@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
 import { formatRevenueTable, formatPercent, toTitleCase, MONTH_NAMES } from '@/lib/formatters';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 const AgentAnalysis = () => {
   const { filters, currentYear, previousYear } = useFilters();
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['agent-comparison', filters.property, currentYear, previousYear, filters.month],
@@ -28,6 +30,13 @@ const AgentAnalysis = () => {
       }>;
     },
   });
+
+  const filtered = useMemo(() => {
+    if (!data) return [];
+    if (!search.trim()) return data.slice(0, 50);
+    const q = search.toLowerCase();
+    return data.filter(r => r.travel_agent_name?.toLowerCase().includes(q)).slice(0, 50);
+  }, [data, search]);
 
   const { data: companiesData, isLoading: companiesLoading } = useQuery({
     queryKey: ['agent-companies', expandedAgent, filters.property, currentYear, previousYear, filters.month],
@@ -62,9 +71,22 @@ const AgentAnalysis = () => {
 
   return (
     <div className="surface-card overflow-hidden">
-      <div className="p-4 pb-2">
-        <h3 className="text-sm font-semibold text-foreground">Agências de Viagem</h3>
-        <p className="text-xs text-muted-foreground mt-1">{data?.length || 0} agências · {periodLabel}</p>
+      <div className="p-4 pb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Agências de Viagem</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            {filtered.length}{search ? ` de ${data?.length || 0}` : ''} agências · {periodLabel}
+          </p>
+        </div>
+        <div className="relative w-full sm:w-56">
+          <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar agência..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-8 h-8 text-xs"
+          />
+        </div>
       </div>
       <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
         <table className="w-full text-sm table-compact">
@@ -79,8 +101,8 @@ const AgentAnalysis = () => {
             </tr>
           </thead>
           <tbody>
-            {data && data.length > 0 ? (
-              data.slice(0, 50).map((row) => {
+            {filtered.length > 0 ? (
+              filtered.map((row) => {
                 const isExpanded = expandedAgent === row.travel_agent_name;
                 return (
                   <React.Fragment key={row.travel_agent_name}>
@@ -129,7 +151,9 @@ const AgentAnalysis = () => {
               })
             ) : (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Sem dados</td>
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  {search ? 'Nenhuma agência encontrada' : 'Sem dados'}
+                </td>
               </tr>
             )}
           </tbody>
