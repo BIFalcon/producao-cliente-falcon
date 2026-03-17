@@ -90,14 +90,10 @@ const UsersPage = () => {
     setFormRole('viewer');
   };
 
-  // Show loading while auth or auto-fix is in progress
-  if (authLoading || autoFixing) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center space-y-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">{autoFixing ? 'Atribuindo permissões...' : 'Carregando...'}</p>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
       </div>
     );
   }
