@@ -3,7 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FiltersContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, Database, BarChart3, Users } from 'lucide-react';
+import { LogOut, Database, Users } from 'lucide-react';
+import falconLogo from '@/assets/falcon-logo.png';
 import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
 const AppHeader = () => {
