@@ -223,6 +223,37 @@ export type Database = {
           travel_agent_name: string
         }[]
       }
+      get_agent_companies: {
+        Args: {
+          p_agent: string
+          p_current_year?: number
+          p_month?: number
+          p_previous_year?: number
+          p_property?: string
+        }
+        Returns: {
+          absolute_change: number
+          company_name: string
+          pct_change: number
+          revenue_current: number
+          revenue_previous: number
+        }[]
+      }
+      get_agent_comparison: {
+        Args: {
+          p_current_year?: number
+          p_month?: number
+          p_previous_year?: number
+          p_property?: string
+        }
+        Returns: {
+          absolute_change: number
+          pct_change: number
+          revenue_current: number
+          revenue_previous: number
+          travel_agent_name: string
+        }[]
+      }
       get_channel_analytics: {
         Args: { p_property?: string; p_year?: number }
         Returns: {
@@ -230,6 +261,37 @@ export type Database = {
           revenue: number
           sales_channel: string
           share_pct: number
+        }[]
+      }
+      get_channel_comparison: {
+        Args: {
+          p_current_year?: number
+          p_month?: number
+          p_previous_year?: number
+          p_property?: string
+        }
+        Returns: {
+          absolute_change: number
+          pct_change: number
+          revenue_current: number
+          revenue_previous: number
+          sales_channel: string
+        }[]
+      }
+      get_channel_drilldown: {
+        Args: {
+          p_channel: string
+          p_current_year?: number
+          p_month?: number
+          p_previous_year?: number
+          p_property?: string
+        }
+        Returns: {
+          absolute_change: number
+          item_name: string
+          pct_change: number
+          revenue_current: number
+          revenue_previous: number
         }[]
       }
       get_city_analytics: {
@@ -241,6 +303,35 @@ export type Database = {
           revenue: number
           state: string
           top_companies: string[]
+        }[]
+      }
+      get_company_city_analytics: {
+        Args: {
+          p_channel?: string
+          p_month?: number
+          p_property?: string
+          p_year?: number
+        }
+        Returns: {
+          city: string
+          company_count: number
+          revenue: number
+          state: string
+        }[]
+      }
+      get_company_city_drilldown: {
+        Args: {
+          p_channel?: string
+          p_city: string
+          p_month?: number
+          p_property?: string
+          p_state?: string
+          p_year?: number
+        }
+        Returns: {
+          company_name: string
+          reservations: number
+          revenue: number
         }[]
       }
       get_company_table: {
@@ -281,6 +372,20 @@ export type Database = {
           channels: string[]
           properties: string[]
           years: number[]
+        }[]
+      }
+      get_guest_city_analytics: {
+        Args: {
+          p_channel?: string
+          p_month?: number
+          p_property?: string
+          p_year?: number
+        }
+        Returns: {
+          city: string
+          reservations: number
+          revenue: number
+          state: string
         }[]
       }
       get_monthly_revenue: {

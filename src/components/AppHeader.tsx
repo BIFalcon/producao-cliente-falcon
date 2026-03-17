@@ -4,6 +4,7 @@ import { useFilters } from '@/contexts/FiltersContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LogOut, Database, BarChart3 } from 'lucide-react';
+import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
 const AppHeader = () => {
   const { signOut, role } = useAuth();
@@ -46,6 +47,21 @@ const AppHeader = () => {
               <SelectItem value="all">Todos</SelectItem>
               {options.years.map((y) => (
                 <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.month?.toString() || 'all'}
+            onValueChange={(v) => setFilter('month', v === 'all' ? null : parseInt(v))}
+          >
+            <SelectTrigger className="h-8 w-[120px] bg-secondary text-xs">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Meses</SelectItem>
+              {MONTH_NAMES_FULL.map((m, i) => (
+                <SelectItem key={i + 1} value={(i + 1).toString()}>{m}</SelectItem>
               ))}
             </SelectContent>
           </Select>
