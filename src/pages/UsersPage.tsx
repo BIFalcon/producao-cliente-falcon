@@ -109,12 +109,6 @@ const UsersPage = () => {
     onError: (err: any) => toast.error(err.message || 'Erro ao atualizar status'),
   });
 
-  const resetForm = () => {
-    setFormName('');
-    setFormEmail('');
-    setFormPassword('');
-    setFormRole('viewer');
-  };
 
   if (authLoading) {
     return (
