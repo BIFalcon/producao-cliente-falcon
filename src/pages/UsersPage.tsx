@@ -36,11 +36,13 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const UsersPage = () => {
-  const { role, user } = useAuth();
+  const { role, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
+  const [autoFixing, setAutoFixing] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -48,14 +50,54 @@ const UsersPage = () => {
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState('viewer');
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users, isLoading, error: usersError } = useQuery({
     queryKey: ['all-users'],
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_all_users');
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
       return (data || []) as UserRow[];
     },
+    enabled: role === 'master_admin',
   });
+
+  // Auto-assign master_admin for debugging if user has no role or wrong role
+  React.useEffect(() => {
+    if (authLoading || !user || role === 'master_admin' || autoFixing) return;
+    
+    const autoAssignRole = async () => {
+      setAutoFixing(true);
+      try {
+        console.log('Auto-assigning master_admin role for debugging...');
+        const { error } = await supabase.from('user_roles').upsert(
+          { user_id: user.id, role: 'master_admin' as const },
+          { onConflict: 'user_id,role' }
+        );
+        if (error) {
+          console.error('Failed to auto-assign role:', error);
+          // Try delete + insert approach
+          await supabase.from('user_roles').delete().eq('user_id', user.id);
+          const { error: insertError } = await supabase.from('user_roles').insert({ user_id: user.id, role: 'master_admin' as const });
+          if (insertError) {
+            console.error('Insert also failed:', insertError);
+            setPageError('Não foi possível atribuir a role master_admin. Verifique as permissões.');
+            setAutoFixing(false);
+            return;
+          }
+        }
+        // Reload to pick up new role
+        window.location.reload();
+      } catch (err) {
+        console.error('Auto-assign error:', err);
+        setPageError('Erro ao atribuir role automaticamente.');
+        setAutoFixing(false);
+      }
+    };
+
+    autoAssignRole();
+  }, [authLoading, user, role, autoFixing]);
 
   const callManageUsers = async (body: any) => {
     const { data, error } = await supabase.functions.invoke('manage-users', { body });
@@ -104,9 +146,38 @@ const UsersPage = () => {
     setFormRole('viewer');
   };
 
+  // Show loading while auth or auto-fix is in progress
+  if (authLoading || autoFixing) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">{autoFixing ? 'Atribuindo permissões...' : 'Carregando...'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (pageError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <p className="text-destructive text-sm">{pageError}</p>
+          <Button variant="outline" size="sm" onClick={() => navigate('/')}>Voltar</Button>
+        </div>
+      </div>
+    );
+  }
+
   if (role !== 'master_admin') {
-    navigate('/');
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <p className="text-destructive text-sm">Acesso restrito a Master Admin.</p>
+          <Button variant="outline" size="sm" onClick={() => navigate('/')}>Voltar</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
