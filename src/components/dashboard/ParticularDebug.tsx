@@ -1,12 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
 import { formatRevenueTable } from '@/lib/formatters';
-import { Bug, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Bug, AlertTriangle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 
 interface DebugData {
@@ -31,7 +30,7 @@ interface DebugData {
 const ParticularDebug = () => {
   const { filters } = useFilters();
   const currentYear = filters.year || new Date().getFullYear();
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['particular-debug', filters.property, currentYear, filters.month],
@@ -48,20 +47,22 @@ const ParticularDebug = () => {
   });
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="border-dashed border-yellow-500/30 bg-yellow-500/5">
-        <CardHeader className="pb-2">
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start gap-2 p-0 h-auto hover:bg-transparent">
-              <Bug className="h-4 w-4 text-yellow-500" />
-              <CardTitle className="text-sm font-semibold text-yellow-500">
-                Diagnóstico de Classificação — Particular
-              </CardTitle>
-            </Button>
-          </CollapsibleTrigger>
-        </CardHeader>
+    <Card className="border-dashed border-yellow-500/30 bg-yellow-500/5">
+      <CardHeader className="pb-2">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 p-0 h-auto hover:bg-transparent"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <ChevronDown className="h-4 w-4 text-yellow-500" /> : <ChevronRight className="h-4 w-4 text-yellow-500" />}
+          <Bug className="h-4 w-4 text-yellow-500" />
+          <CardTitle className="text-sm font-semibold text-yellow-500">
+            Diagnóstico de Classificação — Particular
+          </CardTitle>
+        </Button>
+      </CardHeader>
 
-        <CollapsibleContent>
+      {open && (
           <CardContent className="space-y-4">
             {isLoading ? (
               <p className="text-xs text-muted-foreground">Carregando diagnóstico...</p>
@@ -127,9 +128,8 @@ const ParticularDebug = () => {
               </>
             )}
           </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+      )}
+    </Card>
   );
 };
 
