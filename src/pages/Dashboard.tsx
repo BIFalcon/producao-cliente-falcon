@@ -1,0 +1,80 @@
+import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { FiltersProvider } from '@/contexts/FiltersContext';
+import AppHeader from '@/components/AppHeader';
+import KPICards from '@/components/dashboard/KPICards';
+import ChannelChart from '@/components/dashboard/ChannelChart';
+import MonthlyChart from '@/components/dashboard/MonthlyChart';
+import CompanyTable from '@/components/dashboard/CompanyTable';
+import CompanyHighlights from '@/components/dashboard/CompanyHighlights';
+import ConcentrationMetrics from '@/components/dashboard/ConcentrationMetrics';
+import AgentBreakdown from '@/components/dashboard/AgentBreakdown';
+import CityAnalytics from '@/components/dashboard/CityAnalytics';
+import { Button } from '@/components/ui/button';
+import { Database } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+const DashboardContent = () => {
+  const { role } = useAuth();
+
+  const { data: hasData } = useQuery({
+    queryKey: ['has-data'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('processed_reservations')
+        .select('*', { count: 'exact', head: true });
+      return (count || 0) > 0;
+    },
+  });
+
+  if (hasData === false) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <Database className="h-12 w-12 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Nenhum dado importado</p>
+        {(role === 'master_admin' || role === 'editor') && (
+          <Button asChild>
+            <a href="/upload">Importar Base de Dados</a>
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 p-4 lg:p-6">
+      <KPICards />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <MonthlyChart />
+        <ChannelChart />
+      </div>
+
+      <CompanyHighlights />
+      <CompanyTable />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <AgentBreakdown />
+        </div>
+        <ConcentrationMetrics />
+      </div>
+
+      <CityAnalytics />
+    </div>
+  );
+};
+
+const Dashboard = () => {
+  return (
+    <FiltersProvider>
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <DashboardContent />
+      </div>
+    </FiltersProvider>
+  );
+};
+
+export default Dashboard;
