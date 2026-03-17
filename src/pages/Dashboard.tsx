@@ -62,7 +62,7 @@ const DashboardContent = () => {
         <CompanyCityAnalysis />
       </div>
 
-      <ParticularDebug />
+      
     </div>
   );
 };
