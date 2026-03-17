@@ -87,6 +87,12 @@ const AppHeader = () => {
             </Button>
           )}
 
+          {role === 'master_admin' && (
+            <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
+              <a href="/users"><Users className="mr-1 h-3 w-3" />Usuários</a>
+            </Button>
+          )}
+
           <Button variant="ghost" size="sm" onClick={signOut} className="h-8 text-xs text-muted-foreground">
             <LogOut className="mr-1 h-3 w-3" />Sair
           </Button>
