@@ -15,10 +15,7 @@ const AppHeader = () => {
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
       <div className="flex h-14 items-center justify-between px-4 lg:px-6">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Performance Hoteleira</span>
-          </div>
+          <img src={falconLogo} alt="Falcon" className="h-8 w-auto" />
         </div>
 
         <div className="flex items-center gap-2">
