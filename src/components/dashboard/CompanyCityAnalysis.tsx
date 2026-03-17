@@ -32,7 +32,7 @@ const CompanyCityAnalysis = () => {
     queryKey: ['company-city-drilldown', expandedCity, filters],
     queryFn: async () => {
       if (!expandedCity) return [];
-      const { data, error } = await supabase.rpc('get_company_city_drilldown', {
+      const { data, error } = await (supabase.rpc as any)('get_company_city_drilldown', {
         p_city: expandedCity.city,
         p_state: expandedCity.state,
         p_property: filters.property,
