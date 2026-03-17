@@ -52,32 +52,16 @@ const UploadPage = () => {
   const detectSheets = async (excelFile: File) => {
     setLoadingSheets(true);
     try {
-      const formData = new FormData();
-      formData.append('file', excelFile);
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const projectId = import.meta.env.VITE_SUPABASE_URL?.replace('https://', '').split('.')[0];
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-excel?action=get-sheets`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao ler planilha');
-      }
-
-      const result = await response.json();
-      const sheetList: SheetInfo[] = result.sheets || [];
+      const buffer = await excelFile.arrayBuffer();
+      const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: false });
+      const sheetList: SheetInfo[] = workbook.SheetNames.map((name: string) => {
+        const sheet = workbook.Sheets[name];
+        const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+        return { name, rowCount: range.e.r };
+      });
       setSheets(sheetList);
+      // Store workbook for later use
+      (excelFile as any).__workbook = workbook;
 
       if (sheetList.length === 1) {
         setSelectedSheet(sheetList[0].name);
