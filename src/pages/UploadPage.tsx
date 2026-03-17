@@ -193,10 +193,10 @@ const UploadPage = () => {
       let rows: ParsedRow[];
 
       if (isExcelFile(file)) {
-        setProgressText('Processando arquivo Excel no servidor...');
+        setProgressText('Processando arquivo Excel...');
         setProgress(5);
         const sheet = selectedSheet || sheets[0]?.name || '';
-        rows = await parseExcelViaBackend(file, sheet);
+        rows = await parseExcelLocally(file, sheet);
         setProgress(20);
       } else {
         setProgressText('Lendo arquivo CSV...');
