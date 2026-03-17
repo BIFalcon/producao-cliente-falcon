@@ -3,13 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FiltersProvider } from '@/contexts/FiltersContext';
 import AppHeader from '@/components/AppHeader';
 import KPICards from '@/components/dashboard/KPICards';
+import ConcentrationMetrics from '@/components/dashboard/ConcentrationMetrics';
 import ChannelComparison from '@/components/dashboard/ChannelComparison';
 import CompanyTable from '@/components/dashboard/CompanyTable';
-import CompanyHighlights from '@/components/dashboard/CompanyHighlights';
-import ConcentrationMetrics from '@/components/dashboard/ConcentrationMetrics';
 import AgentAnalysis from '@/components/dashboard/AgentAnalysis';
 import GuestCityAnalysis from '@/components/dashboard/GuestCityAnalysis';
 import CompanyCityAnalysis from '@/components/dashboard/CompanyCityAnalysis';
+import AutoInsights from '@/components/dashboard/AutoInsights';
 import { Button } from '@/components/ui/button';
 import { Database } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -46,9 +46,12 @@ const DashboardContent = () => {
     <div className="space-y-4 p-4 lg:p-6">
       <KPICards />
 
+      <ConcentrationMetrics />
+
+      <AutoInsights />
+
       <ChannelComparison />
 
-      <CompanyHighlights />
       <CompanyTable />
 
       <AgentAnalysis />
@@ -57,8 +60,6 @@ const DashboardContent = () => {
         <GuestCityAnalysis />
         <CompanyCityAnalysis />
       </div>
-
-      <ConcentrationMetrics />
     </div>
   );
 };

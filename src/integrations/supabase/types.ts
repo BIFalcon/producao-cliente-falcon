@@ -98,6 +98,7 @@ export type Database = {
           reservation_status: string | null
           room_revenue: number | null
           room_type: string | null
+          source_name: string | null
           state: string | null
           total_revenue: number | null
           travel_agent_name: string | null
@@ -120,6 +121,7 @@ export type Database = {
           reservation_status?: string | null
           room_revenue?: number | null
           room_type?: string | null
+          source_name?: string | null
           state?: string | null
           total_revenue?: number | null
           travel_agent_name?: string | null
@@ -142,6 +144,7 @@ export type Database = {
           reservation_status?: string | null
           room_revenue?: number | null
           room_type?: string | null
+          source_name?: string | null
           state?: string | null
           total_revenue?: number | null
           travel_agent_name?: string | null

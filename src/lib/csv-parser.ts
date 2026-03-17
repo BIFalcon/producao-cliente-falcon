@@ -54,6 +54,10 @@ const COLUMN_MAP: Record<string, string> = {
   'tipo de quarto': 'room_type',
   'tipo quarto': 'room_type',
   'roomtype': 'room_type',
+  'source name': 'source_name',
+  'source': 'source_name',
+  'fonte': 'source_name',
+  'nome da fonte': 'source_name',
 };
 
 const normalizeHeader = (header: string): string => {
@@ -82,6 +86,7 @@ export interface ParsedRow {
   fb_revenue?: string | number;
   total_revenue?: string | number;
   room_type?: string;
+  source_name?: string;
 }
 
 export const parseCSV = (file: File): Promise<ParsedRow[]> => {
