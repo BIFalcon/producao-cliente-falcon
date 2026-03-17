@@ -43,6 +43,32 @@ const UsersPage = () => {
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
 
+  // Form state
+  const [formName, setFormName] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [formRole, setFormRole] = useState('viewer');
+
+  const { data: users, isLoading, error: usersError } = useQuery({
+    queryKey: ['all-users'],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)('get_all_users');
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
+      return (data || []) as UserRow[];
+    },
+    enabled: role === 'master_admin',
+  });
+
+  const resetForm = () => {
+    setFormName('');
+    setFormEmail('');
+    setFormPassword('');
+    setFormRole('viewer');
+  };
+
   const callManageUsers = async (body: any) => {
     const { data, error } = await supabase.functions.invoke('manage-users', { body });
     if (error) throw error;
