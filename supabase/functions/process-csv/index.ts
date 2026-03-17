@@ -61,8 +61,8 @@ Deno.serve(async (req) => {
 
     // If first chunk and replace mode, clear existing data
     if (chunk_index === 0 && mode === 'replace') {
-      await supabase.from('raw_reservations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await supabase.from('processed_reservations').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('raw_reservations').delete().not('id', 'is', null);
+      await supabase.from('processed_reservations').delete().not('id', 'is', null);
     }
 
     // Process and insert rows
