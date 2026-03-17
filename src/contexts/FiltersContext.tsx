@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface Filters {
   property: string | null;
   year: number | null;
+  month: number | null;
   channel: string | null;
 }
 
@@ -18,12 +19,14 @@ interface FiltersContextType {
   options: FilterOptions;
   setFilter: (key: keyof Filters, value: any) => void;
   refreshOptions: () => Promise<void>;
+  currentYear: number;
+  previousYear: number;
 }
 
 const FiltersContext = createContext<FiltersContextType | undefined>(undefined);
 
 export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [filters, setFilters] = useState<Filters>({ property: null, year: null, channel: null });
+  const [filters, setFilters] = useState<Filters>({ property: null, year: null, month: null, channel: null });
   const [options, setOptions] = useState<FilterOptions>({ properties: [], years: [], channels: [] });
 
   const refreshOptions = useCallback(async () => {
@@ -45,8 +48,11 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  const currentYear = filters.year || new Date().getFullYear();
+  const previousYear = currentYear - 1;
+
   return (
-    <FiltersContext.Provider value={{ filters, options, setFilter, refreshOptions }}>
+    <FiltersContext.Provider value={{ filters, options, setFilter, refreshOptions, currentYear, previousYear }}>
       {children}
     </FiltersContext.Provider>
   );

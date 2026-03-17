@@ -3,13 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FiltersProvider } from '@/contexts/FiltersContext';
 import AppHeader from '@/components/AppHeader';
 import KPICards from '@/components/dashboard/KPICards';
-import ChannelChart from '@/components/dashboard/ChannelChart';
-import MonthlyChart from '@/components/dashboard/MonthlyChart';
+import ChannelComparison from '@/components/dashboard/ChannelComparison';
 import CompanyTable from '@/components/dashboard/CompanyTable';
 import CompanyHighlights from '@/components/dashboard/CompanyHighlights';
 import ConcentrationMetrics from '@/components/dashboard/ConcentrationMetrics';
-import AgentBreakdown from '@/components/dashboard/AgentBreakdown';
-import CityAnalytics from '@/components/dashboard/CityAnalytics';
+import AgentAnalysis from '@/components/dashboard/AgentAnalysis';
+import GuestCityAnalysis from '@/components/dashboard/GuestCityAnalysis';
+import CompanyCityAnalysis from '@/components/dashboard/CompanyCityAnalysis';
 import { Button } from '@/components/ui/button';
 import { Database } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -46,22 +46,19 @@ const DashboardContent = () => {
     <div className="space-y-4 p-4 lg:p-6">
       <KPICards />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <MonthlyChart />
-        <ChannelChart />
-      </div>
+      <ChannelComparison />
 
       <CompanyHighlights />
       <CompanyTable />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <AgentBreakdown />
-        </div>
-        <ConcentrationMetrics />
+      <AgentAnalysis />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <GuestCityAnalysis />
+        <CompanyCityAnalysis />
       </div>
 
-      <CityAnalytics />
+      <ConcentrationMetrics />
     </div>
   );
 };
