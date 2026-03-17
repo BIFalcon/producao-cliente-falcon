@@ -12,7 +12,7 @@ const CompanyCityAnalysis = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['company-cities', filters],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_company_city_analytics', {
+      const { data, error } = await (supabase.rpc as any)('get_company_city_analytics', {
         p_property: filters.property,
         p_year: filters.year,
         p_month: filters.month,
