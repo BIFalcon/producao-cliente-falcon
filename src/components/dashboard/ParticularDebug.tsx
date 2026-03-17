@@ -128,9 +128,8 @@ const ParticularDebug = () => {
               </>
             )}
           </CardContent>
-        </CollapsibleContent>
-      </Card>
-    </Collapsible>
+      )}
+    </Card>
   );
 };
 
