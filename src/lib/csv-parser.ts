@@ -81,6 +81,7 @@ export interface ParsedRow {
   room_revenue?: string | number;
   fb_revenue?: string | number;
   total_revenue?: string | number;
+  room_type?: string;
 }
 
 export const parseCSV = (file: File): Promise<ParsedRow[]> => {
