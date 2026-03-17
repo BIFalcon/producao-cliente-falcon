@@ -14,7 +14,7 @@ const ChannelComparison = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['channel-comparison', filters.property, currentYear, previousYear, filters.month],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_channel_comparison', {
+      const { data, error } = await (supabase.rpc as any)('get_channel_comparison', {
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
