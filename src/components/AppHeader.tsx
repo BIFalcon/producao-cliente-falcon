@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FiltersContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, Database, BarChart3 } from 'lucide-react';
+import { LogOut, Database, BarChart3, Users } from 'lucide-react';
 import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
 const AppHeader = () => {
