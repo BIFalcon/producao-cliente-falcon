@@ -1,0 +1,59 @@
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Filters {
+  property: string | null;
+  year: number | null;
+  channel: string | null;
+}
+
+interface FilterOptions {
+  properties: string[];
+  years: number[];
+  channels: string[];
+}
+
+interface FiltersContextType {
+  filters: Filters;
+  options: FilterOptions;
+  setFilter: (key: keyof Filters, value: any) => void;
+  refreshOptions: () => Promise<void>;
+}
+
+const FiltersContext = createContext<FiltersContextType | undefined>(undefined);
+
+export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [filters, setFilters] = useState<Filters>({ property: null, year: null, channel: null });
+  const [options, setOptions] = useState<FilterOptions>({ properties: [], years: [], channels: [] });
+
+  const refreshOptions = useCallback(async () => {
+    const { data } = await supabase.rpc('get_filter_options');
+    if (data && data[0]) {
+      setOptions({
+        properties: data[0].properties || [],
+        years: data[0].years || [],
+        channels: data[0].channels || [],
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshOptions();
+  }, [refreshOptions]);
+
+  const setFilter = (key: keyof Filters, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  return (
+    <FiltersContext.Provider value={{ filters, options, setFilter, refreshOptions }}>
+      {children}
+    </FiltersContext.Provider>
+  );
+};
+
+export const useFilters = () => {
+  const ctx = useContext(FiltersContext);
+  if (!ctx) throw new Error('useFilters must be used within FiltersProvider');
+  return ctx;
+};
