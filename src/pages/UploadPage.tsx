@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 2000;
 
