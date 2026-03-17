@@ -1,12 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
 import { formatRevenueTable } from '@/lib/formatters';
-import { Bug, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Bug, AlertTriangle, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 
 interface DebugData {
