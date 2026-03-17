@@ -438,6 +438,10 @@ export type Database = {
           year: number
         }[]
       }
+      get_particular_debug: {
+        Args: { p_month?: number; p_property?: string; p_year?: number }
+        Returns: Json
+      }
       has_any_users: { Args: never; Returns: boolean }
       has_role: {
         Args: {

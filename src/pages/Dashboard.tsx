@@ -10,6 +10,7 @@ import AgentAnalysis from '@/components/dashboard/AgentAnalysis';
 import GuestCityAnalysis from '@/components/dashboard/GuestCityAnalysis';
 import CompanyCityAnalysis from '@/components/dashboard/CompanyCityAnalysis';
 import AutoInsights from '@/components/dashboard/AutoInsights';
+import ParticularDebug from '@/components/dashboard/ParticularDebug';
 import { Button } from '@/components/ui/button';
 import { Database } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -60,6 +61,8 @@ const DashboardContent = () => {
         <GuestCityAnalysis />
         <CompanyCityAnalysis />
       </div>
+
+      <ParticularDebug />
     </div>
   );
 };
