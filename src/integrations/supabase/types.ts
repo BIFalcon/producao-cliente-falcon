@@ -80,6 +80,33 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       raw_reservations: {
         Row: {
           arrival_date: string | null
@@ -255,6 +282,17 @@ export type Database = {
           revenue_current: number
           revenue_previous: number
           travel_agent_name: string
+        }[]
+      }
+      get_all_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          is_active: boolean
+          role: string
+          user_id: string
         }[]
       }
       get_channel_analytics: {

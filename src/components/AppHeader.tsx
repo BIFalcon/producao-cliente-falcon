@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FiltersContext';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, Database, BarChart3 } from 'lucide-react';
+import { LogOut, Database, BarChart3, Users } from 'lucide-react';
 import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
 const AppHeader = () => {
@@ -84,6 +84,12 @@ const AppHeader = () => {
           {(role === 'master_admin' || role === 'editor') && (
             <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
               <a href="/upload"><Database className="mr-1 h-3 w-3" />Central de Dados</a>
+            </Button>
+          )}
+
+          {role === 'master_admin' && (
+            <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
+              <a href="/users"><Users className="mr-1 h-3 w-3" />Usuários</a>
             </Button>
           )}
 
