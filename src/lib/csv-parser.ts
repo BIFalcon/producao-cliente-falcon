@@ -50,6 +50,10 @@ const COLUMN_MAP: Record<string, string> = {
   'receita total': 'total_revenue',
   'revenue': 'total_revenue',
   'receita': 'total_revenue',
+  'room type': 'room_type',
+  'tipo de quarto': 'room_type',
+  'tipo quarto': 'room_type',
+  'roomtype': 'room_type',
 };
 
 const normalizeHeader = (header: string): string => {
