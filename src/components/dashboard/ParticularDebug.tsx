@@ -30,7 +30,7 @@ interface DebugData {
 const ParticularDebug = () => {
   const { filters } = useFilters();
   const currentYear = filters.year || new Date().getFullYear();
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['particular-debug', filters.property, currentYear, filters.month],
@@ -47,20 +47,22 @@ const ParticularDebug = () => {
   });
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="border-dashed border-yellow-500/30 bg-yellow-500/5">
-        <CardHeader className="pb-2">
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start gap-2 p-0 h-auto hover:bg-transparent">
-              <Bug className="h-4 w-4 text-yellow-500" />
-              <CardTitle className="text-sm font-semibold text-yellow-500">
-                Diagnóstico de Classificação — Particular
-              </CardTitle>
-            </Button>
-          </CollapsibleTrigger>
-        </CardHeader>
+    <Card className="border-dashed border-yellow-500/30 bg-yellow-500/5">
+      <CardHeader className="pb-2">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2 p-0 h-auto hover:bg-transparent"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <ChevronDown className="h-4 w-4 text-yellow-500" /> : <ChevronRight className="h-4 w-4 text-yellow-500" />}
+          <Bug className="h-4 w-4 text-yellow-500" />
+          <CardTitle className="text-sm font-semibold text-yellow-500">
+            Diagnóstico de Classificação — Particular
+          </CardTitle>
+        </Button>
+      </CardHeader>
 
-        <CollapsibleContent>
+      {open && (
           <CardContent className="space-y-4">
             {isLoading ? (
               <p className="text-xs text-muted-foreground">Carregando diagnóstico...</p>
