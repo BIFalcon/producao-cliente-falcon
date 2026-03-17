@@ -1,0 +1,4 @@
+project_id = "nprjvffrieevctknwqll"
+
+[functions.process-csv]
+verify_jwt = false
