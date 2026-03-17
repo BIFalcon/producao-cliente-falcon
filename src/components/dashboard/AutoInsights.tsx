@@ -5,7 +5,6 @@ import { useFilters } from '@/contexts/FiltersContext';
 import { formatRevenue, formatPercent, toTitleCase } from '@/lib/formatters';
 import { Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const AutoInsights = () => {
   const [open, setOpen] = useState(false);
@@ -86,16 +85,16 @@ const AutoInsights = () => {
 
       if (topGrowth.length > 0) {
         const items = topGrowth.map((c: any) =>
-          `**${toTitleCase(c.company_name)}** (${formatPercent(c.pct_change)}, ${formatRevenue(c.absolute_change)})`
+          `<strong>${toTitleCase(c.company_name)}</strong> (${formatPercent(c.pct_change)}, ${formatRevenue(c.absolute_change)})`
         ).join(', ');
-        insights.push(`📈 **Empresas com maior crescimento:** ${items}`);
+        insights.push(`📈 <strong>Empresas com maior crescimento:</strong> ${items}`);
       }
 
       if (topDecline.length > 0 && topDecline[0].pct_change < 0) {
         const items = topDecline.filter((c: any) => c.pct_change < 0).map((c: any) =>
-          `**${toTitleCase(c.company_name)}** (${formatPercent(c.pct_change)}, ${formatRevenue(c.absolute_change)})`
+          `<strong>${toTitleCase(c.company_name)}</strong> (${formatPercent(c.pct_change)}, ${formatRevenue(c.absolute_change)})`
         ).join(', ');
-        if (items) insights.push(`📉 **Empresas com maior queda:** ${items}`);
+        if (items) insights.push(`📉 <strong>Empresas com maior queda:</strong> ${items}`);
       }
     }
 
@@ -113,9 +112,9 @@ const AutoInsights = () => {
 
       if (cityGrowth.length > 0) {
         const items = cityGrowth.map((c: any) =>
-          `**${toTitleCase(c.city)}** (${c.pct > 0 ? '+' : ''}${c.pct.toFixed(1)}%, receita ${formatRevenue(c.revenue)})`
+          `<strong>${toTitleCase(c.city)}</strong> (${c.pct > 0 ? '+' : ''}${c.pct.toFixed(1)}%, receita ${formatRevenue(c.revenue)})`
         ).join(', ');
-        insights.push(`🏙️ **Cidades com maior crescimento:** ${items}`);
+        insights.push(`🏙️ <strong>Cidades com maior crescimento:</strong> ${items}`);
       }
     }
 
@@ -125,9 +124,9 @@ const AutoInsights = () => {
         const channelShares = channelData.map((c: any) => {
           const share = ((c.revenue_current || 0) / totalCurrent * 100).toFixed(1);
           const change = c.pct_change !== null ? ` (var. ${formatPercent(c.pct_change)})` : '';
-          return `**${c.sales_channel}**: ${share}%${change}`;
+          return `<strong>${c.sales_channel}</strong>: ${share}%${change}`;
         }).join(' · ');
-        insights.push(`📊 **Distribuição por canal:** ${channelShares}`);
+        insights.push(`📊 <strong>Distribuição por canal:</strong> ${channelShares}`);
       }
     }
 
@@ -135,15 +134,13 @@ const AutoInsights = () => {
   };
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Lightbulb className="h-4 w-4" />
-          Ver Insights Automáticos
-          {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
+    <div>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => setOpen(!open)}>
+        <Lightbulb className="h-4 w-4" />
+        Ver Insights Automáticos
+        {open ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+      </Button>
+      {open && (
         <div className="surface-card mt-3 p-4 space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-primary" />
@@ -152,12 +149,12 @@ const AutoInsights = () => {
           <div className="space-y-2">
             {generateInsights().map((insight, i) => (
               <p key={i} className="text-xs leading-relaxed text-foreground/90"
-                 dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                 dangerouslySetInnerHTML={{ __html: insight }} />
             ))}
           </div>
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      )}
+    </div>
   );
 };
 
