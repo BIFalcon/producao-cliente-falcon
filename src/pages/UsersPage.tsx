@@ -41,7 +41,6 @@ const UsersPage = () => {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
-  const [autoFixing, setAutoFixing] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
 
   // Form state
@@ -63,41 +62,12 @@ const UsersPage = () => {
     enabled: role === 'master_admin',
   });
 
-  // Auto-assign master_admin for debugging if user has no role or wrong role
-  React.useEffect(() => {
-    if (authLoading || !user || role === 'master_admin' || autoFixing) return;
-    
-    const autoAssignRole = async () => {
-      setAutoFixing(true);
-      try {
-        console.log('Auto-assigning master_admin role for debugging...');
-        const { error } = await supabase.from('user_roles').upsert(
-          { user_id: user.id, role: 'master_admin' as const },
-          { onConflict: 'user_id,role' }
-        );
-        if (error) {
-          console.error('Failed to auto-assign role:', error);
-          // Try delete + insert approach
-          await supabase.from('user_roles').delete().eq('user_id', user.id);
-          const { error: insertError } = await supabase.from('user_roles').insert({ user_id: user.id, role: 'master_admin' as const });
-          if (insertError) {
-            console.error('Insert also failed:', insertError);
-            setPageError('Não foi possível atribuir a role master_admin. Verifique as permissões.');
-            setAutoFixing(false);
-            return;
-          }
-        }
-        // Reload to pick up new role
-        window.location.reload();
-      } catch (err) {
-        console.error('Auto-assign error:', err);
-        setPageError('Erro ao atribuir role automaticamente.');
-        setAutoFixing(false);
-      }
-    };
-
-    autoAssignRole();
-  }, [authLoading, user, role, autoFixing]);
+  const resetForm = () => {
+    setFormName('');
+    setFormEmail('');
+    setFormPassword('');
+    setFormRole('viewer');
+  };
 
   const callManageUsers = async (body: any) => {
     const { data, error } = await supabase.functions.invoke('manage-users', { body });
@@ -139,21 +109,11 @@ const UsersPage = () => {
     onError: (err: any) => toast.error(err.message || 'Erro ao atualizar status'),
   });
 
-  const resetForm = () => {
-    setFormName('');
-    setFormEmail('');
-    setFormPassword('');
-    setFormRole('viewer');
-  };
 
-  // Show loading while auth or auto-fix is in progress
-  if (authLoading || autoFixing) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center space-y-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-          <p className="text-sm text-muted-foreground">{autoFixing ? 'Atribuindo permissões...' : 'Carregando...'}</p>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
       </div>
     );
   }
