@@ -54,6 +54,10 @@ const COLUMN_MAP: Record<string, string> = {
   'tipo de quarto': 'room_type',
   'tipo quarto': 'room_type',
   'roomtype': 'room_type',
+  'source name': 'source_name',
+  'source': 'source_name',
+  'fonte': 'source_name',
+  'nome da fonte': 'source_name',
 };
 
 const normalizeHeader = (header: string): string => {
