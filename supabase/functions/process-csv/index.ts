@@ -91,6 +91,7 @@ Deno.serve(async (req) => {
         room_revenue: roomRev,
         fb_revenue: fbRev,
         total_revenue: totalRev,
+        room_type: normalizeText(row.room_type),
         upload_batch_id: batch_id,
       };
     });

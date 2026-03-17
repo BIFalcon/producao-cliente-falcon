@@ -121,6 +121,7 @@ const UploadPage = () => {
     'room revenue': 'room_revenue', 'receita quartos': 'room_revenue', 'receita quarto': 'room_revenue',
     'f&b revenue': 'fb_revenue', 'fb revenue': 'fb_revenue', 'receita a&b': 'fb_revenue', 'receita ab': 'fb_revenue',
     'total revenue': 'total_revenue', 'receita total': 'total_revenue', 'revenue': 'total_revenue', 'receita': 'total_revenue',
+    'room type': 'room_type', 'tipo de quarto': 'room_type', 'tipo quarto': 'room_type', 'roomtype': 'room_type',
   };
 
   const normalizeHeader = (header: string): string => {
