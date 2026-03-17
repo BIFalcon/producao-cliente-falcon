@@ -61,6 +61,8 @@ const DashboardContent = () => {
         <GuestCityAnalysis />
         <CompanyCityAnalysis />
       </div>
+
+      <ParticularDebug />
     </div>
   );
 };
