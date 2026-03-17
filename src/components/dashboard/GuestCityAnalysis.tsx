@@ -10,7 +10,7 @@ const GuestCityAnalysis = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['guest-cities', filters],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_guest_city_analytics', {
+      const { data, error } = await (supabase.rpc as any)('get_guest_city_analytics', {
         p_property: filters.property,
         p_year: filters.year,
         p_month: filters.month,

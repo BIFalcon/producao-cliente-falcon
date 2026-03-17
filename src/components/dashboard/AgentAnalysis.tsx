@@ -12,7 +12,7 @@ const AgentAnalysis = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['agent-comparison', filters.property, currentYear, previousYear, filters.month],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_agent_comparison', {
+      const { data, error } = await (supabase.rpc as any)('get_agent_comparison', {
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
@@ -33,7 +33,7 @@ const AgentAnalysis = () => {
     queryKey: ['agent-companies', expandedAgent, filters.property, currentYear, previousYear, filters.month],
     queryFn: async () => {
       if (!expandedAgent) return [];
-      const { data, error } = await supabase.rpc('get_agent_companies', {
+      const { data, error } = await (supabase.rpc as any)('get_agent_companies', {
         p_agent: expandedAgent,
         p_property: filters.property,
         p_current_year: currentYear,
