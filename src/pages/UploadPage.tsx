@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 2000;
 
@@ -51,32 +52,16 @@ const UploadPage = () => {
   const detectSheets = async (excelFile: File) => {
     setLoadingSheets(true);
     try {
-      const formData = new FormData();
-      formData.append('file', excelFile);
-
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
-      const projectId = import.meta.env.VITE_SUPABASE_URL?.replace('https://', '').split('.')[0];
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-excel?action=get-sheets`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao ler planilha');
-      }
-
-      const result = await response.json();
-      const sheetList: SheetInfo[] = result.sheets || [];
+      const buffer = await excelFile.arrayBuffer();
+      const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: false });
+      const sheetList: SheetInfo[] = workbook.SheetNames.map((name: string) => {
+        const sheet = workbook.Sheets[name];
+        const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+        return { name, rowCount: range.e.r };
+      });
       setSheets(sheetList);
+      // Store workbook for later use
+      (excelFile as any).__workbook = workbook;
 
       if (sheetList.length === 1) {
         setSelectedSheet(sheetList[0].name);
@@ -120,34 +105,76 @@ const UploadPage = () => {
     if (selectedFile) handleFileSelected(selectedFile);
   };
 
-  const parseExcelViaBackend = async (excelFile: File, sheetName: string): Promise<ParsedRow[]> => {
-    const formData = new FormData();
-    formData.append('file', excelFile);
+  const COLUMN_MAP: Record<string, string> = {
+    'property name': 'property_name', 'property': 'property_name', 'hotel': 'property_name', 'nome do hotel': 'property_name',
+    'reservation status': 'reservation_status', 'status': 'reservation_status', 'status da reserva': 'reservation_status',
+    'confirmation number': 'confirmation_number', 'confirmation': 'confirmation_number', 'numero de confirmacao': 'confirmation_number', 'numero confirmacao': 'confirmation_number',
+    'reservation date': 'reservation_date', 'data da reserva': 'reservation_date',
+    'arrival date': 'arrival_date', 'data de chegada': 'arrival_date', 'checkin': 'arrival_date', 'check-in': 'arrival_date',
+    'arrival time': 'arrival_time',
+    'departure date': 'departure_date', 'data de saida': 'departure_date', 'checkout': 'departure_date', 'check-out': 'departure_date',
+    'departure time': 'departure_time',
+    'travel agent name': 'travel_agent_name', 'travel agent': 'travel_agent_name', 'agencia': 'travel_agent_name', 'agente': 'travel_agent_name',
+    'company name': 'company_name', 'company': 'company_name', 'empresa': 'company_name',
+    'city': 'city', 'cidade': 'city', 'state': 'state', 'estado': 'state', 'uf': 'state',
+    'country': 'country', 'pais': 'country',
+    'room revenue': 'room_revenue', 'receita quartos': 'room_revenue', 'receita quarto': 'room_revenue',
+    'f&b revenue': 'fb_revenue', 'fb revenue': 'fb_revenue', 'receita a&b': 'fb_revenue', 'receita ab': 'fb_revenue',
+    'total revenue': 'total_revenue', 'receita total': 'total_revenue', 'revenue': 'total_revenue', 'receita': 'total_revenue',
+  };
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
+  const normalizeHeader = (header: string): string => {
+    const normalized = header.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    return COLUMN_MAP[normalized] || normalized.replace(/\s+/g, '_');
+  };
 
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-excel?action=parse&sheet=${encodeURIComponent(sheetName)}`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      }
-    );
+  const excelDateToJSDate = (serial: number): string | null => {
+    if (!serial || typeof serial !== 'number') return null;
+    const utc_days = Math.floor(serial - 25569);
+    const date = new Date(utc_days * 86400 * 1000);
+    return date.toISOString().split('T')[0];
+  };
 
-    const result = await response.json();
+  const parseExcelLocally = async (excelFile: File, sheetName: string): Promise<ParsedRow[]> => {
+    let workbook = (excelFile as any).__workbook;
+    if (!workbook) {
+      const buffer = await excelFile.arrayBuffer();
+      workbook = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: false });
+    }
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) throw new Error(`Aba "${sheetName}" não encontrada`);
 
-    if (!response.ok) {
-      if (result.missing_columns) {
-        throw new Error(result.error);
-      }
-      throw new Error(result.error || 'Erro ao processar arquivo Excel');
+    const rawRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
+    if (rawRows.length === 0) throw new Error('Planilha vazia');
+
+    const rawHeaders = Object.keys(rawRows[0]);
+    const headerMap: Record<string, string> = {};
+    rawHeaders.forEach(h => { headerMap[h] = normalizeHeader(h); });
+
+    const normalizedHeaders = Object.values(headerMap);
+    const REQUIRED = ['property_name', 'reservation_status', 'confirmation_number'];
+    const missing = REQUIRED.filter(c => !normalizedHeaders.includes(c));
+    if (missing.length > 0) {
+      const names: Record<string, string> = {
+        'property_name': 'Property Name / Hotel',
+        'reservation_status': 'Reservation Status',
+        'confirmation_number': 'Confirmation Number',
+      };
+      throw new Error(`Colunas obrigatórias não encontradas: ${missing.map(c => names[c] || c).join(', ')}`);
     }
 
-    return result.rows as ParsedRow[];
+    const dateColumns = ['reservation_date', 'arrival_date', 'departure_date'];
+    return rawRows.map((row: any) => {
+      const normalized: any = {};
+      for (const [rawKey, normKey] of Object.entries(headerMap)) {
+        let value = row[rawKey];
+        if (dateColumns.includes(normKey) && typeof value === 'number') {
+          value = excelDateToJSDate(value);
+        }
+        normalized[normKey] = value;
+      }
+      return normalized as ParsedRow;
+    });
   };
 
   const handleUpload = async () => {
@@ -166,10 +193,10 @@ const UploadPage = () => {
       let rows: ParsedRow[];
 
       if (isExcelFile(file)) {
-        setProgressText('Processando arquivo Excel no servidor...');
+        setProgressText('Processando arquivo Excel...');
         setProgress(5);
         const sheet = selectedSheet || sheets[0]?.name || '';
-        rows = await parseExcelViaBackend(file, sheet);
+        rows = await parseExcelLocally(file, sheet);
         setProgress(20);
       } else {
         setProgressText('Lendo arquivo CSV...');

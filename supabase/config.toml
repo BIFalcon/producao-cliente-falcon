@@ -3,5 +3,3 @@ project_id = "nprjvffrieevctknwqll"
 [functions.process-csv]
 verify_jwt = false
 
-[functions.parse-excel]
-verify_jwt = false
