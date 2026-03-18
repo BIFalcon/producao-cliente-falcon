@@ -31,6 +31,7 @@ export type Database = {
           property_name: string
           reservation_date: string | null
           room_revenue: number | null
+          roomnights: number | null
           sales_channel: string | null
           state: string | null
           total_revenue: number | null
@@ -52,6 +53,7 @@ export type Database = {
           property_name: string
           reservation_date?: string | null
           room_revenue?: number | null
+          roomnights?: number | null
           sales_channel?: string | null
           state?: string | null
           total_revenue?: number | null
@@ -73,6 +75,7 @@ export type Database = {
           property_name?: string
           reservation_date?: string | null
           room_revenue?: number | null
+          roomnights?: number | null
           sales_channel?: string | null
           state?: string | null
           total_revenue?: number | null
@@ -120,7 +123,10 @@ export type Database = {
           departure_time: string | null
           fb_revenue: number | null
           id: string
+          number_of_nights: number | null
           property_name: string | null
+          rate_code: string | null
+          rate_code_description: string | null
           reservation_date: string | null
           reservation_status: string | null
           room_revenue: number | null
@@ -143,7 +149,10 @@ export type Database = {
           departure_time?: string | null
           fb_revenue?: number | null
           id?: string
+          number_of_nights?: number | null
           property_name?: string | null
+          rate_code?: string | null
+          rate_code_description?: string | null
           reservation_date?: string | null
           reservation_status?: string | null
           room_revenue?: number | null
@@ -166,7 +175,10 @@ export type Database = {
           departure_time?: string | null
           fb_revenue?: number | null
           id?: string
+          number_of_nights?: number | null
           property_name?: string | null
+          rate_code?: string | null
+          rate_code_description?: string | null
           reservation_date?: string | null
           reservation_status?: string | null
           room_revenue?: number | null
