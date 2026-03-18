@@ -47,7 +47,7 @@ const DashboardContent = () => {
     <div className="space-y-4 p-4 lg:p-6">
       <KPICards />
 
-      <ConcentrationMetrics />
+      
 
       <AutoInsights />
 
