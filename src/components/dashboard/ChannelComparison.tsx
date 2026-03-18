@@ -30,27 +30,23 @@ const ChannelComparison = () => {
     },
   });
 
-  // Drilldown data (still uses year comparison)
+  // Multi-year drilldown data
   const { data: drilldownData, isLoading: drilldownLoading } = useQuery({
-    queryKey: ['channel-drilldown', expandedChannel, filters.property, currentYear, previousYear, filters.month],
+    queryKey: ['channel-drilldown-multiyear', expandedChannel, filters.property, filters.month],
     queryFn: async () => {
       if (!expandedChannel) return [];
-      const { data, error } = await (supabase.rpc as any)('get_channel_drilldown', {
+      const { data, error } = await (supabase.rpc as any)('get_channel_drilldown_multiyear', {
         p_channel: expandedChannel,
         p_property: filters.property,
-        p_current_year: currentYear,
-        p_previous_year: previousYear,
         p_month: filters.month,
       });
       if (error) throw error;
       return (data || []) as Array<{
         item_name: string;
-        revenue_current: number;
-        revenue_previous: number;
-        absolute_change: number;
-        pct_change: number | null;
-        roomnights_current: number;
-        adr_current: number;
+        departure_year: number;
+        revenue: number;
+        roomnights: number;
+        room_revenue: number;
       }>;
     },
     enabled: !!expandedChannel,
