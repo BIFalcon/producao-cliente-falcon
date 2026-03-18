@@ -142,16 +142,14 @@ const ChannelComparison = () => {
                       drilldownLoading ? (
                         <tr><td colSpan={2 + years.length} className="px-8 py-4 text-center text-xs text-muted-foreground">Carregando...</td></tr>
                       ) : (
-                        drilldownData?.map((sub, j) => (
+                        drilldownRows.map((sub, j) => (
                           <tr key={j} className="border-b bg-secondary/10" style={{ borderColor: 'rgba(255,255,255,0.02)' }}>
                             <td className="px-4 py-1.5"></td>
-                            <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.item_name)}</td>
-                            <td className="px-4 py-1.5 text-right font-mono text-xs text-foreground/80">{formatRevenueTable(sub.revenue_current)}</td>
-                            {years.length > 1 && (
-                              <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatRevenueTable(sub.revenue_previous)}</td>
-                            )}
-                            {years.slice(2).map(y => (
-                              <td key={y} className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">—</td>
+                            <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.name)}</td>
+                            {years.map((y, i) => (
+                              <td key={y} className={`px-4 py-1.5 text-right font-mono text-xs ${i === 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
+                                {formatRevenueTable(sub.revenues[y] || 0)}
+                              </td>
                             ))}
                           </tr>
                         ))
