@@ -23,7 +23,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Verify caller is master_admin
     const userClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -36,7 +35,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check master_admin role
     const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
@@ -54,14 +52,13 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     if (action === 'create') {
-      const { email, password, full_name, role } = body;
+      const { email, password, full_name, role, hotel_permissions } = body;
       if (!email || !password || !role) {
         return new Response(JSON.stringify({ error: 'Missing fields' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      // Create auth user
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -70,16 +67,23 @@ Deno.serve(async (req) => {
       });
       if (createError) throw createError;
 
-      // Update profile name
       await supabaseAdmin
         .from('profiles')
         .update({ full_name: full_name || '' })
         .eq('user_id', newUser.user.id);
 
-      // Assign role
       await supabaseAdmin
         .from('user_roles')
         .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role' });
+
+      // Set hotel permissions if provided and not master_admin
+      if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0 && role !== 'master_admin') {
+        const permRows = hotel_permissions.map((p: string) => ({
+          user_id: newUser.user.id,
+          property_name: p,
+        }));
+        await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
+      }
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -94,9 +98,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Prevent removing own master_admin
       if (target_user_id === user.id && role !== 'master_admin') {
-        // Check if there's another master_admin
         const { data: admins } = await supabaseAdmin
           .from('user_roles')
           .select('user_id')
@@ -108,9 +110,33 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Delete existing role and insert new one
       await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id);
       await supabaseAdmin.from('user_roles').insert({ user_id: target_user_id, role });
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (action === 'update_hotel_permissions') {
+      const { target_user_id, hotel_permissions } = body;
+      if (!target_user_id) {
+        return new Response(JSON.stringify({ error: 'Missing fields' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Clear existing permissions
+      await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id);
+
+      // Insert new permissions
+      if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0) {
+        const permRows = hotel_permissions.map((p: string) => ({
+          user_id: target_user_id,
+          property_name: p,
+        }));
+        await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -125,7 +151,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Prevent deactivating self
       if (target_user_id === user.id && !is_active) {
         return new Response(JSON.stringify({ error: 'Você não pode desativar sua própria conta' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -137,7 +162,6 @@ Deno.serve(async (req) => {
         .update({ is_active })
         .eq('user_id', target_user_id);
 
-      // Ban/unban in auth
       if (!is_active) {
         await supabaseAdmin.auth.admin.updateUserById(target_user_id, { ban_duration: '876000h' });
       } else {

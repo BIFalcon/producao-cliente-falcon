@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
-import { formatRevenueTable, formatPercent, toTitleCase, MONTH_NAMES } from '@/lib/formatters';
+import { formatRevenueTable, formatPercent, formatNumber, toTitleCase, MONTH_NAMES } from '@/lib/formatters';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -27,6 +27,8 @@ const AgentAnalysis = () => {
         revenue_previous: number;
         absolute_change: number;
         pct_change: number | null;
+        roomnights_current: number;
+        adr_current: number;
       }>;
     },
   });
@@ -56,6 +58,8 @@ const AgentAnalysis = () => {
         revenue_previous: number;
         absolute_change: number;
         pct_change: number | null;
+        roomnights_current: number;
+        adr_current: number;
       }>;
     },
     enabled: !!expandedAgent,
@@ -95,8 +99,8 @@ const AgentAnalysis = () => {
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground w-8"></th>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Agência</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {currentYear}</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {previousYear}</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Var. Absoluta</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Roomnights</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">ADR (R$)</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Var. %</th>
             </tr>
           </thead>
@@ -116,10 +120,8 @@ const AgentAnalysis = () => {
                       </td>
                       <td className="px-4 py-2 text-foreground font-medium truncate max-w-[200px]">{toTitleCase(row.travel_agent_name)}</td>
                       <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue_current)}</td>
-                      <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRevenueTable(row.revenue_previous)}</td>
-                      <td className={`px-4 py-2 text-right font-mono ${(row.absolute_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
-                        {(row.absolute_change || 0) >= 0 ? '+' : ''}{formatRevenueTable(row.absolute_change)}
-                      </td>
+                      <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(Math.round(row.roomnights_current || 0))}</td>
+                      <td className="px-4 py-2 text-right font-mono text-muted-foreground">{row.adr_current ? formatRevenueTable(row.adr_current) : '—'}</td>
                       <td className={`px-4 py-2 text-right font-mono ${(row.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
                         {formatPercent(row.pct_change)}
                       </td>
@@ -133,10 +135,8 @@ const AgentAnalysis = () => {
                             <td className="px-4 py-1.5"></td>
                             <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.company_name)}</td>
                             <td className="px-4 py-1.5 text-right font-mono text-xs text-foreground/80">{formatRevenueTable(sub.revenue_current)}</td>
-                            <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatRevenueTable(sub.revenue_previous)}</td>
-                            <td className={`px-4 py-1.5 text-right font-mono text-xs ${(sub.absolute_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
-                              {(sub.absolute_change || 0) >= 0 ? '+' : ''}{formatRevenueTable(sub.absolute_change)}
-                            </td>
+                            <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatNumber(Math.round(sub.roomnights_current || 0))}</td>
+                            <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{sub.adr_current ? formatRevenueTable(sub.adr_current) : '—'}</td>
                             <td className={`px-4 py-1.5 text-right font-mono text-xs ${(sub.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
                               {formatPercent(sub.pct_change)}
                             </td>
