@@ -355,6 +355,16 @@ export type Database = {
           roomnights_current: number
         }[]
       }
+      get_channel_drilldown_multiyear: {
+        Args: { p_channel: string; p_month?: number; p_property?: string }
+        Returns: {
+          departure_year: number
+          item_name: string
+          revenue: number
+          room_revenue: number
+          roomnights: number
+        }[]
+      }
       get_channel_multiyear: {
         Args: { p_month?: number; p_property?: string }
         Returns: {

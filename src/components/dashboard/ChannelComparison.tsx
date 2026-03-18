@@ -30,27 +30,23 @@ const ChannelComparison = () => {
     },
   });
 
-  // Drilldown data (still uses year comparison)
+  // Multi-year drilldown data
   const { data: drilldownData, isLoading: drilldownLoading } = useQuery({
-    queryKey: ['channel-drilldown', expandedChannel, filters.property, currentYear, previousYear, filters.month],
+    queryKey: ['channel-drilldown-multiyear', expandedChannel, filters.property, filters.month],
     queryFn: async () => {
       if (!expandedChannel) return [];
-      const { data, error } = await (supabase.rpc as any)('get_channel_drilldown', {
+      const { data, error } = await (supabase.rpc as any)('get_channel_drilldown_multiyear', {
         p_channel: expandedChannel,
         p_property: filters.property,
-        p_current_year: currentYear,
-        p_previous_year: previousYear,
         p_month: filters.month,
       });
       if (error) throw error;
       return (data || []) as Array<{
         item_name: string;
-        revenue_current: number;
-        revenue_previous: number;
-        absolute_change: number;
-        pct_change: number | null;
-        roomnights_current: number;
-        adr_current: number;
+        departure_year: number;
+        revenue: number;
+        roomnights: number;
+        room_revenue: number;
       }>;
     },
     enabled: !!expandedChannel,
@@ -85,6 +81,19 @@ const ChannelComparison = () => {
     if (NON_DRILLDOWN_CHANNELS.includes(channel)) return;
     setExpandedChannel(prev => prev === channel ? null : channel);
   };
+
+  // Pivot drilldown data: group by entity, map revenues per year
+  const drilldownRows = useMemo(() => {
+    if (!drilldownData || drilldownData.length === 0) return [];
+    const entityMap = new Map<string, Record<number, number>>();
+    for (const row of drilldownData) {
+      if (!entityMap.has(row.item_name)) entityMap.set(row.item_name, {});
+      entityMap.get(row.item_name)![row.departure_year] = row.revenue;
+    }
+    return Array.from(entityMap.entries())
+      .map(([name, revenues]) => ({ name, revenues, maxRev: revenues[years[0]] || 0 }))
+      .sort((a, b) => b.maxRev - a.maxRev);
+  }, [drilldownData, years]);
 
   if (isLoading) {
     return <div className="surface-card animate-pulse h-64 p-6" />;
@@ -133,16 +142,14 @@ const ChannelComparison = () => {
                       drilldownLoading ? (
                         <tr><td colSpan={2 + years.length} className="px-8 py-4 text-center text-xs text-muted-foreground">Carregando...</td></tr>
                       ) : (
-                        drilldownData?.map((sub, j) => (
+                        drilldownRows.map((sub, j) => (
                           <tr key={j} className="border-b bg-secondary/10" style={{ borderColor: 'rgba(255,255,255,0.02)' }}>
                             <td className="px-4 py-1.5"></td>
-                            <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.item_name)}</td>
-                            <td className="px-4 py-1.5 text-right font-mono text-xs text-foreground/80">{formatRevenueTable(sub.revenue_current)}</td>
-                            {years.length > 1 && (
-                              <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatRevenueTable(sub.revenue_previous)}</td>
-                            )}
-                            {years.slice(2).map(y => (
-                              <td key={y} className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">—</td>
+                            <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.name)}</td>
+                            {years.map((y, i) => (
+                              <td key={y} className={`px-4 py-1.5 text-right font-mono text-xs ${i === 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
+                                {formatRevenueTable(sub.revenues[y] || 0)}
+                              </td>
                             ))}
                           </tr>
                         ))
