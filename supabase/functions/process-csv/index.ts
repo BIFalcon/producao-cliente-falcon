@@ -19,6 +19,12 @@ const normalizeRevenue = (val: any): number => {
   return parseFloat(cleaned) || 0;
 };
 
+const normalizeNights = (val: any): number => {
+  if (val === null || val === undefined || val === '') return 0;
+  const n = parseFloat(String(val)) || 0;
+  return n;
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -37,7 +43,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Verify user
     const userClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -59,13 +64,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If first chunk and replace mode, clear existing data
     if (chunk_index === 0 && mode === 'replace') {
       await supabase.from('raw_reservations').delete().not('id', 'is', null);
       await supabase.from('processed_reservations').delete().not('id', 'is', null);
     }
 
-    // Process and insert rows
     const processedRows = rows.map((row: any) => {
       const roomRev = normalizeRevenue(row.room_revenue);
       const fbRev = normalizeRevenue(row.fb_revenue);
@@ -83,6 +86,7 @@ Deno.serve(async (req) => {
         arrival_time: row.arrival_time || null,
         departure_date: row.departure_date || null,
         departure_time: row.departure_time || null,
+        number_of_nights: normalizeNights(row.number_of_nights),
         travel_agent_name: normalizeText(row.travel_agent_name),
         company_name: normalizeText(row.company_name),
         city: normalizeText(row.city),
@@ -93,11 +97,12 @@ Deno.serve(async (req) => {
         total_revenue: totalRev,
         room_type: normalizeText(row.room_type),
         source_name: normalizeText(row.source_name),
+        rate_code: normalizeText(row.rate_code),
+        rate_code_description: normalizeText(row.rate_code_description),
         upload_batch_id: batch_id,
       };
     });
 
-    // Insert in batches of 500
     const batchSize = 500;
     for (let i = 0; i < processedRows.length; i += batchSize) {
       const batch = processedRows.slice(i, i + batchSize);
@@ -108,13 +113,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update batch progress
     await supabase.from('upload_batches').update({
       processed_rows: rows.length * (chunk_index + 1),
       status: chunk_index + 1 >= total_chunks ? 'processing' : 'uploading',
     }).eq('id', batch_id);
 
-    // If last chunk, run aggregation
     if (chunk_index + 1 >= total_chunks) {
       const { error: procError } = await supabase.rpc('process_reservations', { p_batch_id: batch_id });
       if (procError) {

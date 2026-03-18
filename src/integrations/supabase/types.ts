@@ -263,10 +263,12 @@ export type Database = {
         }
         Returns: {
           absolute_change: number
+          adr_current: number
           company_name: string
           pct_change: number
           revenue_current: number
           revenue_previous: number
+          roomnights_current: number
         }[]
       }
       get_agent_comparison: {
@@ -278,9 +280,11 @@ export type Database = {
         }
         Returns: {
           absolute_change: number
+          adr_current: number
           pct_change: number
           revenue_current: number
           revenue_previous: number
+          roomnights_current: number
           travel_agent_name: string
         }[]
       }
@@ -290,11 +294,13 @@ export type Database = {
           created_at: string
           email: string
           full_name: string
+          hotel_permissions: string[]
           is_active: boolean
           role: string
           user_id: string
         }[]
       }
+      get_allowed_properties: { Args: { p_user_id: string }; Returns: string[] }
       get_channel_analytics: {
         Args: { p_property?: string; p_year?: number }
         Returns: {
@@ -329,10 +335,22 @@ export type Database = {
         }
         Returns: {
           absolute_change: number
+          adr_current: number
           item_name: string
           pct_change: number
           revenue_current: number
           revenue_previous: number
+          roomnights_current: number
+        }[]
+      }
+      get_channel_multiyear: {
+        Args: { p_month?: number; p_property?: string }
+        Returns: {
+          departure_year: number
+          revenue: number
+          room_revenue: number
+          roomnights: number
+          sales_channel: string
         }[]
       }
       get_city_analytics: {
@@ -384,11 +402,14 @@ export type Database = {
         }
         Returns: {
           absolute_change: number
+          adr_current: number
           company_name: string
           pct_change: number
           revenue_current: number
           revenue_previous: number
           revenue_share: number
+          room_revenue_current: number
+          roomnights_current: number
         }[]
       }
       get_concentration_metrics: {
@@ -402,9 +423,11 @@ export type Database = {
       get_dashboard_kpis: {
         Args: { p_channel?: string; p_property?: string; p_year?: number }
         Returns: {
+          adr: number
           avg_lead_time: number
           total_reservations: number
           total_revenue: number
+          total_roomnights: number
         }[]
       }
       get_filter_options: {

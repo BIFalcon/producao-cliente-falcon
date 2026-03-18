@@ -114,6 +114,7 @@ const UploadPage = () => {
     'arrival time': 'arrival_time',
     'departure date': 'departure_date', 'data de saida': 'departure_date', 'checkout': 'departure_date', 'check-out': 'departure_date',
     'departure time': 'departure_time',
+    'number of nights': 'number_of_nights', 'nights': 'number_of_nights', 'numero de noites': 'number_of_nights', 'noites': 'number_of_nights',
     'travel agent name': 'travel_agent_name', 'travel agent': 'travel_agent_name', 'agencia': 'travel_agent_name', 'agente': 'travel_agent_name',
     'company name': 'company_name', 'company': 'company_name', 'empresa': 'company_name',
     'city': 'city', 'cidade': 'city', 'state': 'state', 'estado': 'state', 'uf': 'state',
@@ -122,6 +123,9 @@ const UploadPage = () => {
     'f&b revenue': 'fb_revenue', 'fb revenue': 'fb_revenue', 'receita a&b': 'fb_revenue', 'receita ab': 'fb_revenue',
     'total revenue': 'total_revenue', 'receita total': 'total_revenue', 'revenue': 'total_revenue', 'receita': 'total_revenue',
     'room type': 'room_type', 'tipo de quarto': 'room_type', 'tipo quarto': 'room_type', 'roomtype': 'room_type',
+    'source name': 'source_name', 'source': 'source_name', 'fonte': 'source_name', 'nome da fonte': 'source_name',
+    'rate code': 'rate_code', 'codigo tarifa': 'rate_code', 'codigo de tarifa': 'rate_code',
+    'rate code description': 'rate_code_description', 'descricao tarifa': 'rate_code_description', 'rate description': 'rate_code_description',
   };
 
   const normalizeHeader = (header: string): string => {

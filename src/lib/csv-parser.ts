@@ -1,6 +1,5 @@
 import Papa from 'papaparse';
 
-// Common column name mappings (handles various CSV formats)
 const COLUMN_MAP: Record<string, string> = {
   'property name': 'property_name',
   'property': 'property_name',
@@ -25,6 +24,10 @@ const COLUMN_MAP: Record<string, string> = {
   'checkout': 'departure_date',
   'check-out': 'departure_date',
   'departure time': 'departure_time',
+  'number of nights': 'number_of_nights',
+  'nights': 'number_of_nights',
+  'numero de noites': 'number_of_nights',
+  'noites': 'number_of_nights',
   'travel agent name': 'travel_agent_name',
   'travel agent': 'travel_agent_name',
   'agencia': 'travel_agent_name',
@@ -58,6 +61,13 @@ const COLUMN_MAP: Record<string, string> = {
   'source': 'source_name',
   'fonte': 'source_name',
   'nome da fonte': 'source_name',
+  'rate code': 'rate_code',
+  'codigo tarifa': 'rate_code',
+  'codigo de tarifa': 'rate_code',
+  'rate code description': 'rate_code_description',
+  'descricao tarifa': 'rate_code_description',
+  'descricao da tarifa': 'rate_code_description',
+  'rate description': 'rate_code_description',
 };
 
 const normalizeHeader = (header: string): string => {
@@ -77,6 +87,7 @@ export interface ParsedRow {
   arrival_time?: string;
   departure_date?: string;
   departure_time?: string;
+  number_of_nights?: string | number;
   travel_agent_name?: string;
   company_name?: string;
   city?: string;
@@ -87,6 +98,8 @@ export interface ParsedRow {
   total_revenue?: string | number;
   room_type?: string;
   source_name?: string;
+  rate_code?: string;
+  rate_code_description?: string;
 }
 
 export const parseCSV = (file: File): Promise<ParsedRow[]> => {

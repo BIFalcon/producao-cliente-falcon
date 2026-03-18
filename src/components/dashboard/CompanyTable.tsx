@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
-import { formatRevenueTable, formatPercent } from '@/lib/formatters';
+import { formatRevenueTable, formatPercent, formatNumber } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
@@ -15,14 +15,24 @@ const CompanyTable = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['companies', filters, currentYear],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_company_table', {
+      const { data, error } = await (supabase.rpc as any)('get_company_table', {
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
         p_channel: filters.channel,
       });
       if (error) throw error;
-      return data || [];
+      return (data || []) as Array<{
+        company_name: string;
+        revenue_current: number;
+        revenue_previous: number;
+        absolute_change: number;
+        pct_change: number | null;
+        revenue_share: number;
+        roomnights_current: number;
+        room_revenue_current: number;
+        adr_current: number;
+      }>;
     },
   });
 
@@ -68,9 +78,9 @@ const CompanyTable = () => {
           <thead>
             <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Empresa</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {currentYear} (R$)</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {previousYear} (R$)</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Var. Absoluta (R$)</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita Total (R$)</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Roomnights</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">ADR (R$)</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Var. %</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Share %</th>
             </tr>
@@ -81,10 +91,8 @@ const CompanyTable = () => {
                 <tr key={i} className="border-b transition-colors hover:bg-secondary/30" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
                   <td className="px-4 py-2 text-foreground font-medium truncate max-w-[200px]">{row.company_name}</td>
                   <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue_current)}</td>
-                  <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRevenueTable(row.revenue_previous)}</td>
-                  <td className={`px-4 py-2 text-right font-mono ${(row.absolute_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
-                    {(row.absolute_change || 0) >= 0 ? '+' : ''}{formatRevenueTable(row.absolute_change)}
-                  </td>
+                  <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(Math.round(row.roomnights_current || 0))}</td>
+                  <td className="px-4 py-2 text-right font-mono text-muted-foreground">{row.adr_current ? formatRevenueTable(row.adr_current) : '—'}</td>
                   <td className={`px-4 py-2 text-right font-mono ${(row.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
                     {row.pct_change !== null ? formatPercent(row.pct_change) : '—'}
                   </td>

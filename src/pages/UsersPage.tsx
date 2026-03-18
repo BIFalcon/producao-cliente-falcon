@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { UserPlus, Shield, Edit2, UserX, UserCheck, ArrowLeft, Loader2 } from 'lucide-react';
+import { UserPlus, Shield, Edit2, UserX, UserCheck, ArrowLeft, Loader2, Hotel } from 'lucide-react';
 
 type UserRow = {
   user_id: string;
@@ -21,6 +22,7 @@ type UserRow = {
   role: string;
   is_active: boolean;
   created_at: string;
+  hotel_permissions: string[];
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -41,22 +43,30 @@ const UsersPage = () => {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
-  const [pageError, setPageError] = useState<string | null>(null);
+  const [hotelEditUser, setHotelEditUser] = useState<UserRow | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState('viewer');
+  const [formHotels, setFormHotels] = useState<string[]>([]);
 
-  const { data: users, isLoading, error: usersError } = useQuery({
+  // Available properties from database
+  const { data: allProperties } = useQuery({
+    queryKey: ['all-properties'],
+    queryFn: async () => {
+      const { data } = await supabase.rpc('get_filter_options');
+      return data?.[0]?.properties || [];
+    },
+    enabled: role === 'master_admin',
+  });
+
+  const { data: users, isLoading } = useQuery({
     queryKey: ['all-users'],
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_all_users');
-      if (error) {
-        console.error('Error fetching users:', error);
-        throw error;
-      }
+      if (error) throw error;
       return (data || []) as UserRow[];
     },
     enabled: role === 'master_admin',
@@ -67,6 +77,7 @@ const UsersPage = () => {
     setFormEmail('');
     setFormPassword('');
     setFormRole('viewer');
+    setFormHotels([]);
   };
 
   const callManageUsers = async (body: any) => {
@@ -77,7 +88,7 @@ const UsersPage = () => {
   };
 
   const createMutation = useMutation({
-    mutationFn: (params: { email: string; password: string; full_name: string; role: string }) =>
+    mutationFn: (params: { email: string; password: string; full_name: string; role: string; hotel_permissions: string[] }) =>
       callManageUsers({ action: 'create', ...params }),
     onSuccess: () => {
       toast.success('Usuário criado com sucesso');
@@ -99,6 +110,17 @@ const UsersPage = () => {
     onError: (err: any) => toast.error(err.message || 'Erro ao atualizar'),
   });
 
+  const updateHotelsMutation = useMutation({
+    mutationFn: (params: { target_user_id: string; hotel_permissions: string[] }) =>
+      callManageUsers({ action: 'update_hotel_permissions', ...params }),
+    onSuccess: () => {
+      toast.success('Permissões de hotel atualizadas');
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+      setHotelEditUser(null);
+    },
+    onError: (err: any) => toast.error(err.message || 'Erro ao atualizar permissões'),
+  });
+
   const toggleActiveMutation = useMutation({
     mutationFn: (params: { target_user_id: string; is_active: boolean }) =>
       callManageUsers({ action: 'toggle_active', ...params }),
@@ -109,22 +131,14 @@ const UsersPage = () => {
     onError: (err: any) => toast.error(err.message || 'Erro ao atualizar status'),
   });
 
+  const toggleHotel = (hotel: string) => {
+    setFormHotels(prev => prev.includes(hotel) ? prev.filter(h => h !== hotel) : [...prev, hotel]);
+  };
 
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-      </div>
-    );
-  }
-
-  if (pageError) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center space-y-3">
-          <p className="text-destructive text-sm">{pageError}</p>
-          <Button variant="outline" size="sm" onClick={() => navigate('/')}>Voltar</Button>
-        </div>
       </div>
     );
   }
@@ -166,7 +180,7 @@ const UsersPage = () => {
                   Criar Usuário
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Usuário</DialogTitle>
                 </DialogHeader>
@@ -174,7 +188,7 @@ const UsersPage = () => {
                   className="space-y-4"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    createMutation.mutate({ email: formEmail, password: formPassword, full_name: formName, role: formRole });
+                    createMutation.mutate({ email: formEmail, password: formPassword, full_name: formName, role: formRole, hotel_permissions: formHotels });
                   }}
                 >
                   <div className="space-y-2">
@@ -200,6 +214,26 @@ const UsersPage = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  {formRole !== 'master_admin' && allProperties && allProperties.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Hotel className="h-4 w-4" />
+                        Hotéis Permitidos
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Selecione os hotéis que o usuário poderá acessar. Sem seleção = nenhum acesso.</p>
+                      <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                        {allProperties.map((prop: string) => (
+                          <label key={prop} className="flex items-center gap-2 cursor-pointer text-sm">
+                            <Checkbox
+                              checked={formHotels.includes(prop)}
+                              onCheckedChange={() => toggleHotel(prop)}
+                            />
+                            <span className="text-foreground">{prop}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <Button type="submit" className="w-full" disabled={createMutation.isPending}>
                     {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Criar Usuário
@@ -243,6 +277,45 @@ const UsersPage = () => {
             </DialogContent>
           </Dialog>
 
+          {/* Edit Hotel Permissions Dialog */}
+          <Dialog open={!!hotelEditUser} onOpenChange={(o) => { if (!o) setHotelEditUser(null); }}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Permissões de Hotel — {hotelEditUser?.full_name || hotelEditUser?.email}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-xs text-muted-foreground">Selecione os hotéis que o usuário poderá visualizar.</p>
+                {allProperties && allProperties.length > 0 ? (
+                  <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                    {allProperties.map((prop: string) => (
+                      <label key={prop} className="flex items-center gap-2 cursor-pointer text-sm">
+                        <Checkbox
+                          checked={formHotels.includes(prop)}
+                          onCheckedChange={() => toggleHotel(prop)}
+                        />
+                        <span className="text-foreground">{prop}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Nenhum hotel disponível. Importe dados primeiro.</p>
+                )}
+                <Button
+                  className="w-full"
+                  disabled={updateHotelsMutation.isPending}
+                  onClick={() => {
+                    if (hotelEditUser) {
+                      updateHotelsMutation.mutate({ target_user_id: hotelEditUser.user_id, hotel_permissions: formHotels });
+                    }
+                  }}
+                >
+                  {updateHotelsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar Permissões
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           {/* Users Table */}
           <div className="surface-card overflow-hidden">
             <div className="overflow-x-auto">
@@ -252,8 +325,8 @@ const UsersPage = () => {
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Nome</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">E-mail</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Função</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Hotéis</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Criado em</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground">Ações</th>
                   </tr>
                 </thead>
@@ -271,12 +344,18 @@ const UsersPage = () => {
                           </Badge>
                         </td>
                         <td className="px-4 py-3">
+                          {u.role === 'master_admin' ? (
+                            <span className="text-xs text-muted-foreground">Todos</span>
+                          ) : u.hotel_permissions && u.hotel_permissions.length > 0 ? (
+                            <span className="text-xs text-muted-foreground">{u.hotel_permissions.length} hotel(is)</span>
+                          ) : (
+                            <span className="text-xs text-destructive">Nenhum</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
                           <Badge variant="outline" className={u.is_active ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-destructive/30 bg-destructive/10 text-destructive'}>
                             {u.is_active ? 'Ativo' : 'Inativo'}
                           </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {new Date(u.created_at).toLocaleDateString('pt-BR')}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">
@@ -289,6 +368,17 @@ const UsersPage = () => {
                             >
                               <Edit2 className="h-3 w-3" />
                             </Button>
+                            {u.role !== 'master_admin' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                title="Permissões de hotel"
+                                onClick={() => { setHotelEditUser(u); setFormHotels(u.hotel_permissions || []); }}
+                              >
+                                <Hotel className="h-3 w-3" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
