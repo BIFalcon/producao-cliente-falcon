@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FiltersProvider } from '@/contexts/FiltersContext';
 import AppHeader from '@/components/AppHeader';
 import KPICards from '@/components/dashboard/KPICards';
-import ConcentrationMetrics from '@/components/dashboard/ConcentrationMetrics';
+
 import ChannelComparison from '@/components/dashboard/ChannelComparison';
 import CompanyTable from '@/components/dashboard/CompanyTable';
 import AgentAnalysis from '@/components/dashboard/AgentAnalysis';
