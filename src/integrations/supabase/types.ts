@@ -499,7 +499,6 @@ export type Database = {
         Args: { p_batch_id?: string }
         Returns: undefined
       }
-      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       app_role: "master_admin" | "editor" | "viewer"
