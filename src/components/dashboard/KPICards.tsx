@@ -23,11 +23,15 @@ const KPICards = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        {[0, 1, 2, 3].map(i => (
-          <div key={i} className="surface-card animate-pulse p-6">
-            <div className="h-4 w-20 rounded bg-muted mb-3" />
-            <div className="h-10 w-32 rounded bg-muted" />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="col-span-2 surface-card animate-pulse px-4 py-3">
+          <div className="h-3 w-20 rounded bg-muted mb-2" />
+          <div className="h-8 w-32 rounded bg-muted" />
+        </div>
+        {[0, 1, 2].map(i => (
+          <div key={i} className="surface-card animate-pulse px-4 py-3">
+            <div className="h-3 w-16 rounded bg-muted mb-2" />
+            <div className="h-6 w-24 rounded bg-muted" />
           </div>
         ))}
       </div>
@@ -35,39 +39,43 @@ const KPICards = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-      <div className="surface-card p-6">
-        <div className="flex items-center gap-2 mb-2">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="col-span-2 surface-card px-4 py-3">
+        <div className="flex items-center gap-2 mb-1">
           <TrendingUp className="h-4 w-4 text-primary" />
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Receita Total</span>
         </div>
-        <div className="kpi-hero">{formatRevenue(data?.total_revenue || 0)}</div>
+        <div className="text-3xl md:text-4xl font-bold tracking-tighter font-mono text-primary">
+          {formatRevenue(data?.total_revenue || 0)}
+        </div>
       </div>
 
-      <div className="surface-card p-6">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="surface-card px-4 py-3">
+        <div className="flex items-center gap-2 mb-1">
           <BedDouble className="h-4 w-4 text-accent" />
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Roomnights</span>
         </div>
-        <div className="kpi-secondary">{formatNumber(Math.round(data?.total_roomnights || 0))}</div>
+        <div className="text-xl font-semibold tracking-tight font-mono text-foreground">
+          {formatNumber(Math.round(data?.total_roomnights || 0))}
+        </div>
       </div>
 
-      <div className="surface-card p-6">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="surface-card px-4 py-3">
+        <div className="flex items-center gap-2 mb-1">
           <DollarSign className="h-4 w-4 text-chart-emerald" />
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ADR</span>
         </div>
-        <div className="kpi-secondary">
+        <div className="text-xl font-semibold tracking-tight font-mono text-foreground">
           {data?.adr ? `R$ ${formatRevenueTable(data.adr)}` : '—'}
         </div>
       </div>
 
-      <div className="surface-card p-6">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="surface-card px-4 py-3">
+        <div className="flex items-center gap-2 mb-1">
           <CalendarClock className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Antecedência Média</span>
         </div>
-        <div className="kpi-secondary">
+        <div className="text-xl font-semibold tracking-tight font-mono text-foreground">
           {data?.avg_lead_time ? `${Math.round(data.avg_lead_time)} dias` : '—'}
         </div>
       </div>
