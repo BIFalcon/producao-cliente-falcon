@@ -82,6 +82,19 @@ const ChannelComparison = () => {
     setExpandedChannel(prev => prev === channel ? null : channel);
   };
 
+  // Pivot drilldown data: group by entity, map revenues per year
+  const drilldownRows = useMemo(() => {
+    if (!drilldownData || drilldownData.length === 0) return [];
+    const entityMap = new Map<string, Record<number, number>>();
+    for (const row of drilldownData) {
+      if (!entityMap.has(row.item_name)) entityMap.set(row.item_name, {});
+      entityMap.get(row.item_name)![row.departure_year] = row.revenue;
+    }
+    return Array.from(entityMap.entries())
+      .map(([name, revenues]) => ({ name, revenues, maxRev: revenues[years[0]] || 0 }))
+      .sort((a, b) => b.maxRev - a.maxRev);
+  }, [drilldownData, years]);
+
   if (isLoading) {
     return <div className="surface-card animate-pulse h-64 p-6" />;
   }
