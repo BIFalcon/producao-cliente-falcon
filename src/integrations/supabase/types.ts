@@ -463,16 +463,32 @@ export type Database = {
           top5_share: number
         }[]
       }
-      get_dashboard_kpis: {
-        Args: { p_channel?: string; p_property?: string; p_year?: number }
-        Returns: {
-          adr: number
-          avg_lead_time: number
-          total_reservations: number
-          total_revenue: number
-          total_roomnights: number
-        }[]
-      }
+      get_dashboard_kpis:
+        | {
+            Args: { p_channel?: string; p_property?: string; p_year?: number }
+            Returns: {
+              adr: number
+              avg_lead_time: number
+              total_reservations: number
+              total_revenue: number
+              total_roomnights: number
+            }[]
+          }
+        | {
+            Args: {
+              p_channel?: string
+              p_month?: number
+              p_property?: string
+              p_year?: number
+            }
+            Returns: {
+              adr: number
+              avg_lead_time: number
+              total_reservations: number
+              total_revenue: number
+              total_roomnights: number
+            }[]
+          }
       get_filter_options: {
         Args: never
         Returns: {
@@ -492,7 +508,24 @@ export type Database = {
           city: string
           reservations: number
           revenue: number
+          roomnights: number
           state: string
+        }[]
+      }
+      get_guest_city_drilldown: {
+        Args: {
+          p_channel?: string
+          p_city: string
+          p_month?: number
+          p_property?: string
+          p_state?: string
+          p_year?: number
+        }
+        Returns: {
+          entity_name: string
+          entity_type: string
+          revenue: number
+          roomnights: number
         }[]
       }
       get_monthly_revenue: {
