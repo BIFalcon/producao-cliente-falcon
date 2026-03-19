@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2 } from 'lucide-react';
+import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 2000;
@@ -29,6 +29,10 @@ interface SheetInfo {
   rowCount: number;
 }
 
+const normalizeText = (str: string): string => {
+  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+};
+
 const UploadPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -43,6 +47,11 @@ const UploadPage = () => {
   const [sheets, setSheets] = useState<SheetInfo[]>([]);
   const [selectedSheet, setSelectedSheet] = useState<string>('');
   const [loadingSheets, setLoadingSheets] = useState(false);
+
+  // Mapping file state
+  const [mappingFile, setMappingFile] = useState<File | null>(null);
+  const [uploadingMapping, setUploadingMapping] = useState(false);
+  const [mappingCount, setMappingCount] = useState<number | null>(null);
 
   const resetSheets = () => {
     setSheets([]);
@@ -60,7 +69,6 @@ const UploadPage = () => {
         return { name, rowCount: range.e.r };
       });
       setSheets(sheetList);
-      // Store workbook for later use
       (excelFile as any).__workbook = workbook;
 
       if (sheetList.length === 1) {
@@ -182,10 +190,84 @@ const UploadPage = () => {
     });
   };
 
+  // Parse mapping file (CSV or XLSX) - expects CANAL and SEGMENTO columns
+  const parseMappingFile = async (f: File): Promise<Array<{ canal: string; segmento: string }>> => {
+    let rawRows: any[];
+
+    if (isExcelFile(f)) {
+      const buffer = await f.arrayBuffer();
+      const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    } else {
+      const text = await f.text();
+      const parsed = await new Promise<any>((resolve, reject) => {
+        import('papaparse').then(Papa => {
+          Papa.default.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results: any) => resolve(results),
+            error: (err: any) => reject(err),
+          });
+        });
+      });
+      rawRows = parsed.data;
+    }
+
+    // Find CANAL and SEGMENTO columns (case-insensitive)
+    if (rawRows.length === 0) throw new Error('Arquivo de mapeamento vazio');
+
+    const headers = Object.keys(rawRows[0]);
+    const canalCol = headers.find(h => normalizeText(h) === 'canal');
+    const segmentoCol = headers.find(h => normalizeText(h) === 'segmento');
+
+    if (!canalCol || !segmentoCol) {
+      throw new Error('Colunas obrigatórias não encontradas: CANAL e SEGMENTO');
+    }
+
+    return rawRows
+      .filter((row: any) => row[canalCol] && row[segmentoCol])
+      .map((row: any) => ({
+        canal: String(row[canalCol]).trim(),
+        segmento: String(row[segmentoCol]).trim(),
+      }));
+  };
+
+  const handleMappingUpload = async () => {
+    if (!mappingFile || !user) return;
+    setUploadingMapping(true);
+    try {
+      const rows = await parseMappingFile(mappingFile);
+      if (rows.length === 0) {
+        toast.error('Arquivo de mapeamento vazio ou sem dados válidos');
+        setUploadingMapping(false);
+        return;
+      }
+
+      // Delete existing mapping and insert new
+      await supabase.from('channel_mapping').delete().not('id', 'is', null);
+
+      // Insert in batches
+      const batchSize = 500;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const { error } = await supabase.from('channel_mapping' as any).insert(batch as any);
+        if (error) throw error;
+      }
+
+      setMappingCount(rows.length);
+      toast.success(`${rows.length} mapeamentos importados com sucesso!`);
+    } catch (err: any) {
+      console.error('Mapping upload error:', err);
+      toast.error(`Erro no upload do mapeamento: ${err.message}`);
+    } finally {
+      setUploadingMapping(false);
+    }
+  };
+
   const handleUpload = async () => {
     if (!file || !user) return;
 
-    // For Excel, require sheet selection if multiple sheets
     if (isExcelFile(file) && sheets.length > 1 && !selectedSheet) {
       toast.error('Selecione uma aba da planilha para importar');
       return;
@@ -214,7 +296,6 @@ const UploadPage = () => {
         return;
       }
 
-      // Create batch
       const { data: batch, error: batchError } = await supabase
         .from('upload_batches')
         .insert({
@@ -229,7 +310,6 @@ const UploadPage = () => {
 
       if (batchError) throw batchError;
 
-      // Chunk and upload
       const chunks = chunkArray(rows, CHUNK_SIZE);
       setProgressText(`Processando ${rows.length.toLocaleString('pt-BR')} registros...`);
 
@@ -278,9 +358,73 @@ const UploadPage = () => {
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl p-6">
-        {/* Mode selection */}
-        <div className="mb-6">
+      <div className="mx-auto max-w-2xl p-6 space-y-8">
+        {/* ===== SECTION 1: Channel Mapping Upload ===== */}
+        <div>
+          <h2 className="mb-3 text-sm font-medium text-foreground flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-primary" />
+            Tabela de Mapeamento de Canais
+          </h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            Importe um arquivo com as colunas <span className="font-medium text-foreground">CANAL</span> e <span className="font-medium text-foreground">SEGMENTO</span> para classificação automática.
+          </p>
+          <div className="surface-card p-4 flex items-center gap-4">
+            <div className="flex-1">
+              <input
+                id="mapping-file-input"
+                type="file"
+                accept=".csv,.xlsx"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f && isValidFile(f)) {
+                    setMappingFile(f);
+                    setMappingCount(null);
+                  } else if (f) {
+                    toast.error('Formato não suportado. Envie .csv ou .xlsx');
+                  }
+                }}
+                disabled={uploadingMapping}
+              />
+              {mappingFile ? (
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-primary" />
+                  <span className="text-sm text-foreground">{mappingFile.name}</span>
+                  {mappingCount !== null && (
+                    <span className="text-xs text-muted-foreground">({mappingCount} registros)</span>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => document.getElementById('mapping-file-input')?.click()}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Selecionar arquivo de mapeamento...
+                </button>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={mappingFile ? handleMappingUpload : () => document.getElementById('mapping-file-input')?.click()}
+              disabled={uploadingMapping}
+            >
+              {uploadingMapping ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : mappingFile ? (
+                <>
+                  <Upload className="mr-1 h-3 w-3" />
+                  Importar
+                </>
+              ) : (
+                'Selecionar'
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* ===== SECTION 2: Reservations Upload ===== */}
+        <div>
           <h2 className="mb-3 text-sm font-medium text-foreground">Modo de Upload</h2>
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -353,7 +497,7 @@ const UploadPage = () => {
 
         {/* Sheet selection for Excel with multiple sheets */}
         {needsSheetSelection && !uploading && (
-          <div className="mt-4 surface-card p-4">
+          <div className="surface-card p-4">
             <div className="flex items-center gap-2 mb-3">
               <Table2 className="h-4 w-4 text-accent" />
               <span className="text-sm font-medium text-foreground">Selecionar Aba</span>
@@ -379,7 +523,7 @@ const UploadPage = () => {
 
         {/* Single sheet info */}
         {fileIsExcel && sheets.length === 1 && !uploading && (
-          <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Table2 className="h-3 w-3" />
             Aba: <span className="font-medium text-foreground">{sheets[0].name}</span>
             ({sheets[0].rowCount.toLocaleString('pt-BR')} linhas)
@@ -388,7 +532,7 @@ const UploadPage = () => {
 
         {/* Progress */}
         {uploading && (
-          <div className="mt-4 space-y-2">
+          <div className="space-y-2">
             <Progress value={progress} className="h-1" />
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -398,7 +542,7 @@ const UploadPage = () => {
         )}
 
         {/* Upload button */}
-        <div className="mt-6">
+        <div>
           <Button
             onClick={handleUpload}
             disabled={!canUpload}
