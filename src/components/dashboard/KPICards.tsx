@@ -66,7 +66,7 @@ const KPICards = () => {
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ADR</span>
         </div>
         <div className="text-xl font-semibold tracking-tight font-mono text-foreground">
-          {data?.adr ? `R$ ${formatRevenueTable(data.adr)}` : '—'}
+          {data?.adr != null && data.adr > 0 ? `R$ ${formatRevenueTable(data.adr)}` : '—'}
         </div>
       </div>
 
