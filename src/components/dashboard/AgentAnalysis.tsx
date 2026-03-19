@@ -28,7 +28,6 @@ const AgentAnalysis = () => {
         absolute_change: number;
         pct_change: number | null;
         roomnights_current: number;
-        adr_current: number;
       }>;
     },
   });
@@ -59,15 +58,19 @@ const AgentAnalysis = () => {
         absolute_change: number;
         pct_change: number | null;
         roomnights_current: number;
-        adr_current: number;
       }>;
     },
     enabled: !!expandedAgent,
   });
 
-  const periodLabel = filters.month
-    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${currentYear} vs ${MONTH_NAMES[(filters.month || 1) - 1]} ${previousYear}`
-    : `${currentYear} vs ${previousYear}`;
+  const currentLabel = filters.month
+    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${currentYear}`
+    : `${currentYear}`;
+  const previousLabel = filters.month
+    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${previousYear}`
+    : `${previousYear}`;
+
+  const periodLabel = `${currentLabel} vs ${previousLabel}`;
 
   if (isLoading) {
     return <div className="surface-card animate-pulse h-48 p-6" />;
@@ -98,9 +101,9 @@ const AgentAnalysis = () => {
             <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground w-8"></th>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Agência</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {currentYear}</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Roomnights</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">ADR (R$)</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {currentLabel}</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {previousLabel}</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Var. %</th>
             </tr>
           </thead>
@@ -119,9 +122,9 @@ const AgentAnalysis = () => {
                         {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                       </td>
                       <td className="px-4 py-2 text-foreground font-medium truncate max-w-[200px]">{toTitleCase(row.travel_agent_name)}</td>
-                      <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue_current)}</td>
                       <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(Math.round(row.roomnights_current || 0))}</td>
-                      <td className="px-4 py-2 text-right font-mono text-muted-foreground">{row.adr_current ? formatRevenueTable(row.adr_current) : '—'}</td>
+                      <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue_current)}</td>
+                      <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRevenueTable(row.revenue_previous)}</td>
                       <td className={`px-4 py-2 text-right font-mono ${(row.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
                         {formatPercent(row.pct_change)}
                       </td>
@@ -134,9 +137,9 @@ const AgentAnalysis = () => {
                           <tr key={j} className="border-b bg-secondary/10" style={{ borderColor: 'rgba(255,255,255,0.02)' }}>
                             <td className="px-4 py-1.5"></td>
                             <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.company_name)}</td>
-                            <td className="px-4 py-1.5 text-right font-mono text-xs text-foreground/80">{formatRevenueTable(sub.revenue_current)}</td>
                             <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatNumber(Math.round(sub.roomnights_current || 0))}</td>
-                            <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{sub.adr_current ? formatRevenueTable(sub.adr_current) : '—'}</td>
+                            <td className="px-4 py-1.5 text-right font-mono text-xs text-foreground/80">{formatRevenueTable(sub.revenue_current)}</td>
+                            <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatRevenueTable(sub.revenue_previous)}</td>
                             <td className={`px-4 py-1.5 text-right font-mono text-xs ${(sub.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
                               {formatPercent(sub.pct_change)}
                             </td>

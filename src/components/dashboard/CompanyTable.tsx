@@ -2,14 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
-import { formatRevenueTable, formatPercent, formatNumber } from '@/lib/formatters';
+import { formatRevenueTable, formatPercent, formatNumber, MONTH_NAMES } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
 const CompanyTable = () => {
-  const { filters } = useFilters();
-  const currentYear = filters.year || new Date().getFullYear();
-  const previousYear = currentYear - 1;
+  const { filters, currentYear, previousYear } = useFilters();
   const [search, setSearch] = useState('');
 
   const { data, isLoading } = useQuery({
@@ -28,10 +26,7 @@ const CompanyTable = () => {
         revenue_previous: number;
         absolute_change: number;
         pct_change: number | null;
-        revenue_share: number;
         roomnights_current: number;
-        room_revenue_current: number;
-        adr_current: number;
       }>;
     },
   });
@@ -42,6 +37,13 @@ const CompanyTable = () => {
     const q = search.toLowerCase();
     return data.filter(r => r.company_name?.toLowerCase().includes(q)).slice(0, 50);
   }, [data, search]);
+
+  const currentLabel = filters.month
+    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${currentYear}`
+    : `${currentYear}`;
+  const previousLabel = filters.month
+    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${previousYear}`
+    : `${previousYear}`;
 
   if (isLoading) {
     return (
@@ -60,7 +62,7 @@ const CompanyTable = () => {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Tabela de Empresas</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            {filtered.length}{search ? ` de ${data?.length || 0}` : ''} empresas · Ordenado por receita {currentYear}
+            {filtered.length}{search ? ` de ${data?.length || 0}` : ''} empresas · Ordenado por receita {currentLabel}
           </p>
         </div>
         <div className="relative w-full sm:w-56">
@@ -78,11 +80,10 @@ const CompanyTable = () => {
           <thead>
             <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Empresa</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita Total (R$)</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Roomnights</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">ADR (R$)</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {currentLabel}</th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita {previousLabel}</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Var. %</th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Share %</th>
             </tr>
           </thead>
           <tbody>
@@ -90,18 +91,17 @@ const CompanyTable = () => {
               filtered.map((row, i) => (
                 <tr key={i} className="border-b transition-colors hover:bg-secondary/30" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
                   <td className="px-4 py-2 text-foreground font-medium truncate max-w-[200px]">{row.company_name}</td>
-                  <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue_current)}</td>
                   <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(Math.round(row.roomnights_current || 0))}</td>
-                  <td className="px-4 py-2 text-right font-mono text-muted-foreground">{row.adr_current ? formatRevenueTable(row.adr_current) : '—'}</td>
+                  <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue_current)}</td>
+                  <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRevenueTable(row.revenue_previous)}</td>
                   <td className={`px-4 py-2 text-right font-mono ${(row.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
                     {row.pct_change !== null ? formatPercent(row.pct_change) : '—'}
                   </td>
-                  <td className="px-4 py-2 text-right font-mono text-muted-foreground">{row.revenue_share?.toFixed(1)}%</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                   {search ? 'Nenhuma empresa encontrada' : 'Sem dados de empresas disponíveis'}
                 </td>
               </tr>

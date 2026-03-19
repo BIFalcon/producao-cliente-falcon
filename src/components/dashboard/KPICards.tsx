@@ -2,8 +2,8 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
-import { formatRevenue, formatNumber, formatRevenueTable } from '@/lib/formatters';
-import { TrendingUp, CalendarClock, BedDouble, DollarSign } from 'lucide-react';
+import { formatRevenue, formatNumber } from '@/lib/formatters';
+import { TrendingUp, CalendarClock, BedDouble } from 'lucide-react';
 
 const KPICards = () => {
   const { filters } = useFilters();
@@ -15,20 +15,21 @@ const KPICards = () => {
         p_property: filters.property,
         p_year: filters.year,
         p_channel: filters.channel,
+        p_month: filters.month,
       });
       if (error) throw error;
-      return data?.[0] || { total_revenue: 0, total_reservations: 0, avg_lead_time: 0, total_roomnights: 0, adr: 0 };
+      return data?.[0] || { total_revenue: 0, total_reservations: 0, avg_lead_time: 0, total_roomnights: 0 };
     },
   });
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <div className="col-span-2 surface-card animate-pulse px-4 py-3">
           <div className="h-3 w-20 rounded bg-muted mb-2" />
           <div className="h-8 w-32 rounded bg-muted" />
         </div>
-        {[0, 1, 2].map(i => (
+        {[0, 1].map(i => (
           <div key={i} className="surface-card animate-pulse px-4 py-3">
             <div className="h-3 w-16 rounded bg-muted mb-2" />
             <div className="h-6 w-24 rounded bg-muted" />
@@ -39,7 +40,7 @@ const KPICards = () => {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       <div className="col-span-2 surface-card px-4 py-3">
         <div className="flex items-center gap-2 mb-1">
           <TrendingUp className="h-4 w-4 text-primary" />
@@ -57,16 +58,6 @@ const KPICards = () => {
         </div>
         <div className="text-xl font-semibold tracking-tight font-mono text-foreground">
           {formatNumber(Math.round(data?.total_roomnights || 0))}
-        </div>
-      </div>
-
-      <div className="surface-card px-4 py-3">
-        <div className="flex items-center gap-2 mb-1">
-          <DollarSign className="h-4 w-4 text-chart-emerald" />
-          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">ADR</span>
-        </div>
-        <div className="text-xl font-semibold tracking-tight font-mono text-foreground">
-          {data?.adr != null && data.adr > 0 ? `R$ ${formatRevenueTable(data.adr)}` : '—'}
         </div>
       </div>
 
