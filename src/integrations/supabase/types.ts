@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      channel_mapping: {
+        Row: {
+          canal: string
+          created_at: string
+          id: string
+          segmento: string
+        }
+        Insert: {
+          canal: string
+          created_at?: string
+          id?: string
+          segmento: string
+        }
+        Update: {
+          canal?: string
+          created_at?: string
+          id?: string
+          segmento?: string
+        }
+        Relationships: []
+      }
       processed_reservations: {
         Row: {
           arrival_date: string | null
