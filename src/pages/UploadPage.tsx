@@ -284,10 +284,11 @@ const UploadPage = () => {
         setProgress(5);
         const sheet = selectedSheet || sheets[0]?.name || '';
         rows = await parseExcelLocally(file, sheet);
-        setProgress(20);
+        setProgress(10);
       } else {
         setProgressText('Lendo arquivo CSV...');
         rows = await parseCSV(file);
+        setProgress(10);
       }
 
       if (rows.length === 0) {
@@ -296,6 +297,7 @@ const UploadPage = () => {
         return;
       }
 
+      setProgressText('Criando lote de upload...');
       const { data: batch, error: batchError } = await supabase
         .from('upload_batches')
         .insert({
@@ -311,12 +313,14 @@ const UploadPage = () => {
       if (batchError) throw batchError;
 
       const chunks = chunkArray(rows, CHUNK_SIZE);
-      setProgressText(`Processando ${rows.length.toLocaleString('pt-BR')} registros...`);
+      const totalRows = rows.length;
 
+      // Phase 1: Upload all chunks (10% - 80%)
       for (let i = 0; i < chunks.length; i++) {
-        const pct = 20 + Math.round(((i + 1) / chunks.length) * 70);
+        const uploadedSoFar = Math.min((i + 1) * CHUNK_SIZE, totalRows);
+        const pct = 10 + Math.round((uploadedSoFar / totalRows) * 70);
         setProgress(pct);
-        setProgressText(`Enviando lote ${i + 1}/${chunks.length} (${((i + 1) * CHUNK_SIZE > rows.length ? rows.length : (i + 1) * CHUNK_SIZE).toLocaleString('pt-BR')} registros)`);
+        setProgressText(`Enviando lote ${i + 1}/${chunks.length} — ${uploadedSoFar.toLocaleString('pt-BR')} de ${totalRows.toLocaleString('pt-BR')} registros`);
 
         const { error } = await supabase.functions.invoke('process-csv', {
           body: {
@@ -329,10 +333,26 @@ const UploadPage = () => {
         });
 
         if (error) throw error;
+
+        // Release chunk memory
+        chunks[i] = null as any;
       }
 
+      // Phase 2: Process reservations (80% - 100%)
+      setProgress(82);
+      setProgressText('Processando classificações e agregações...');
+
+      const { error: processError } = await supabase.functions.invoke('process-csv', {
+        body: {
+          action: 'process',
+          batch_id: batch.id,
+        },
+      });
+
+      if (processError) throw processError;
+
       setProgress(100);
-      setProgressText(`${rows.length.toLocaleString('pt-BR')} registros processados com sucesso!`);
+      setProgressText(`${totalRows.toLocaleString('pt-BR')} registros processados com sucesso!`);
       toast.success('Upload concluído com sucesso!');
 
       setTimeout(() => navigate('/'), 1500);
