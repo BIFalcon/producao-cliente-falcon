@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const CHUNK_SIZE = 2000;
+const CHUNK_SIZE = 500;
 
 const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx'];
 const ACCEPTED_TYPES = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
