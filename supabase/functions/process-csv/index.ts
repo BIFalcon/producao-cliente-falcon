@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
       };
     });
 
-    const batchSize = 500;
+    const batchSize = 100;
     for (let i = 0; i < processedRows.length; i += batchSize) {
       const batch = processedRows.slice(i, i + batchSize);
       const { error: insertError } = await supabase.from('raw_reservations').insert(batch);
