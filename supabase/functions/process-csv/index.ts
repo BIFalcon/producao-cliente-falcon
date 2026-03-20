@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 const normalizeText = (str: string | null | undefined): string => {
@@ -21,8 +21,7 @@ const normalizeRevenue = (val: any): number => {
 
 const normalizeNights = (val: any): number => {
   if (val === null || val === undefined || val === '') return 0;
-  const n = parseFloat(String(val)) || 0;
-  return n;
+  return parseFloat(String(val)) || 0;
 };
 
 Deno.serve(async (req) => {
@@ -56,19 +55,52 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { rows, batch_id, mode, chunk_index, total_chunks } = body;
+    const { rows, batch_id, mode, chunk_index, total_chunks, action } = body;
 
+    // Separate action: only run process_reservations
+    if (action === 'process') {
+      if (!batch_id) {
+        return new Response(JSON.stringify({ error: 'Missing batch_id' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      await supabase.from('upload_batches').update({ status: 'processing' }).eq('id', batch_id);
+
+      const { error: procError } = await supabase.rpc('process_reservations', { p_batch_id: batch_id });
+      if (procError) {
+        console.error('Processing error:', procError);
+        await supabase.from('upload_batches').update({
+          status: 'error',
+          error_message: procError.message,
+        }).eq('id', batch_id);
+        throw new Error(`Processing failed: ${procError.message}`);
+      }
+
+      await supabase.from('upload_batches').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+      }).eq('id', batch_id);
+
+      return new Response(JSON.stringify({ success: true, action: 'process' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Normal upload action
     if (!rows || !Array.isArray(rows) || !batch_id) {
       return new Response(JSON.stringify({ error: 'Invalid payload' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
+    // First chunk in replace mode: clear existing data
     if (chunk_index === 0 && mode === 'replace') {
       await supabase.from('raw_reservations').delete().not('id', 'is', null);
       await supabase.from('processed_reservations').delete().not('id', 'is', null);
     }
 
+    // Normalize all rows
     const processedRows = rows.map((row: any) => {
       const roomRev = normalizeRevenue(row.room_revenue);
       const fbRev = normalizeRevenue(row.fb_revenue);
@@ -103,7 +135,8 @@ Deno.serve(async (req) => {
       };
     });
 
-    const batchSize = 100;
+    // Insert in batches of 200
+    const batchSize = 200;
     for (let i = 0; i < processedRows.length; i += batchSize) {
       const batch = processedRows.slice(i, i + batchSize);
       const { error: insertError } = await supabase.from('raw_reservations').insert(batch);
@@ -113,27 +146,11 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Update batch progress
     await supabase.from('upload_batches').update({
       processed_rows: rows.length * (chunk_index + 1),
-      status: chunk_index + 1 >= total_chunks ? 'processing' : 'uploading',
+      status: 'uploading',
     }).eq('id', batch_id);
-
-    if (chunk_index + 1 >= total_chunks) {
-      const { error: procError } = await supabase.rpc('process_reservations', { p_batch_id: batch_id });
-      if (procError) {
-        console.error('Processing error:', procError);
-        await supabase.from('upload_batches').update({
-          status: 'error',
-          error_message: procError.message,
-        }).eq('id', batch_id);
-        throw new Error(`Processing failed: ${procError.message}`);
-      }
-
-      await supabase.from('upload_batches').update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-      }).eq('id', batch_id);
-    }
 
     return new Response(JSON.stringify({
       success: true,
