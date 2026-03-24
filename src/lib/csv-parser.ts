@@ -61,6 +61,10 @@ const COLUMN_MAP: Record<string, string> = {
   'source': 'source_name',
   'fonte': 'source_name',
   'nome da fonte': 'source_name',
+  'individual first name': 'individual_first_name',
+  'first name': 'individual_first_name',
+  'nome individual': 'individual_first_name',
+  'primeiro nome': 'individual_first_name',
   'rate code': 'rate_code',
   'codigo tarifa': 'rate_code',
   'codigo de tarifa': 'rate_code',
@@ -98,6 +102,7 @@ export interface ParsedRow {
   total_revenue?: string | number;
   room_type?: string;
   source_name?: string;
+  individual_first_name?: string;
   rate_code?: string;
   rate_code_description?: string;
 }

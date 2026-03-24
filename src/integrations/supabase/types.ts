@@ -144,6 +144,7 @@ export type Database = {
           departure_time: string | null
           fb_revenue: number | null
           id: string
+          individual_first_name: string | null
           number_of_nights: number | null
           property_name: string | null
           rate_code: string | null
@@ -170,6 +171,7 @@ export type Database = {
           departure_time?: string | null
           fb_revenue?: number | null
           id?: string
+          individual_first_name?: string | null
           number_of_nights?: number | null
           property_name?: string | null
           rate_code?: string | null
@@ -196,6 +198,7 @@ export type Database = {
           departure_time?: string | null
           fb_revenue?: number | null
           id?: string
+          individual_first_name?: string | null
           number_of_nights?: number | null
           property_name?: string | null
           rate_code?: string | null
