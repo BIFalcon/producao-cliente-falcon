@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
         total_revenue: totalRev,
         room_type: normalizeText(row.room_type),
         source_name: normalizeText(row.source_name),
+        individual_first_name: normalizeText(row.individual_first_name),
         rate_code: normalizeText(row.rate_code),
         rate_code_description: normalizeText(row.rate_code_description),
         upload_batch_id: batch_id,

@@ -102,6 +102,7 @@ export interface ParsedRow {
   total_revenue?: string | number;
   room_type?: string;
   source_name?: string;
+  individual_first_name?: string;
   rate_code?: string;
   rate_code_description?: string;
 }
