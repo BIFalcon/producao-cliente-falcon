@@ -448,20 +448,28 @@ const UploadPage = () => {
           <h2 className="mb-3 text-sm font-medium text-foreground">Modo de Upload</h2>
           <div className="grid grid-cols-2 gap-3">
             <button
+              type="button"
               onClick={() => setMode('replace')}
-              className={`surface-card p-4 text-left transition-all ${mode === 'replace' ? 'ring-1 ring-primary' : ''}`}
+              className={`relative surface-card p-4 text-left transition-all cursor-pointer hover:border-primary/50 ${mode === 'replace' ? 'ring-2 ring-primary border-primary' : ''}`}
             >
               <Replace className="mb-2 h-5 w-5 text-destructive" />
               <div className="text-sm font-medium text-foreground">Substituir Base</div>
               <div className="text-xs text-muted-foreground mt-1">Remove dados existentes e importa nova base completa</div>
+              {mode === 'replace' && (
+                <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
+              )}
             </button>
             <button
+              type="button"
               onClick={() => setMode('append')}
-              className={`surface-card p-4 text-left transition-all ${mode === 'append' ? 'ring-1 ring-primary' : ''}`}
+              className={`relative surface-card p-4 text-left transition-all cursor-pointer hover:border-primary/50 ${mode === 'append' ? 'ring-2 ring-primary border-primary' : ''}`}
             >
               <PlusCircle className="mb-2 h-5 w-5 text-success" />
               <div className="text-sm font-medium text-foreground">Adicionar Registros</div>
               <div className="text-xs text-muted-foreground mt-1">Adiciona novos registros sem remover existentes</div>
+              {mode === 'append' && (
+                <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
+              )}
             </button>
           </div>
         </div>
