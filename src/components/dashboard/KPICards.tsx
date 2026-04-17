@@ -2,16 +2,20 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenue, formatNumber } from '@/lib/formatters';
 import { TrendingUp, CalendarClock, BedDouble } from 'lucide-react';
 
 const KPICards = () => {
   const { filters } = useFilters();
+  const { tenantId } = useAuth();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['kpis', filters],
+    queryKey: ['kpis', tenantId, filters],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_dashboard_kpis', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_year: filters.year,
         p_channel: filters.channel,
