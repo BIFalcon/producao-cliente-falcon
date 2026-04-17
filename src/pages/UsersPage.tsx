@@ -187,13 +187,29 @@ const UsersPage = () => {
               </div>
             </div>
 
-            <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) resetForm(); }}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Criar Usuário
-                </Button>
-              </DialogTrigger>
+            <div className="flex items-center gap-2">
+              {isSuperAdmin && (
+                <Select
+                  value={tenantId || ''}
+                  onValueChange={(v) => setActiveTenantId(v || null)}
+                >
+                  <SelectTrigger className="h-9 w-[200px] bg-primary/10 border-primary/30 text-xs">
+                    <SelectValue placeholder="Selecionar Tenant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(tenants || []).map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) resetForm(); }}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-2" disabled={!tenantId}>
+                    <UserPlus className="h-4 w-4" />
+                    Criar Usuário
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Usuário</DialogTitle>
