@@ -1,15 +1,26 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FiltersContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, Database, Users } from 'lucide-react';
+import { LogOut, Database, Users, Building2 } from 'lucide-react';
 import falconLogo from '@/assets/falcon-logo.png';
 import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
 const AppHeader = () => {
-  const { signOut, role } = useAuth();
+  const { signOut, role, isSuperAdmin, tenantId, setActiveTenantId } = useAuth();
   const { filters, options, setFilter } = useFilters();
+
+  const { data: tenants } = useQuery({
+    queryKey: ['all-tenants-header'],
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_all_tenants');
+      return (data || []) as { id: string; name: string; is_active: boolean }[];
+    },
+    enabled: isSuperAdmin,
+  });
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
@@ -19,6 +30,23 @@ const AppHeader = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {isSuperAdmin && (
+            <Select
+              value={tenantId || ''}
+              onValueChange={(v) => setActiveTenantId(v || null)}
+            >
+              <SelectTrigger className="h-8 w-[180px] bg-primary/10 border-primary/30 text-xs">
+                <Building2 className="h-3 w-3 mr-1 text-primary" />
+                <SelectValue placeholder="Selecionar Tenant" />
+              </SelectTrigger>
+              <SelectContent>
+                {(tenants || []).map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           <Select
             value={filters.property || 'all'}
             onValueChange={(v) => setFilter('property', v === 'all' ? null : v)}
@@ -79,15 +107,21 @@ const AppHeader = () => {
             </SelectContent>
           </Select>
 
-          {(role === 'master_admin' || role === 'editor') && (
+          {(isSuperAdmin || role === 'master_admin' || role === 'editor') && (
             <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
               <a href="/upload"><Database className="mr-1 h-3 w-3" />Central de Dados</a>
             </Button>
           )}
 
-          {role === 'master_admin' && (
+          {(isSuperAdmin || role === 'master_admin') && (
             <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
               <a href="/users"><Users className="mr-1 h-3 w-3" />Usuários</a>
+            </Button>
+          )}
+
+          {isSuperAdmin && (
+            <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
+              <a href="/tenants"><Building2 className="mr-1 h-3 w-3" />Tenants</a>
             </Button>
           )}
 
