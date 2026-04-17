@@ -271,6 +271,7 @@ const UsersPage = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {/* Edit Role Dialog */}
