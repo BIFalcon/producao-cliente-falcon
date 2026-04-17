@@ -54,6 +54,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Resolve tenant_id from the authenticated user's profile (server-side, never trusted from client)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError || !profile?.tenant_id) {
+      return new Response(JSON.stringify({ error: 'Tenant não encontrado para este usuário' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const tenant_id: string = profile.tenant_id;
+
     const body = await req.json();
     const { rows, batch_id, mode, chunk_index, total_chunks, action } = body;
 
@@ -65,9 +79,24 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Verify the batch belongs to this tenant
+      const { data: batchRow } = await supabase
+        .from('upload_batches')
+        .select('tenant_id')
+        .eq('id', batch_id)
+        .single();
+      if (!batchRow || batchRow.tenant_id !== tenant_id) {
+        return new Response(JSON.stringify({ error: 'Batch não pertence ao seu tenant' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       await supabase.from('upload_batches').update({ status: 'processing' }).eq('id', batch_id);
 
-      const { error: procError } = await supabase.rpc('process_reservations', { p_batch_id: batch_id });
+      const { error: procError } = await supabase.rpc('process_reservations', {
+        p_tenant_id: tenant_id,
+        p_batch_id: batch_id,
+      });
       if (procError) {
         console.error('Processing error:', procError);
         await supabase.from('upload_batches').update({
@@ -94,13 +123,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // First chunk in replace mode: clear existing data
-    if (chunk_index === 0 && mode === 'replace') {
-      await supabase.from('raw_reservations').delete().not('id', 'is', null);
-      await supabase.from('processed_reservations').delete().not('id', 'is', null);
+    // Verify the batch belongs to this tenant
+    const { data: batchRow2 } = await supabase
+      .from('upload_batches')
+      .select('tenant_id')
+      .eq('id', batch_id)
+      .single();
+    if (!batchRow2 || batchRow2.tenant_id !== tenant_id) {
+      return new Response(JSON.stringify({ error: 'Batch não pertence ao seu tenant' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Normalize all rows
+    // First chunk in replace mode: clear existing data ONLY for this tenant
+    if (chunk_index === 0 && mode === 'replace') {
+      await supabase.from('raw_reservations').delete().eq('tenant_id', tenant_id);
+      await supabase.from('processed_reservations').delete().eq('tenant_id', tenant_id);
+    }
+
+    // Normalize all rows and stamp tenant_id
     const processedRows = rows.map((row: any) => {
       const roomRev = normalizeRevenue(row.room_revenue);
       const fbRev = normalizeRevenue(row.fb_revenue);
@@ -110,6 +151,7 @@ Deno.serve(async (req) => {
       }
 
       return {
+        tenant_id,
         property_name: normalizeText(row.property_name),
         reservation_status: normalizeText(row.reservation_status),
         confirmation_number: String(row.confirmation_number || '').trim(),

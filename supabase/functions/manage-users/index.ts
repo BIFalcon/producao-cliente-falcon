@@ -35,18 +35,44 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Resolve tenant_id from the caller's profile (server-side)
+    const { data: callerProfile, error: callerProfileError } = await supabaseAdmin
+      .from('profiles')
+      .select('tenant_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (callerProfileError || !callerProfile?.tenant_id) {
+      return new Response(JSON.stringify({ error: 'Tenant não encontrado' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const tenant_id: string = callerProfile.tenant_id;
+
+    // Caller must be master_admin in this tenant
     const { data: roleData } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
+      .eq('tenant_id', tenant_id)
       .eq('role', 'master_admin')
-      .single();
+      .maybeSingle();
 
     if (!roleData) {
       return new Response(JSON.stringify({ error: 'Forbidden' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    // Helper: ensure target user belongs to the same tenant
+    const assertSameTenant = async (target_user_id: string): Promise<boolean> => {
+      const { data } = await supabaseAdmin
+        .from('profiles')
+        .select('tenant_id')
+        .eq('user_id', target_user_id)
+        .single();
+      return data?.tenant_id === tenant_id;
+    };
 
     const body = await req.json();
     const { action } = body;
@@ -63,24 +89,36 @@ Deno.serve(async (req) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name: full_name || '' },
+        user_metadata: { full_name: full_name || '', tenant_id },
       });
       if (createError) throw createError;
 
+      // Triggers create profile + (first user of tenant) master_admin row using metadata.tenant_id.
+      // Make sure the profile exists and has the right tenant + name.
       await supabaseAdmin
         .from('profiles')
-        .update({ full_name: full_name || '' })
-        .eq('user_id', newUser.user.id);
+        .upsert(
+          { user_id: newUser.user.id, full_name: full_name || '', tenant_id },
+          { onConflict: 'user_id' }
+        );
+
+      // Replace any auto-assigned role with the requested one (scoped to tenant)
+      await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', newUser.user.id)
+        .eq('tenant_id', tenant_id);
 
       await supabaseAdmin
         .from('user_roles')
-        .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role' });
+        .insert({ user_id: newUser.user.id, role, tenant_id });
 
       // Set hotel permissions if provided and not master_admin
       if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0 && role !== 'master_admin') {
         const permRows = hotel_permissions.map((p: string) => ({
           user_id: newUser.user.id,
           property_name: p,
+          tenant_id,
         }));
         await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
       }
@@ -98,11 +136,18 @@ Deno.serve(async (req) => {
         });
       }
 
+      if (!(await assertSameTenant(target_user_id))) {
+        return new Response(JSON.stringify({ error: 'Usuário não pertence ao seu tenant' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       if (target_user_id === user.id && role !== 'master_admin') {
         const { data: admins } = await supabaseAdmin
           .from('user_roles')
           .select('user_id')
-          .eq('role', 'master_admin');
+          .eq('role', 'master_admin')
+          .eq('tenant_id', tenant_id);
         if (!admins || admins.length <= 1) {
           return new Response(JSON.stringify({ error: 'Deve existir ao menos um Master Admin' }), {
             status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -110,8 +155,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id);
-      await supabaseAdmin.from('user_roles').insert({ user_id: target_user_id, role });
+      await supabaseAdmin
+        .from('user_roles')
+        .delete()
+        .eq('user_id', target_user_id)
+        .eq('tenant_id', tenant_id);
+      await supabaseAdmin
+        .from('user_roles')
+        .insert({ user_id: target_user_id, role, tenant_id });
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -126,14 +177,25 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Clear existing permissions
-      await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id);
+      if (!(await assertSameTenant(target_user_id))) {
+        return new Response(JSON.stringify({ error: 'Usuário não pertence ao seu tenant' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Clear existing permissions for this tenant only
+      await supabaseAdmin
+        .from('user_hotel_permissions')
+        .delete()
+        .eq('user_id', target_user_id)
+        .eq('tenant_id', tenant_id);
 
       // Insert new permissions
       if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0) {
         const permRows = hotel_permissions.map((p: string) => ({
           user_id: target_user_id,
           property_name: p,
+          tenant_id,
         }));
         await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
       }
@@ -151,6 +213,12 @@ Deno.serve(async (req) => {
         });
       }
 
+      if (!(await assertSameTenant(target_user_id))) {
+        return new Response(JSON.stringify({ error: 'Usuário não pertence ao seu tenant' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       if (target_user_id === user.id && !is_active) {
         return new Response(JSON.stringify({ error: 'Você não pode desativar sua própria conta' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -160,7 +228,8 @@ Deno.serve(async (req) => {
       await supabaseAdmin
         .from('profiles')
         .update({ is_active })
-        .eq('user_id', target_user_id);
+        .eq('user_id', target_user_id)
+        .eq('tenant_id', tenant_id);
 
       if (!is_active) {
         await supabaseAdmin.auth.admin.updateUserById(target_user_id, { ban_duration: '876000h' });
