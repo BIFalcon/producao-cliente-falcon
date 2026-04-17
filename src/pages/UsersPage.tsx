@@ -346,7 +346,14 @@ const UsersPage = () => {
             </DialogContent>
           </Dialog>
 
+          {isSuperAdmin && !tenantId && (
+            <div className="surface-card p-6 text-center text-sm text-muted-foreground">
+              Selecione um tenant acima para visualizar e gerenciar usuários.
+            </div>
+          )}
+
           {/* Users Table */}
+          {tenantId && (
           <div className="surface-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
