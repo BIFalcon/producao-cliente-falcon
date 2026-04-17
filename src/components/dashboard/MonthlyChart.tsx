@@ -2,16 +2,20 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenue, MONTH_NAMES } from '@/lib/formatters';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 
 const MonthlyChart = () => {
   const { filters } = useFilters();
+  const { tenantId } = useAuth();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['monthly', filters],
+    queryKey: ['monthly', tenantId, filters],
+    enabled: !!tenantId,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_monthly_revenue', {
+      const { data, error } = await (supabase.rpc as any)('get_monthly_revenue', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_year: null,
         p_channel: filters.channel,
