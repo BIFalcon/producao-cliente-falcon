@@ -132,7 +132,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
-          tenant_id: string
+          tenant_id: string | null
           updated_at: string
           user_id: string
         }
@@ -141,7 +141,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
-          tenant_id: string
+          tenant_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -150,7 +150,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
-          tenant_id?: string
+          tenant_id?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -370,21 +370,21 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
-          tenant_id: string
+          tenant_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
-          tenant_id: string
+          tenant_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
-          tenant_id?: string
+          tenant_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -446,6 +446,17 @@ export type Database = {
           revenue_previous: number
           roomnights_current: number
           travel_agent_name: string
+        }[]
+      }
+      get_all_tenants: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          user_count: number
         }[]
       }
       get_all_users: {
@@ -705,6 +716,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       process_reservations: {
         Args: { p_batch_id?: string; p_tenant_id: string }
         Returns: undefined
