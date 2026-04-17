@@ -38,7 +38,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const UsersPage = () => {
-  const { role, user, tenantId, loading: authLoading } = useAuth();
+  const { role, user, tenantId, isSuperAdmin, setActiveTenantId, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
@@ -52,14 +52,26 @@ const UsersPage = () => {
   const [formRole, setFormRole] = useState('viewer');
   const [formHotels, setFormHotels] = useState<string[]>([]);
 
-  // Available properties from database
+  const canManage = isSuperAdmin || role === 'master_admin';
+
+  // Tenants list (only for super_admin)
+  const { data: tenants } = useQuery({
+    queryKey: ['all-tenants-users'],
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_all_tenants');
+      return (data || []) as { id: string; name: string }[];
+    },
+    enabled: isSuperAdmin,
+  });
+
+  // Available properties from database (scoped to active tenant)
   const { data: allProperties } = useQuery({
     queryKey: ['all-properties', tenantId],
     queryFn: async () => {
       const { data } = await (supabase.rpc as any)('get_filter_options', { p_tenant_id: tenantId });
       return data?.[0]?.properties || [];
     },
-    enabled: role === 'master_admin' && !!tenantId,
+    enabled: canManage && !!tenantId,
   });
 
   const { data: users, isLoading } = useQuery({
@@ -69,7 +81,7 @@ const UsersPage = () => {
       if (error) throw error;
       return (data || []) as UserRow[];
     },
-    enabled: role === 'master_admin' && !!tenantId,
+    enabled: canManage && !!tenantId,
   });
 
   const resetForm = () => {
@@ -81,7 +93,9 @@ const UsersPage = () => {
   };
 
   const callManageUsers = async (body: any) => {
-    const { data, error } = await supabase.functions.invoke('manage-users', { body });
+    // For super_admin we always send target_tenant_id (the active tenant)
+    const payload = isSuperAdmin ? { ...body, target_tenant_id: tenantId } : body;
+    const { data, error } = await supabase.functions.invoke('manage-users', { body: payload });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     return data;
@@ -143,11 +157,11 @@ const UsersPage = () => {
     );
   }
 
-  if (role !== 'master_admin') {
+  if (!canManage) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-3">
-          <p className="text-destructive text-sm">Acesso restrito a Master Admin.</p>
+          <p className="text-destructive text-sm">Acesso restrito a Master Admin ou Super Admin.</p>
           <Button variant="outline" size="sm" onClick={() => navigate('/')}>Voltar</Button>
         </div>
       </div>
