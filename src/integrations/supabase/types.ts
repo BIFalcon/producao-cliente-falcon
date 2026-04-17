@@ -20,20 +20,31 @@ export type Database = {
           created_at: string
           id: string
           segmento: string
+          tenant_id: string
         }
         Insert: {
           canal: string
           created_at?: string
           id?: string
           segmento: string
+          tenant_id: string
         }
         Update: {
           canal?: string
           created_at?: string
           id?: string
           segmento?: string
+          tenant_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "channel_mapping_tenant_fk"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       processed_reservations: {
         Row: {
@@ -55,6 +66,7 @@ export type Database = {
           roomnights: number | null
           sales_channel: string | null
           state: string | null
+          tenant_id: string
           total_revenue: number | null
           travel_agent_name: string | null
         }
@@ -77,6 +89,7 @@ export type Database = {
           roomnights?: number | null
           sales_channel?: string | null
           state?: string | null
+          tenant_id: string
           total_revenue?: number | null
           travel_agent_name?: string | null
         }
@@ -99,10 +112,19 @@ export type Database = {
           roomnights?: number | null
           sales_channel?: string | null
           state?: string | null
+          tenant_id?: string
           total_revenue?: number | null
           travel_agent_name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "processed_reservations_tenant_fk"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -110,6 +132,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean
+          tenant_id: string
           updated_at: string
           user_id: string
         }
@@ -118,6 +141,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          tenant_id: string
           updated_at?: string
           user_id: string
         }
@@ -126,10 +150,19 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean
+          tenant_id?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tenant_fk"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       raw_reservations: {
         Row: {
@@ -155,6 +188,7 @@ export type Database = {
           room_type: string | null
           source_name: string | null
           state: string | null
+          tenant_id: string
           total_revenue: number | null
           travel_agent_name: string | null
           upload_batch_id: string | null
@@ -182,6 +216,7 @@ export type Database = {
           room_type?: string | null
           source_name?: string | null
           state?: string | null
+          tenant_id: string
           total_revenue?: number | null
           travel_agent_name?: string | null
           upload_batch_id?: string | null
@@ -209,9 +244,42 @@ export type Database = {
           room_type?: string | null
           source_name?: string | null
           state?: string | null
+          tenant_id?: string
           total_revenue?: number | null
           travel_agent_name?: string | null
           upload_batch_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_reservations_tenant_fk"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
         }
         Relationships: []
       }
@@ -225,6 +293,7 @@ export type Database = {
           mode: string | null
           processed_rows: number | null
           status: string | null
+          tenant_id: string
           total_rows: number | null
           uploaded_by: string
         }
@@ -237,6 +306,7 @@ export type Database = {
           mode?: string | null
           processed_rows?: number | null
           status?: string | null
+          tenant_id: string
           total_rows?: number | null
           uploaded_by: string
         }
@@ -249,52 +319,83 @@ export type Database = {
           mode?: string | null
           processed_rows?: number | null
           status?: string | null
+          tenant_id?: string
           total_rows?: number | null
           uploaded_by?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "upload_batches_tenant_fk"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_hotel_permissions: {
         Row: {
           created_at: string
           id: string
           property_name: string
+          tenant_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           property_name: string
+          tenant_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           property_name?: string
+          tenant_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_hotel_permissions_tenant_fk"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_tenant_fk"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -487,6 +588,7 @@ export type Database = {
           top5_share: number
         }[]
       }
+      get_current_tenant_id: { Args: never; Returns: string }
       get_dashboard_kpis:
         | {
             Args: { p_channel?: string; p_property?: string; p_year?: number }
@@ -566,9 +668,21 @@ export type Database = {
         Returns: Json
       }
       has_any_users: { Args: never; Returns: boolean }
+      has_any_users_in_tenant: {
+        Args: { _tenant_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role_in_tenant: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _tenant_id: string
           _user_id: string
         }
         Returns: boolean
