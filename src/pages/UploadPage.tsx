@@ -298,10 +298,22 @@ const UploadPage = () => {
       }
 
       setProgressText('Criando lote de upload...');
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .single();
+      if (profileError || !profile?.tenant_id) {
+        toast.error('Não foi possível identificar o tenant do usuário');
+        setUploading(false);
+        return;
+      }
+
       const { data: batch, error: batchError } = await supabase
         .from('upload_batches')
         .insert({
           uploaded_by: user.id,
+          tenant_id: profile.tenant_id,
           file_name: file.name,
           total_rows: rows.length,
           status: 'uploading',
