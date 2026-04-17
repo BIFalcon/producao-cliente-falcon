@@ -2,17 +2,21 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatNumber, toTitleCase } from '@/lib/formatters';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 const GuestCityAnalysis = () => {
   const { filters } = useFilters();
+  const { tenantId } = useAuth();
   const [expandedCity, setExpandedCity] = useState<{ city: string; state: string } | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['guest-cities', filters],
+    queryKey: ['guest-cities', tenantId, filters],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_guest_city_analytics', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_year: filters.year,
         p_month: filters.month,
@@ -30,10 +34,11 @@ const GuestCityAnalysis = () => {
   });
 
   const { data: drilldownData, isLoading: drilldownLoading } = useQuery({
-    queryKey: ['guest-city-drilldown', expandedCity, filters],
+    queryKey: ['guest-city-drilldown', tenantId, expandedCity, filters],
     queryFn: async () => {
       if (!expandedCity) return [];
       const { data, error } = await (supabase.rpc as any)('get_guest_city_drilldown', {
+        p_tenant_id: tenantId,
         p_city: expandedCity.city,
         p_state: expandedCity.state,
         p_property: filters.property,
@@ -49,7 +54,7 @@ const GuestCityAnalysis = () => {
         roomnights: number;
       }>;
     },
-    enabled: !!expandedCity,
+    enabled: !!expandedCity && !!tenantId,
   });
 
   const toggleCity = (city: string, state: string) => {
