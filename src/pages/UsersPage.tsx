@@ -437,6 +437,7 @@ const UsersPage = () => {
               </table>
             </div>
           </div>
+          )}
         </div>
       </div>
     </FiltersProvider>
