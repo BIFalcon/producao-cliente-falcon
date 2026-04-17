@@ -38,7 +38,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const UsersPage = () => {
-  const { role, user, tenantId, loading: authLoading } = useAuth();
+  const { role, user, tenantId, isSuperAdmin, setActiveTenantId, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
@@ -52,14 +52,26 @@ const UsersPage = () => {
   const [formRole, setFormRole] = useState('viewer');
   const [formHotels, setFormHotels] = useState<string[]>([]);
 
-  // Available properties from database
+  const canManage = isSuperAdmin || role === 'master_admin';
+
+  // Tenants list (only for super_admin)
+  const { data: tenants } = useQuery({
+    queryKey: ['all-tenants-users'],
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_all_tenants');
+      return (data || []) as { id: string; name: string }[];
+    },
+    enabled: isSuperAdmin,
+  });
+
+  // Available properties from database (scoped to active tenant)
   const { data: allProperties } = useQuery({
     queryKey: ['all-properties', tenantId],
     queryFn: async () => {
       const { data } = await (supabase.rpc as any)('get_filter_options', { p_tenant_id: tenantId });
       return data?.[0]?.properties || [];
     },
-    enabled: role === 'master_admin' && !!tenantId,
+    enabled: canManage && !!tenantId,
   });
 
   const { data: users, isLoading } = useQuery({
@@ -69,7 +81,7 @@ const UsersPage = () => {
       if (error) throw error;
       return (data || []) as UserRow[];
     },
-    enabled: role === 'master_admin' && !!tenantId,
+    enabled: canManage && !!tenantId,
   });
 
   const resetForm = () => {
@@ -81,7 +93,9 @@ const UsersPage = () => {
   };
 
   const callManageUsers = async (body: any) => {
-    const { data, error } = await supabase.functions.invoke('manage-users', { body });
+    // For super_admin we always send target_tenant_id (the active tenant)
+    const payload = isSuperAdmin ? { ...body, target_tenant_id: tenantId } : body;
+    const { data, error } = await supabase.functions.invoke('manage-users', { body: payload });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     return data;
@@ -143,11 +157,11 @@ const UsersPage = () => {
     );
   }
 
-  if (role !== 'master_admin') {
+  if (!canManage) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-3">
-          <p className="text-destructive text-sm">Acesso restrito a Master Admin.</p>
+          <p className="text-destructive text-sm">Acesso restrito a Master Admin ou Super Admin.</p>
           <Button variant="outline" size="sm" onClick={() => navigate('/')}>Voltar</Button>
         </div>
       </div>
@@ -173,13 +187,29 @@ const UsersPage = () => {
               </div>
             </div>
 
-            <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) resetForm(); }}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Criar Usuário
-                </Button>
-              </DialogTrigger>
+            <div className="flex items-center gap-2">
+              {isSuperAdmin && (
+                <Select
+                  value={tenantId || ''}
+                  onValueChange={(v) => setActiveTenantId(v || null)}
+                >
+                  <SelectTrigger className="h-9 w-[200px] bg-primary/10 border-primary/30 text-xs">
+                    <SelectValue placeholder="Selecionar Tenant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(tenants || []).map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) resetForm(); }}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-2" disabled={!tenantId}>
+                    <UserPlus className="h-4 w-4" />
+                    Criar Usuário
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Usuário</DialogTitle>
@@ -316,7 +346,14 @@ const UsersPage = () => {
             </DialogContent>
           </Dialog>
 
+          {isSuperAdmin && !tenantId && (
+            <div className="surface-card p-6 text-center text-sm text-muted-foreground">
+              Selecione um tenant acima para visualizar e gerenciar usuários.
+            </div>
+          )}
+
           {/* Users Table */}
+          {tenantId && (
           <div className="surface-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -400,6 +437,7 @@ const UsersPage = () => {
               </table>
             </div>
           </div>
+          )}
         </div>
       </div>
     </FiltersProvider>
