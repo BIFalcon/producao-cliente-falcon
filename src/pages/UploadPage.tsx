@@ -66,25 +66,62 @@ const UploadPage = () => {
   const detectSheets = async (excelFile: File) => {
     setLoadingSheets(true);
     try {
+      const sizeMB = excelFile.size / (1024 * 1024);
+      if (sizeMB > 50) {
+        toast.warning(
+          `Arquivo grande (${sizeMB.toFixed(0)} MB). Recomendamos converter para .CSV antes de enviar — arquivos Excel acima de 50 MB podem exceder a memória do navegador.`,
+          { duration: 8000 }
+        );
+      }
+
       const buffer = await excelFile.arrayBuffer();
-      const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: false });
-      const sheetList: SheetInfo[] = workbook.SheetNames.map((name: string) => {
-        const sheet = workbook.Sheets[name];
-        const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
-        return { name, rowCount: range.e.r };
+      const workbook = XLSX.read(new Uint8Array(buffer), {
+        type: 'array',
+        cellDates: false,
+        cellFormula: false,
+        cellHTML: false,
+        cellStyles: false,
       });
+
+      if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+        throw new Error('Arquivo Excel inválido ou sem abas legíveis.');
+      }
+
+      const sheetList: SheetInfo[] = workbook.SheetNames
+        .map((name: string) => {
+          const sheet = workbook.Sheets[name];
+          if (!sheet || !sheet['!ref']) {
+            return { name, rowCount: 0 };
+          }
+          try {
+            const range = XLSX.utils.decode_range(sheet['!ref']);
+            return { name, rowCount: range.e.r };
+          } catch {
+            return { name, rowCount: 0 };
+          }
+        })
+        .filter(s => s.rowCount > 0);
+
+      if (sheetList.length === 0) {
+        throw new Error('Nenhuma aba com dados foi encontrada no arquivo.');
+      }
+
       setSheets(sheetList);
       (excelFile as any).__workbook = workbook;
 
       if (sheetList.length === 1) {
         setSelectedSheet(sheetList[0].name);
-      } else if (sheetList.length > 1) {
+      } else {
         setSelectedSheet('');
         toast.info(`${sheetList.length} abas encontradas. Selecione qual importar.`);
       }
     } catch (err: any) {
       console.error('Sheet detection error:', err);
-      toast.error(`Erro ao ler arquivo Excel: ${err.message}`);
+      const msg = err?.message || String(err);
+      const friendly = msg.includes('!ref') || msg.includes('undefined')
+        ? 'Não foi possível ler o arquivo Excel. Ele pode estar corrompido ou ser muito grande para o navegador. Tente salvar como .CSV e enviar novamente.'
+        : `Erro ao ler arquivo Excel: ${msg}`;
+      toast.error(friendly, { duration: 8000 });
       setFile(null);
     } finally {
       setLoadingSheets(false);
