@@ -30,7 +30,7 @@ const MonthlyChart = () => {
   }
 
   // Group by month, separate years
-  const years = [...new Set((data ?? []).map((d: any) => d.year as number))].sort();
+  const years: number[] = Array.from(new Set<number>(((data ?? []) as any[]).map((d) => d.year as number))).sort();
   const chartData = MONTH_NAMES.map((name, idx) => {
     const entry: any = { month: name };
     years.forEach(y => {
