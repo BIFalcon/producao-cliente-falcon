@@ -93,7 +93,7 @@ const UploadPage = () => {
 
   const handleFileSelected = (selectedFile: File) => {
     if (!isValidFile(selectedFile)) {
-      toast.error('Formato não suportado. Envie um arquivo .csv ou .xlsx');
+      toast.error('Formato não suportado. Envie um arquivo .csv, .xlsx ou .xls');
       return;
     }
     setFile(selectedFile);
@@ -410,7 +410,7 @@ const UploadPage = () => {
               <input
                 id="mapping-file-input"
                 type="file"
-                accept=".csv,.xlsx"
+                accept=".csv,.xlsx,.xls"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -418,7 +418,7 @@ const UploadPage = () => {
                     setMappingFile(f);
                     setMappingCount(null);
                   } else if (f) {
-                    toast.error('Formato não suportado. Envie .csv ou .xlsx');
+                    toast.error('Formato não suportado. Envie .csv, .xlsx ou .xls');
                   }
                 }}
                 disabled={uploadingMapping}
@@ -504,7 +504,7 @@ const UploadPage = () => {
           <input
             id="file-input"
             type="file"
-            accept=".csv,.xlsx"
+            accept=".csv,.xlsx,.xls"
             className="hidden"
             onChange={handleFileSelect}
             disabled={uploading}
@@ -516,7 +516,9 @@ const UploadPage = () => {
               <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                 <span>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
                 {fileIsExcel && (
-                  <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-medium text-accent">XLSX</span>
+                  <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+                    {file.name.toLowerCase().endsWith('.xls') ? 'XLS' : 'XLSX'}
+                  </span>
                 )}
                 {!fileIsExcel && (
                   <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">CSV</span>
@@ -534,7 +536,7 @@ const UploadPage = () => {
               <Upload className={`mb-3 h-10 w-10 text-muted-foreground ${dragOver ? 'animate-pulse-subtle' : ''}`} />
               <div className="text-sm text-foreground">Arraste o arquivo ou clique para selecionar</div>
               <div className="text-xs text-muted-foreground mt-1">
-                Suporta <span className="font-medium text-primary">.csv</span> e <span className="font-medium text-accent">.xlsx</span> com 100k+ registros
+                Suporta <span className="font-medium text-primary">.csv</span>, <span className="font-medium text-accent">.xlsx</span> e <span className="font-medium text-accent">.xls</span> com 100k+ registros
               </div>
             </>
           )}
