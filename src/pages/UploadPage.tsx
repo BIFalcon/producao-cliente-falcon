@@ -12,8 +12,12 @@ import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 500;
 
-const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx'];
-const ACCEPTED_TYPES = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
+const ACCEPTED_TYPES = [
+  'text/csv',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+];
 
 const isValidFile = (file: File): boolean => {
   const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
@@ -21,7 +25,8 @@ const isValidFile = (file: File): boolean => {
 };
 
 const isExcelFile = (file: File): boolean => {
-  return file.name.toLowerCase().endsWith('.xlsx');
+  const name = file.name.toLowerCase();
+  return name.endsWith('.xlsx') || name.endsWith('.xls');
 };
 
 interface SheetInfo {
