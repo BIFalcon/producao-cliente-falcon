@@ -306,6 +306,10 @@ const UploadPage = () => {
 
   const handleMappingUpload = async () => {
     if (!mappingFile || !user) return;
+    if (!tenantId) {
+      toast.error('Tenant não selecionado. Selecione um tenant antes de enviar o mapeamento.');
+      return;
+    }
     setUploadingMapping(true);
     try {
       const rows = await parseMappingFile(mappingFile);
@@ -315,13 +319,17 @@ const UploadPage = () => {
         return;
       }
 
-      // Delete existing mapping and insert new
-      await supabase.from('channel_mapping').delete().not('id', 'is', null);
+      // Delete existing mapping for this tenant only
+      const { error: delError } = await supabase
+        .from('channel_mapping')
+        .delete()
+        .eq('tenant_id', tenantId);
+      if (delError) throw delError;
 
-      // Insert in batches
+      // Insert in batches, including tenant_id on every row
       const batchSize = 500;
       for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize);
+        const batch = rows.slice(i, i + batchSize).map(r => ({ ...r, tenant_id: tenantId }));
         const { error } = await supabase.from('channel_mapping' as any).insert(batch as any);
         if (error) throw error;
       }
