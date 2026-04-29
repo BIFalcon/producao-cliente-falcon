@@ -307,7 +307,11 @@ const UploadPage = () => {
   const handleMappingUpload = async () => {
     if (!mappingFile || !user) return;
     if (!tenantId) {
-      toast.error('Tenant não selecionado. Selecione um tenant antes de enviar o mapeamento.');
+      toast.error(
+        isSuperAdmin
+          ? 'Selecione um tenant no seletor do cabeçalho antes de enviar o mapeamento.'
+          : 'Tenant do seu perfil ainda não foi carregado. Aguarde alguns segundos e tente novamente.'
+      );
       return;
     }
     setUploadingMapping(true);
