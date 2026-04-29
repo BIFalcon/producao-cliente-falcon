@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parseCSV, chunkArray, type ParsedRow } from '@/lib/csv-parser';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin } from 'lucide-react';
+import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 200;
