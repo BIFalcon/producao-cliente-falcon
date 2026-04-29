@@ -339,6 +339,11 @@ const UploadPage = () => {
   const handleUpload = async () => {
     if (!file || !user) return;
 
+    if (!tenantId) {
+      toast.error('Tenant não selecionado. Selecione um tenant antes de enviar dados.');
+      return;
+    }
+
     if (isExcelFile(file) && sheets.length > 1 && !selectedSheet) {
       toast.error('Selecione uma aba da planilha para importar');
       return;
@@ -369,22 +374,12 @@ const UploadPage = () => {
       }
 
       setProgressText('Criando lote de upload...');
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('user_id', user.id)
-        .single();
-      if (profileError || !profile?.tenant_id) {
-        toast.error('Não foi possível identificar o tenant do usuário');
-        setUploading(false);
-        return;
-      }
 
       const { data: batch, error: batchError } = await supabase
         .from('upload_batches')
         .insert({
           uploaded_by: user.id,
-          tenant_id: profile.tenant_id,
+          tenant_id: tenantId,
           file_name: file.name,
           total_rows: rows.length,
           status: 'uploading',
@@ -397,46 +392,78 @@ const UploadPage = () => {
 
       const chunks = chunkArray(rows, CHUNK_SIZE);
       const totalRows = rows.length;
+      const totalChunks = chunks.length;
+      const failedChunks: number[] = [];
 
       // Phase 1: Upload all chunks (10% - 80%)
       for (let i = 0; i < chunks.length; i++) {
         const uploadedSoFar = Math.min((i + 1) * CHUNK_SIZE, totalRows);
         const pct = 10 + Math.round((uploadedSoFar / totalRows) * 70);
+        const pctOfTotal = Math.round(((i + 1) / totalChunks) * 100);
         setProgress(pct);
-        setProgressText(`Enviando lote ${i + 1}/${chunks.length} — ${uploadedSoFar.toLocaleString('pt-BR')} de ${totalRows.toLocaleString('pt-BR')} registros`);
+        setProgressText(
+          `Chunk ${(i + 1).toLocaleString('pt-BR')} de ${totalChunks.toLocaleString('pt-BR')} enviados — ${pctOfTotal}% (${uploadedSoFar.toLocaleString('pt-BR')}/${totalRows.toLocaleString('pt-BR')} registros)`
+        );
 
-        const { error } = await supabase.functions.invoke('process-csv', {
-          body: {
-            rows: chunks[i],
-            batch_id: batch.id,
-            mode,
-            chunk_index: i,
-            total_chunks: chunks.length,
-          },
-        });
-
-        if (error) throw error;
+        try {
+          await invokeWithRetry(
+            'process-csv',
+            {
+              tenant_id: tenantId,
+              rows: chunks[i],
+              batch_id: batch.id,
+              mode,
+              chunk_index: i,
+              total_chunks: totalChunks,
+            },
+            tenantId,
+            (attempt, err) => {
+              console.warn(`[upload] Chunk ${i + 1} attempt ${attempt} failed:`, err?.message || err);
+              setProgressText(
+                `Chunk ${(i + 1).toLocaleString('pt-BR')}/${totalChunks.toLocaleString('pt-BR')} — tentativa ${attempt}/${MAX_RETRIES}...`
+              );
+            }
+          );
+        } catch (chunkErr: any) {
+          console.error(`[upload] Chunk ${i + 1} failed after ${MAX_RETRIES} attempts:`, chunkErr);
+          failedChunks.push(i + 1);
+          // Continue with next chunk instead of aborting whole batch
+          toast.warning(`Chunk ${i + 1} falhou após ${MAX_RETRIES} tentativas; continuando com os próximos.`);
+        }
 
         // Release chunk memory
         chunks[i] = null as any;
+      }
+
+      if (failedChunks.length === totalChunks) {
+        throw new Error('Todos os chunks falharam. Verifique a conexão e tente novamente.');
       }
 
       // Phase 2: Process reservations (80% - 100%)
       setProgress(82);
       setProgressText('Processando classificações e agregações...');
 
-      const { error: processError } = await supabase.functions.invoke('process-csv', {
-        body: {
+      await invokeWithRetry(
+        'process-csv',
+        {
+          tenant_id: tenantId,
           action: 'process',
           batch_id: batch.id,
         },
-      });
-
-      if (processError) throw processError;
+        tenantId
+      );
 
       setProgress(100);
-      setProgressText(`${totalRows.toLocaleString('pt-BR')} registros processados com sucesso!`);
-      toast.success('Upload concluído com sucesso!');
+      const successText =
+        failedChunks.length > 0
+          ? `${totalRows.toLocaleString('pt-BR')} registros processados (${failedChunks.length} chunks falharam)`
+          : `${totalRows.toLocaleString('pt-BR')} registros processados com sucesso!`;
+      setProgressText(successText);
+      if (failedChunks.length > 0) {
+        toast.warning(`Upload concluído com ${failedChunks.length} chunks falhos.`);
+      } else {
+        toast.success('Upload concluído com sucesso!');
+      }
 
       setTimeout(() => navigate('/'), 1500);
     } catch (err: any) {
