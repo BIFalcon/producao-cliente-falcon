@@ -68,7 +68,7 @@ const normalizeText = (str: string): string => {
 };
 
 const UploadPage = () => {
-  const { user } = useAuth();
+  const { user, tenantId } = useAuth();
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<'replace' | 'append'>('replace');
