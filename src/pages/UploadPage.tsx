@@ -69,7 +69,16 @@ const normalizeText = (str: string): string => {
 };
 
 const UploadPage = () => {
-  const { user, tenantId, isSuperAdmin } = useAuth();
+  const { user, tenantId, isSuperAdmin, setActiveTenantId } = useAuth();
+
+  const { data: tenants } = useQuery({
+    queryKey: ['all-tenants-upload'],
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_all_tenants');
+      return (data || []) as { id: string; name: string; is_active: boolean }[];
+    },
+    enabled: isSuperAdmin,
+  });
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<'replace' | 'append'>('replace');
