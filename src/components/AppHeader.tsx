@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FiltersContext';
@@ -109,19 +110,19 @@ const AppHeader = () => {
 
           {(isSuperAdmin || role === 'master_admin' || role === 'editor') && (
             <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-              <a href="/upload"><Database className="mr-1 h-3 w-3" />Central de Dados</a>
+              <Link to="/upload"><Database className="mr-1 h-3 w-3" />Central de Dados</Link>
             </Button>
           )}
 
           {(isSuperAdmin || role === 'master_admin') && (
             <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-              <a href="/users"><Users className="mr-1 h-3 w-3" />Usuários</a>
+              <Link to="/users"><Users className="mr-1 h-3 w-3" />Usuários</Link>
             </Button>
           )}
 
           {isSuperAdmin && (
             <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-              <a href="/tenants"><Building2 className="mr-1 h-3 w-3" />Tenants</a>
+              <Link to="/tenants"><Building2 className="mr-1 h-3 w-3" />Tenants</Link>
             </Button>
           )}
 

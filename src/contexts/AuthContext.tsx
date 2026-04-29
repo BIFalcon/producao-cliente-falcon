@@ -22,13 +22,29 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ACTIVE_TENANT_STORAGE_KEY = 'falcon.activeTenantId';
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [profileTenantId, setProfileTenantId] = useState<string | null>(null);
-  const [activeTenantId, setActiveTenantId] = useState<string | null>(null);
+  const [activeTenantId, setActiveTenantIdState] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem(ACTIVE_TENANT_STORAGE_KEY);
+  });
   const [loading, setLoading] = useState(true);
+
+  const setActiveTenantId = (tenantId: string | null) => {
+    setActiveTenantIdState(tenantId);
+    if (typeof window !== 'undefined') {
+      if (tenantId) {
+        window.localStorage.setItem(ACTIVE_TENANT_STORAGE_KEY, tenantId);
+      } else {
+        window.localStorage.removeItem(ACTIVE_TENANT_STORAGE_KEY);
+      }
+    }
+  };
 
   const fetchRoleAndTenant = async (userId: string) => {
     const [{ data: roleData }, { data: profileData }] = await Promise.all([
@@ -46,10 +62,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const effectiveRole = (superCheck?.role || roleData?.role || null) as AppRole | null;
     setRole(effectiveRole);
     setProfileTenantId(profileData?.tenant_id || null);
-    // For non-super_admin, active tenant equals profile tenant
+    // For non-super_admin, active tenant equals profile tenant (always overrides any stored value)
     if (effectiveRole !== 'super_admin') {
       setActiveTenantId(profileData?.tenant_id || null);
     }
+    // For super_admin, keep whatever was restored from localStorage (don't overwrite)
   };
 
   useEffect(() => {
@@ -75,7 +92,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Cross-tab sync: react to localStorage changes from other tabs
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === ACTIVE_TENANT_STORAGE_KEY) {
+        setActiveTenantIdState(e.newValue);
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parseCSV, chunkArray, type ParsedRow } from '@/lib/csv-parser';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin } from 'lucide-react';
+import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 200;
@@ -68,7 +69,16 @@ const normalizeText = (str: string): string => {
 };
 
 const UploadPage = () => {
-  const { user, tenantId, isSuperAdmin } = useAuth();
+  const { user, tenantId, isSuperAdmin, setActiveTenantId } = useAuth();
+
+  const { data: tenants } = useQuery({
+    queryKey: ['all-tenants-upload'],
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_all_tenants');
+      return (data || []) as { id: string; name: string; is_active: boolean }[];
+    },
+    enabled: isSuperAdmin,
+  });
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<'replace' | 'append'>('replace');
@@ -501,6 +511,44 @@ const UploadPage = () => {
       </div>
 
       <div className="mx-auto max-w-2xl p-6 space-y-8">
+        {/* ===== Tenant selector for super_admin ===== */}
+        {isSuperAdmin && (
+          <div
+            className={`surface-card p-4 flex items-center gap-3 ${
+              !tenantId ? 'border border-yellow-500/40 bg-yellow-500/5' : ''
+            }`}
+          >
+            {!tenantId ? (
+              <AlertTriangle className="h-5 w-5 text-yellow-500 shrink-0" />
+            ) : (
+              <Building2 className="h-5 w-5 text-primary shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                {tenantId ? 'Tenant ativo' : 'Selecione um tenant para continuar'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {tenantId
+                  ? 'Todas as ações desta página serão aplicadas ao tenant selecionado.'
+                  : 'Nenhum tenant selecionado. Escolha um abaixo antes de enviar arquivos.'}
+              </p>
+            </div>
+            <Select
+              value={tenantId || ''}
+              onValueChange={(v) => setActiveTenantId(v || null)}
+            >
+              <SelectTrigger className="h-9 w-[220px] bg-primary/10 border-primary/30 text-xs">
+                <SelectValue placeholder="Selecionar Tenant" />
+              </SelectTrigger>
+              <SelectContent>
+                {(tenants || []).map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* ===== SECTION 1: Channel Mapping Upload ===== */}
         <div>
           <h2 className="mb-3 text-sm font-medium text-foreground flex items-center gap-2">
