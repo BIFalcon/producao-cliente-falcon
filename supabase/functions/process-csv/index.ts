@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-tenant-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 const normalizeText = (str: string | null | undefined): string => {
@@ -23,6 +23,8 @@ const normalizeNights = (val: any): number => {
   if (val === null || val === undefined || val === '') return 0;
   return parseFloat(String(val)) || 0;
 };
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -54,21 +56,61 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Resolve tenant_id from the authenticated user's profile (server-side, never trusted from client)
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('user_id', user.id)
-      .single();
+    const body = await req.json().catch(() => ({} as any));
+    const headerTenantId = req.headers.get('x-tenant-id');
+    const bodyTenantId = body?.tenant_id;
+    const candidateTenantId = (bodyTenantId || headerTenantId || '').toString().trim();
 
-    if (profileError || !profile?.tenant_id) {
-      return new Response(JSON.stringify({ error: 'Tenant não encontrado para este usuário' }), {
+    if (!candidateTenantId || !UUID_REGEX.test(candidateTenantId)) {
+      console.error('[process-csv] Missing or invalid tenant_id', { headerTenantId, bodyTenantId, userId: user.id });
+      return new Response(JSON.stringify({ error: 'tenant_id ausente ou inválido no payload/header' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Validate tenant exists and is active
+    const { data: tenantRow, error: tenantErr } = await supabase
+      .from('tenants')
+      .select('id, is_active')
+      .eq('id', candidateTenantId)
+      .maybeSingle();
+
+    if (tenantErr || !tenantRow) {
+      console.error('[process-csv] Tenant not found in tenants table', { candidateTenantId, tenantErr });
+      return new Response(JSON.stringify({ error: `Tenant não encontrado: ${candidateTenantId}` }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    if (tenantRow.is_active === false) {
+      return new Response(JSON.stringify({ error: 'Tenant inativo' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    const tenant_id: string = profile.tenant_id;
 
-    const body = await req.json();
+    // Authorization: super_admin can use any tenant; otherwise must match user's profile tenant_id
+    const { data: superRole } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'super_admin')
+      .maybeSingle();
+    const isSuperAdmin = !!superRole;
+
+    if (!isSuperAdmin) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!profile?.tenant_id || profile.tenant_id !== candidateTenantId) {
+        console.error('[process-csv] User does not belong to tenant', { userId: user.id, profileTenant: profile?.tenant_id, candidateTenantId });
+        return new Response(JSON.stringify({ error: 'Usuário não pertence a este tenant' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    const tenant_id: string = candidateTenantId;
     const { rows, batch_id, mode, chunk_index, total_chunks, action } = body;
 
     // Separate action: only run process_reservations
@@ -79,7 +121,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Verify the batch belongs to this tenant
       const { data: batchRow } = await supabase
         .from('upload_batches')
         .select('tenant_id')
@@ -123,7 +164,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the batch belongs to this tenant
     const { data: batchRow2 } = await supabase
       .from('upload_batches')
       .select('tenant_id')
@@ -135,10 +175,46 @@ Deno.serve(async (req) => {
       });
     }
 
-    // First chunk in replace mode: clear existing data ONLY for this tenant
+    // First chunk in replace mode: clear existing data ONLY for this tenant, in batches to avoid lock/timeout
     if (chunk_index === 0 && mode === 'replace') {
-      await supabase.from('raw_reservations').delete().eq('tenant_id', tenant_id);
-      await supabase.from('processed_reservations').delete().eq('tenant_id', tenant_id);
+      console.log(`[process-csv] Replace mode: deleting old data for tenant ${tenant_id} in batches`);
+      const DELETE_BATCH = 5000;
+      // Delete processed_reservations in batches
+      while (true) {
+        const { data: ids } = await supabase
+          .from('processed_reservations')
+          .select('id')
+          .eq('tenant_id', tenant_id)
+          .limit(DELETE_BATCH);
+        if (!ids || ids.length === 0) break;
+        const { error: delErr } = await supabase
+          .from('processed_reservations')
+          .delete()
+          .in('id', ids.map((r: any) => r.id));
+        if (delErr) {
+          console.error('[process-csv] Delete processed batch error', delErr);
+          break;
+        }
+        if (ids.length < DELETE_BATCH) break;
+      }
+      // Delete raw_reservations in batches
+      while (true) {
+        const { data: ids } = await supabase
+          .from('raw_reservations')
+          .select('id')
+          .eq('tenant_id', tenant_id)
+          .limit(DELETE_BATCH);
+        if (!ids || ids.length === 0) break;
+        const { error: delErr } = await supabase
+          .from('raw_reservations')
+          .delete()
+          .in('id', ids.map((r: any) => r.id));
+        if (delErr) {
+          console.error('[process-csv] Delete raw batch error', delErr);
+          break;
+        }
+        if (ids.length < DELETE_BATCH) break;
+      }
     }
 
     // Normalize all rows and stamp tenant_id
@@ -178,7 +254,7 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Insert in batches of 200
+    // Insert in sub-batches of 200
     const batchSize = 200;
     for (let i = 0; i < processedRows.length; i += batchSize) {
       const batch = processedRows.slice(i, i + batchSize);
@@ -189,9 +265,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update batch progress
+    // Update batch progress incrementally (per chunk)
+    const processedSoFar = (typeof chunk_index === 'number' ? chunk_index + 1 : 1) * rows.length;
     await supabase.from('upload_batches').update({
-      processed_rows: rows.length * (chunk_index + 1),
+      processed_rows: processedSoFar,
       status: 'uploading',
     }).eq('id', batch_id);
 
