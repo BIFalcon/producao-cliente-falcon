@@ -10,7 +10,36 @@ import { toast } from 'sonner';
 import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const CHUNK_SIZE = 500;
+const CHUNK_SIZE = 200;
+const MAX_RETRIES = 3;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+async function invokeWithRetry(
+  fnName: string,
+  body: any,
+  tenantId: string,
+  onAttempt?: (attempt: number, err: any) => void
+): Promise<void> {
+  let lastErr: any = null;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const { error } = await supabase.functions.invoke(fnName, {
+        body,
+        headers: { 'x-tenant-id': tenantId },
+      });
+      if (error) throw error;
+      return;
+    } catch (err: any) {
+      lastErr = err;
+      onAttempt?.(attempt, err);
+      if (attempt < MAX_RETRIES) {
+        await sleep(1000 * attempt);
+      }
+    }
+  }
+  throw lastErr;
+}
 
 const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
 const ACCEPTED_TYPES = [
