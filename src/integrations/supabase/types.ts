@@ -716,6 +716,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_raw_reservations_batch: { Args: { p_rows: Json }; Returns: number }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       process_reservations: {
         Args: { p_batch_id?: string; p_tenant_id: string }
