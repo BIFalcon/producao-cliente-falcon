@@ -280,17 +280,23 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Insert in sub-batches of 500 with retry on transient timeouts
+    // Insert through a database RPC with an extended statement_timeout.
+    // Direct PostgREST inserts were timing out under high concurrency/large tenants.
     const batchSize = 500;
     for (let i = 0; i < processedRows.length; i += batchSize) {
       const batch = processedRows.slice(i, i + batchSize);
       let attempt = 0;
       let lastErr: any = null;
       while (attempt < 3) {
-        const { error: insertError } = await supabase.from('raw_reservations').insert(batch);
-        if (!insertError) { lastErr = null; break; }
+        const { error: insertError } = await supabase.rpc('insert_raw_reservations_batch', {
+          p_rows: batch,
+        });
+        if (!insertError) {
+          lastErr = null;
+          break;
+        }
         lastErr = insertError;
-        console.error(`Insert error (attempt ${attempt + 1}):`, insertError);
+        console.error(`Insert RPC error (attempt ${attempt + 1}):`, insertError);
         // Retry only on statement timeout / transient errors
         if (insertError.code !== '57014' && !/timeout/i.test(insertError.message || '')) break;
         attempt++;
