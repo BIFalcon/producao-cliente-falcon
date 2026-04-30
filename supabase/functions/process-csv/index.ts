@@ -280,8 +280,8 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Insert in sub-batches of 200
-    const batchSize = 200;
+    // Insert in sub-batches of 1000
+    const batchSize = 1000;
     for (let i = 0; i < processedRows.length; i += batchSize) {
       const batch = processedRows.slice(i, i + batchSize);
       const { error: insertError } = await supabase.from('raw_reservations').insert(batch);
