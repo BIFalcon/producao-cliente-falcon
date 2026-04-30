@@ -280,14 +280,24 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Insert in sub-batches of 1000
-    const batchSize = 1000;
+    // Insert in sub-batches of 500 with retry on transient timeouts
+    const batchSize = 500;
     for (let i = 0; i < processedRows.length; i += batchSize) {
       const batch = processedRows.slice(i, i + batchSize);
-      const { error: insertError } = await supabase.from('raw_reservations').insert(batch);
-      if (insertError) {
-        console.error('Insert error:', insertError);
-        throw new Error(`Insert failed: ${insertError.message}`);
+      let attempt = 0;
+      let lastErr: any = null;
+      while (attempt < 3) {
+        const { error: insertError } = await supabase.from('raw_reservations').insert(batch);
+        if (!insertError) { lastErr = null; break; }
+        lastErr = insertError;
+        console.error(`Insert error (attempt ${attempt + 1}):`, insertError);
+        // Retry only on statement timeout / transient errors
+        if (insertError.code !== '57014' && !/timeout/i.test(insertError.message || '')) break;
+        attempt++;
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+      }
+      if (lastErr) {
+        throw new Error(`Insert failed: ${lastErr.message}`);
       }
     }
 
