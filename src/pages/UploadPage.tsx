@@ -11,8 +11,9 @@ import { toast } from 'sonner';
 import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const CHUNK_SIZE = 200;
+const CHUNK_SIZE = 1000;
 const MAX_RETRIES = 3;
+const PARALLEL_CHUNKS = 4;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -416,17 +417,14 @@ const UploadPage = () => {
       const totalRows = rows.length;
       const totalChunks = chunks.length;
       const failedChunks: number[] = [];
+      let completedChunks = 0;
 
-      // Phase 1: Upload all chunks (10% - 80%)
-      for (let i = 0; i < chunks.length; i++) {
-        const uploadedSoFar = Math.min((i + 1) * CHUNK_SIZE, totalRows);
-        const pct = 10 + Math.round((uploadedSoFar / totalRows) * 70);
-        const pctOfTotal = Math.round(((i + 1) / totalChunks) * 100);
-        setProgress(pct);
-        setProgressText(
-          `Chunk ${(i + 1).toLocaleString('pt-BR')} de ${totalChunks.toLocaleString('pt-BR')} enviados — ${pctOfTotal}% (${uploadedSoFar.toLocaleString('pt-BR')}/${totalRows.toLocaleString('pt-BR')} registros)`
-        );
+      setProgressText(
+        `Etapa 1/2 — Enviando dados (0/${totalChunks.toLocaleString('pt-BR')} chunks)`
+      );
 
+      // Phase 1: Upload chunks in parallel batches (10% - 80%)
+      const sendChunk = async (i: number) => {
         try {
           await invokeWithRetry(
             'process-csv',
@@ -441,20 +439,37 @@ const UploadPage = () => {
             tenantId,
             (attempt, err) => {
               console.warn(`[upload] Chunk ${i + 1} attempt ${attempt} failed:`, err?.message || err);
-              setProgressText(
-                `Chunk ${(i + 1).toLocaleString('pt-BR')}/${totalChunks.toLocaleString('pt-BR')} — tentativa ${attempt}/${MAX_RETRIES}...`
-              );
             }
           );
         } catch (chunkErr: any) {
           console.error(`[upload] Chunk ${i + 1} failed after ${MAX_RETRIES} attempts:`, chunkErr);
           failedChunks.push(i + 1);
-          // Continue with next chunk instead of aborting whole batch
-          toast.warning(`Chunk ${i + 1} falhou após ${MAX_RETRIES} tentativas; continuando com os próximos.`);
+          toast.warning(`Chunk ${i + 1} falhou após ${MAX_RETRIES} tentativas; continuando.`);
+        } finally {
+          chunks[i] = null as any;
+          completedChunks++;
+          const uploadedSoFar = Math.min(completedChunks * CHUNK_SIZE, totalRows);
+          const pct = 10 + Math.round((completedChunks / totalChunks) * 70);
+          setProgress(pct);
+          setProgressText(
+            `Etapa 1/2 — Enviando dados: ${completedChunks.toLocaleString('pt-BR')}/${totalChunks.toLocaleString('pt-BR')} chunks (${uploadedSoFar.toLocaleString('pt-BR')}/${totalRows.toLocaleString('pt-BR')} registros)`
+          );
         }
+      };
 
-        // Release chunk memory
-        chunks[i] = null as any;
+      // In replace mode, send first chunk alone so DELETE happens before parallel inserts
+      let startIndex = 0;
+      if (mode === 'replace' && chunks.length > 0) {
+        await sendChunk(0);
+        startIndex = 1;
+      }
+
+      for (let i = startIndex; i < chunks.length; i += PARALLEL_CHUNKS) {
+        const batchPromises: Promise<void>[] = [];
+        for (let j = 0; j < PARALLEL_CHUNKS && i + j < chunks.length; j++) {
+          batchPromises.push(sendChunk(i + j));
+        }
+        await Promise.all(batchPromises);
       }
 
       if (failedChunks.length === totalChunks) {
@@ -463,7 +478,7 @@ const UploadPage = () => {
 
       // Phase 2: Process reservations (80% - 100%)
       setProgress(82);
-      setProgressText('Processando classificações e agregações...');
+      setProgressText('Etapa 2/2 — Processando classificações e agregações...');
 
       await invokeWithRetry(
         'process-csv',
