@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
     // First chunk in replace mode: clear existing data ONLY for this tenant, in batches to avoid lock/timeout
     if (chunk_index === 0 && mode === 'replace') {
       console.log(`[process-csv] Replace mode: deleting old data for tenant ${tenant_id} in batches`);
-      const DELETE_BATCH = 5000;
+      const DELETE_BATCH = 50000;
       // Delete processed_reservations in batches
       while (true) {
         const { data: ids } = await supabase
