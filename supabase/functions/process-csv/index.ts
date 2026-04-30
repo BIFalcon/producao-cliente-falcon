@@ -24,6 +24,32 @@ const normalizeNights = (val: any): number => {
   return parseFloat(String(val)) || 0;
 };
 
+const parseDate = (val: any): string | null => {
+  if (val === null || val === undefined || val === '') return null;
+  const s = String(val).trim();
+  if (!s) return null;
+  // Already ISO YYYY-MM-DD (optionally with time)
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const y = +iso[1], m = +iso[2], d = +iso[3];
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+      return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    }
+    return null;
+  }
+  // DD/MM/YYYY or DD-MM-YYYY (optional time after)
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if (dmy) {
+    let d = +dmy[1], m = +dmy[2], y = +dmy[3];
+    if (y < 100) y += 2000;
+    if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
+    return `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
+  }
+  return null;
+};
+
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
