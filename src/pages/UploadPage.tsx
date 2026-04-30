@@ -11,8 +11,9 @@ import { toast } from 'sonner';
 import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const CHUNK_SIZE = 200;
+const CHUNK_SIZE = 1000;
 const MAX_RETRIES = 3;
+const PARALLEL_CHUNKS = 4;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
