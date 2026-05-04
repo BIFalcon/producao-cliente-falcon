@@ -7,10 +7,13 @@ import { formatRevenueTable, formatPercent, formatNumber, MONTH_NAMES } from '@/
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
+const PAGE_SIZE = 50;
+
 const CompanyTable = () => {
   const { filters, currentYear, previousYear } = useFilters();
   const { tenantId } = useAuth();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ['companies', tenantId, filters, currentYear],
@@ -35,12 +38,22 @@ const CompanyTable = () => {
     },
   });
 
-  const filtered = useMemo(() => {
+  // Reset page when search changes
+  React.useEffect(() => { setPage(1); }, [search]);
+
+  const searchFiltered = useMemo(() => {
     if (!data) return [];
-    if (!search.trim()) return data.slice(0, 50);
+    if (!search.trim()) return data;
     const q = search.toLowerCase();
-    return data.filter(r => r.company_name?.toLowerCase().includes(q)).slice(0, 50);
+    return data.filter(r => r.company_name?.toLowerCase().includes(q));
   }, [data, search]);
+
+  const totalPages = Math.max(1, Math.ceil(searchFiltered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const filtered = useMemo(
+    () => searchFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [searchFiltered, safePage]
+  );
 
   const currentLabel = filters.month
     ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${currentYear}`
