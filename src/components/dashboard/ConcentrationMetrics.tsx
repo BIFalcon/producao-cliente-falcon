@@ -12,6 +12,9 @@ const ConcentrationMetrics = () => {
   const { data } = useQuery({
     queryKey: ['concentration', tenantId, filters],
     enabled: !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_concentration_metrics', {
         p_tenant_id: tenantId,

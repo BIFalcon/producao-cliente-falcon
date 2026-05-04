@@ -21,6 +21,9 @@ const DashboardContent = () => {
   const { data: hasData } = useQuery({
     queryKey: ['has-data', tenantId],
     enabled: !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { count } = await supabase
         .from('processed_reservations')

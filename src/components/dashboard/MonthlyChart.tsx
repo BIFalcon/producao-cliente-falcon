@@ -13,6 +13,9 @@ const MonthlyChart = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['monthly', tenantId, filters],
     enabled: !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_monthly_revenue', {
         p_tenant_id: tenantId,

@@ -14,6 +14,9 @@ const GuestCityAnalysis = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['guest-cities', tenantId, filters],
     enabled: !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_guest_city_analytics', {
         p_tenant_id: tenantId,
@@ -55,6 +58,9 @@ const GuestCityAnalysis = () => {
       }>;
     },
     enabled: !!expandedCity && !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const toggleCity = (city: string, state: string) => {

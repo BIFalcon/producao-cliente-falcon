@@ -16,6 +16,9 @@ const ChannelComparison = () => {
   const { data: multiyearData, isLoading } = useQuery({
     queryKey: ['channel-multiyear', tenantId, filters.property, filters.month],
     enabled: !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_channel_multiyear', {
         p_tenant_id: tenantId,
@@ -53,6 +56,9 @@ const ChannelComparison = () => {
       }>;
     },
     enabled: !!expandedChannel && !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { years, channelRows } = useMemo(() => {

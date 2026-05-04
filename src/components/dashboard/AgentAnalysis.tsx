@@ -22,6 +22,9 @@ const AgentAnalysis = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['agent-comparison', tenantId, filters.property, currentYear, previousYear, filters.month],
     enabled: !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_agent_comparison', {
         p_tenant_id: tenantId,
@@ -79,6 +82,9 @@ const AgentAnalysis = () => {
       }>;
     },
     enabled: !!expandedAgent && !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const currentLabel = filters.month
