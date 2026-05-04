@@ -53,6 +53,7 @@ const UsersPage = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [hotelEditUser, setHotelEditUser] = useState<UserRow | null>(null);
+  const [confirmToggleUser, setConfirmToggleUser] = useState<UserRow | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
