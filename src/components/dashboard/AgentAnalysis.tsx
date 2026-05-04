@@ -6,12 +6,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatPercent, formatNumber, toTitleCase, MONTH_NAMES } from '@/lib/formatters';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
+const PAGE_SIZE = 50;
 
 const AgentAnalysis = () => {
   const { filters, currentYear, previousYear } = useFilters();
   const { tenantId } = useAuth();
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+
+  React.useEffect(() => { setPage(1); }, [search]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['agent-comparison', tenantId, filters.property, currentYear, previousYear, filters.month],
@@ -36,12 +42,19 @@ const AgentAnalysis = () => {
     },
   });
 
-  const filtered = useMemo(() => {
+  const searchFiltered = useMemo(() => {
     if (!data) return [];
-    if (!search.trim()) return data.slice(0, 50);
+    if (!search.trim()) return data;
     const q = search.toLowerCase();
-    return data.filter(r => r.travel_agent_name?.toLowerCase().includes(q)).slice(0, 50);
+    return data.filter(r => r.travel_agent_name?.toLowerCase().includes(q));
   }, [data, search]);
+
+  const totalPages = Math.max(1, Math.ceil(searchFiltered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const filtered = useMemo(
+    () => searchFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [searchFiltered, safePage]
+  );
 
   const { data: companiesData, isLoading: companiesLoading } = useQuery({
     queryKey: ['agent-companies', tenantId, expandedAgent, filters.property, currentYear, previousYear, filters.month],
@@ -87,7 +100,7 @@ const AgentAnalysis = () => {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Agências de Viagem</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            {filtered.length}{search ? ` de ${data?.length || 0}` : ''} agências · {periodLabel}
+            {searchFiltered.length}{search ? ` de ${data?.length || 0}` : ''} agências · {periodLabel}
           </p>
         </div>
         <div className="relative w-full sm:w-56">
@@ -167,6 +180,29 @@ const AgentAnalysis = () => {
           </tbody>
         </table>
       </div>
+      {searchFiltered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between gap-2 px-4 py-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={safePage <= 1}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            Anterior
+          </Button>
+          <span className="text-xs text-muted-foreground">Página {safePage} de {totalPages}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            Próximo
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

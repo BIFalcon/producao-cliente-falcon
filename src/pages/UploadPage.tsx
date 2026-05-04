@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle } from 'lucide-react';
+import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle, History, CheckCircle2, XCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 1000;
@@ -133,6 +134,105 @@ const TenantLoadingGuard: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   return <>{children}</>;
+};
+
+// ─── Upload History section ───────────────────────────────────────────────
+const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
+  const { data: batches, isLoading } = useQuery({
+    queryKey: ['upload-history', tenantId],
+    enabled: !!tenantId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('upload_batches')
+        .select('id, created_at, file_name, mode, total_rows, status')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: (query) => {
+      const data = query.state.data as any[] | undefined;
+      const hasActive = data?.some((b: any) => b.status === 'uploading' || b.status === 'processing');
+      return hasActive ? 10_000 : false;
+    },
+  });
+
+  const formatDateTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    } catch { return iso; }
+  };
+
+  const renderStatus = (status: string | null) => {
+    switch (status) {
+      case 'completed':
+        return (
+          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 gap-1">
+            <CheckCircle2 className="h-3 w-3" /> Concluído
+          </Badge>
+        );
+      case 'uploading':
+      case 'processing':
+        return (
+          <Badge variant="outline" className="border-yellow-500/30 bg-yellow-500/10 text-yellow-400 gap-1">
+            <Loader2 className="h-3 w-3 animate-spin" /> {status === 'uploading' ? 'Enviando' : 'Processando'}
+          </Badge>
+        );
+      case 'error':
+        return (
+          <Badge variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive gap-1">
+            <XCircle className="h-3 w-3" /> Erro
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline" className="text-muted-foreground">{status || '—'}</Badge>;
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="mb-3 text-sm font-medium text-foreground flex items-center gap-2">
+        <History className="h-4 w-4 text-primary" />
+        Histórico de Uploads
+      </h2>
+      <div className="surface-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Data/hora</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Arquivo</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Modo</th>
+                <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Registros</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr><td colSpan={5} className="px-3 py-6 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></td></tr>
+              ) : batches && batches.length > 0 ? (
+                batches.map((b: any) => (
+                  <tr key={b.id} className="border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                    <td className="px-3 py-2 text-foreground/80 text-xs whitespace-nowrap">{formatDateTime(b.created_at)}</td>
+                    <td className="px-3 py-2 text-foreground text-xs truncate max-w-[200px]">{b.file_name || '—'}</td>
+                    <td className="px-3 py-2 text-xs text-foreground/80">{b.mode === 'replace' ? 'Substituir' : b.mode === 'append' ? 'Adicionar' : '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs text-foreground/80">{(b.total_rows || 0).toLocaleString('pt-BR')}</td>
+                    <td className="px-3 py-2">{renderStatus(b.status)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhum upload registrado</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // ─── Main component ────────────────────────────────────────────────────────
@@ -833,6 +933,9 @@ const UploadPage = () => {
               )}
             </Button>
           </div>
+
+          {/* ===== SECTION: Upload History ===== */}
+          {tenantId && <UploadHistory tenantId={tenantId} />}
 
         </TenantLoadingGuard>
       </div>

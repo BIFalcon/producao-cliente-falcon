@@ -4,8 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
-import { FiltersProvider } from '@/contexts/FiltersContext';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,6 +53,7 @@ const UsersPage = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [hotelEditUser, setHotelEditUser] = useState<UserRow | null>(null);
+  const [confirmToggleUser, setConfirmToggleUser] = useState<UserRow | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -169,10 +179,9 @@ const UsersPage = () => {
   }
 
   return (
-    <FiltersProvider>
-      <div className="min-h-screen bg-background">
-        <AppHeader />
-        <div className="p-4 lg:p-6 space-y-4">
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+      <div className="p-4 lg:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
@@ -347,6 +356,31 @@ const UsersPage = () => {
             </DialogContent>
           </Dialog>
 
+          {/* Confirm Deactivate User Dialog */}
+          <AlertDialog open={!!confirmToggleUser} onOpenChange={(o) => { if (!o) setConfirmToggleUser(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Desativar usuário?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja desativar este usuário? Ele perderá acesso ao sistema imediatamente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    if (confirmToggleUser) {
+                      toggleActiveMutation.mutate({ target_user_id: confirmToggleUser.user_id, is_active: false });
+                      setConfirmToggleUser(null);
+                    }
+                  }}
+                >
+                  Confirmar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           {isSuperAdmin && !tenantId && (
             <div className="surface-card p-6 text-center text-sm text-muted-foreground">
               Selecione um tenant acima para visualizar e gerenciar usuários.
@@ -423,7 +457,13 @@ const UsersPage = () => {
                               className={`h-7 w-7 p-0 ${u.is_active ? 'text-destructive' : 'text-emerald-400'}`}
                               title={u.is_active ? 'Desativar' : 'Ativar'}
                               disabled={u.user_id === user?.id}
-                              onClick={() => toggleActiveMutation.mutate({ target_user_id: u.user_id, is_active: !u.is_active })}
+                              onClick={() => {
+                                if (u.is_active) {
+                                  setConfirmToggleUser(u);
+                                } else {
+                                  toggleActiveMutation.mutate({ target_user_id: u.user_id, is_active: true });
+                                }
+                              }}
                             >
                               {u.is_active ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
                             </Button>
@@ -440,8 +480,7 @@ const UsersPage = () => {
           </div>
           )}
         </div>
-      </div>
-    </FiltersProvider>
+    </div>
   );
 };
 

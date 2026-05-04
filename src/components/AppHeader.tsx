@@ -6,7 +6,7 @@ import { useFilters } from '@/contexts/FiltersContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, Database, Users, Building2 } from 'lucide-react';
+import { LogOut, Database, Users, Building2, User } from 'lucide-react';
 import falconLogo from '@/assets/falcon-logo.png';
 import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
@@ -125,6 +125,10 @@ const AppHeader = () => {
               <Link to="/tenants"><Building2 className="mr-1 h-3 w-3" />Tenants</Link>
             </Button>
           )}
+
+          <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0 text-muted-foreground" title="Meu perfil">
+            <Link to="/profile"><User className="h-4 w-4" /></Link>
+          </Button>
 
           <Button variant="ghost" size="sm" onClick={signOut} className="h-8 text-xs text-muted-foreground">
             <LogOut className="mr-1 h-3 w-3" />Sair

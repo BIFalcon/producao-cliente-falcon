@@ -5,12 +5,16 @@ import { useFilters } from '@/contexts/FiltersContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatPercent, formatNumber, MONTH_NAMES } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
+
+const PAGE_SIZE = 50;
 
 const CompanyTable = () => {
   const { filters, currentYear, previousYear } = useFilters();
   const { tenantId } = useAuth();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ['companies', tenantId, filters, currentYear],
@@ -35,12 +39,22 @@ const CompanyTable = () => {
     },
   });
 
-  const filtered = useMemo(() => {
+  // Reset page when search changes
+  React.useEffect(() => { setPage(1); }, [search]);
+
+  const searchFiltered = useMemo(() => {
     if (!data) return [];
-    if (!search.trim()) return data.slice(0, 50);
+    if (!search.trim()) return data;
     const q = search.toLowerCase();
-    return data.filter(r => r.company_name?.toLowerCase().includes(q)).slice(0, 50);
+    return data.filter(r => r.company_name?.toLowerCase().includes(q));
   }, [data, search]);
+
+  const totalPages = Math.max(1, Math.ceil(searchFiltered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const filtered = useMemo(
+    () => searchFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [searchFiltered, safePage]
+  );
 
   const currentLabel = filters.month
     ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${currentYear}`
@@ -66,7 +80,7 @@ const CompanyTable = () => {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Tabela de Empresas</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            {filtered.length}{search ? ` de ${data?.length || 0}` : ''} empresas · Ordenado por receita {currentLabel}
+            {searchFiltered.length}{search ? ` de ${data?.length || 0}` : ''} empresas · Ordenado por receita {currentLabel}
           </p>
         </div>
         <div className="relative w-full sm:w-56">
@@ -113,6 +127,29 @@ const CompanyTable = () => {
           </tbody>
         </table>
       </div>
+      {searchFiltered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between gap-2 px-4 py-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={safePage <= 1}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            Anterior
+          </Button>
+          <span className="text-xs text-muted-foreground">Página {safePage} de {totalPages}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            Próximo
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

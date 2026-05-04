@@ -16,14 +16,16 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const DashboardContent = () => {
-  const { role } = useAuth();
+  const { role, tenantId } = useAuth();
 
   const { data: hasData } = useQuery({
-    queryKey: ['has-data'],
+    queryKey: ['has-data', tenantId],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { count } = await supabase
         .from('processed_reservations')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId!);
       return (count || 0) > 0;
     },
   });
