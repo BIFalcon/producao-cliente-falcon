@@ -3,14 +3,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { Building2, Plus, ArrowLeft, Loader2, Power } from 'lucide-react';
-import falconLogo from '@/assets/falcon-logo.png';
 
 type TenantRow = {
   id: string;
@@ -22,12 +32,13 @@ type TenantRow = {
 };
 
 const TenantsPage = () => {
-  const { isSuperAdmin, loading: authLoading, signOut } = useAuth();
+  const { isSuperAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [formName, setFormName] = useState('');
   const [formSlug, setFormSlug] = useState('');
+  const [confirmDeactivate, setConfirmDeactivate] = useState<TenantRow | null>(null);
 
   const { data: tenants, isLoading } = useQuery({
     queryKey: ['all-tenants'],
@@ -90,12 +101,7 @@ const TenantsPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-        <div className="flex h-14 items-center justify-between px-4 lg:px-6">
-          <img src={falconLogo} alt="Falcon" className="h-8 w-auto" />
-          <Button variant="ghost" size="sm" onClick={signOut} className="h-8 text-xs text-muted-foreground">Sair</Button>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="p-4 lg:p-6 space-y-4">
         <div className="flex items-center justify-between">
@@ -153,6 +159,30 @@ const TenantsPage = () => {
           </Dialog>
         </div>
 
+        <AlertDialog open={!!confirmDeactivate} onOpenChange={(o) => { if (!o) setConfirmDeactivate(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Desativar tenant?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja desativar este tenant? Todos os usuários deste tenant perderão acesso imediatamente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (confirmDeactivate) {
+                    toggleMutation.mutate({ tenant_id: confirmDeactivate.id, is_active: false });
+                    setConfirmDeactivate(null);
+                  }
+                }}
+              >
+                Confirmar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <div className="surface-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -184,7 +214,13 @@ const TenantsPage = () => {
                           variant="ghost"
                           size="sm"
                           className={`h-7 gap-1 text-xs ${t.is_active ? 'text-destructive' : 'text-emerald-400'}`}
-                          onClick={() => toggleMutation.mutate({ tenant_id: t.id, is_active: !t.is_active })}
+                          onClick={() => {
+                            if (t.is_active) {
+                              setConfirmDeactivate(t);
+                            } else {
+                              toggleMutation.mutate({ tenant_id: t.id, is_active: true });
+                            }
+                          }}
                         >
                           <Power className="h-3 w-3" />
                           {t.is_active ? 'Desativar' : 'Ativar'}
