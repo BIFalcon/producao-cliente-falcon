@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
   const supabasePublishableKey =
     env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdWJhYmFzZSIsInJlZiI6Im5wcmp2ZmZyaWVldmN0a253cWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDIzNDUsImV4cCI6MjA4OTMxODM0NX0.UOhV_E1ORg-Lt_wpz3r-0RPYPzHT_-jDh_IVgPlQVVg";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5wcmp2ZmZyaWVldmN0a253cWxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NDIzNDUsImV4cCI6MjA4OTMxODM0NX0.UOhV_E1ORg-Lt_wpz3r-0RPYPzHT_-jDh_IVgPlQVVg";
 
   return {
     define: {
