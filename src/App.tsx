@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { FiltersProvider } from "@/contexts/FiltersContext";
 import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
 import UploadPage from "./pages/UploadPage";
@@ -40,8 +41,10 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Sonner />
-          <AppRoutes />
+          <FiltersProvider>
+            <Sonner />
+            <AppRoutes />
+          </FiltersProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

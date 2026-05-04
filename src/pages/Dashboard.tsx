@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { FiltersProvider } from '@/contexts/FiltersContext';
 import AppHeader from '@/components/AppHeader';
 import KPICards from '@/components/dashboard/KPICards';
 
@@ -69,12 +68,10 @@ const DashboardContent = () => {
 
 const Dashboard = () => {
   return (
-    <FiltersProvider>
-      <div className="min-h-screen bg-background">
-        <AppHeader />
-        <DashboardContent />
-      </div>
-    </FiltersProvider>
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+      <DashboardContent />
+    </div>
   );
 };
 
