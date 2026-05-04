@@ -52,6 +52,9 @@ const AutoInsights = () => {
       return data || [];
     },
     enabled: open && !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // ── Channel distribution ──────────────────────────────────
@@ -69,6 +72,9 @@ const AutoInsights = () => {
       return data || [];
     },
     enabled: open && !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // ── City current ──────────────────────────────────────────
@@ -86,6 +92,9 @@ const AutoInsights = () => {
       return data || [];
     },
     enabled: open && !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // ── City previous ─────────────────────────────────────────

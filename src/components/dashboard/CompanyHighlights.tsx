@@ -15,6 +15,9 @@ const CompanyHighlights = () => {
   const { data } = useQuery({
     queryKey: ['company-highlights', tenantId, filters, currentYear],
     enabled: !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_company_table', {
         p_tenant_id: tenantId,

@@ -13,6 +13,9 @@ const AgentBreakdown = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['agents', tenantId, filters],
     enabled: !!tenantId,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_agent_breakdown', {
         p_tenant_id: tenantId,
