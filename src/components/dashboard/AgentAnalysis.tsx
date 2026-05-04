@@ -100,7 +100,7 @@ const AgentAnalysis = () => {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Agências de Viagem</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            {filtered.length}{search ? ` de ${data?.length || 0}` : ''} agências · {periodLabel}
+            {searchFiltered.length}{search ? ` de ${data?.length || 0}` : ''} agências · {periodLabel}
           </p>
         </div>
         <div className="relative w-full sm:w-56">
@@ -180,6 +180,29 @@ const AgentAnalysis = () => {
           </tbody>
         </table>
       </div>
+      {searchFiltered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between gap-2 px-4 py-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={safePage <= 1}
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+          >
+            Anterior
+          </Button>
+          <span className="text-xs text-muted-foreground">Página {safePage} de {totalPages}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+          >
+            Próximo
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
