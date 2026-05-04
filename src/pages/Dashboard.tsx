@@ -23,7 +23,8 @@ const DashboardContent = () => {
     enabled: !!tenantId,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    gcTime: 0,
+    staleTime: 0,
     queryFn: async () => {
       const { count } = await supabase
         .from('processed_reservations')
