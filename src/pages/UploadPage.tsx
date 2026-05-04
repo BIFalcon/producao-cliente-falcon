@@ -934,6 +934,9 @@ const UploadPage = () => {
             </Button>
           </div>
 
+          {/* ===== SECTION: Upload History ===== */}
+          {tenantId && <UploadHistory tenantId={tenantId} />}
+
         </TenantLoadingGuard>
       </div>
     </div>
