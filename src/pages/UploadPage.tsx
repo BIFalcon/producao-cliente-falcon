@@ -69,8 +69,75 @@ const normalizeText = (str: string): string => {
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 };
 
+// ─── Loading guard component ───────────────────────────────────────────────
+const TenantLoadingGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { roleLoading, loading, tenantId, isSuperAdmin, setActiveTenantId } = useAuth();
+
+  const { data: tenants } = useQuery({
+    queryKey: ['all-tenants-guard'],
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_all_tenants');
+      return (data || []) as { id: string; name: string; is_active: boolean }[];
+    },
+    enabled: isSuperAdmin,
+  });
+
+  // Auth still initializing
+  if (loading || roleLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Verificando permissões...</p>
+      </div>
+    );
+  }
+
+  // Non-super_admin without tenant — configuration error
+  if (!isSuperAdmin && !tenantId) {
+    return (
+      <div className="mx-auto max-w-md mt-16 surface-card p-6 text-center space-y-3">
+        <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto" />
+        <p className="text-sm font-medium text-foreground">Tenant não configurado</p>
+        <p className="text-xs text-muted-foreground">
+          Sua conta não está associada a nenhum tenant. Entre em contato com o administrador do sistema.
+        </p>
+      </div>
+    );
+  }
+
+  // super_admin without tenant selected — show inline selector
+  if (isSuperAdmin && !tenantId) {
+    return (
+      <div className="mx-auto max-w-md mt-16 surface-card p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 text-yellow-500 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Selecione um tenant para continuar</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Escolha o cliente para o qual deseja enviar dados.
+            </p>
+          </div>
+        </div>
+        <Select onValueChange={(v) => setActiveTenantId(v || null)}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecionar Tenant" />
+          </SelectTrigger>
+          <SelectContent>
+            {(tenants || []).filter(t => t.is_active).map((t) => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
+// ─── Main component ────────────────────────────────────────────────────────
 const UploadPage = () => {
-  const { user, tenantId, isSuperAdmin, setActiveTenantId } = useAuth();
+  const { user, tenantId, isSuperAdmin, setActiveTenantId, roleLoading, loading } = useAuth();
 
   const { data: tenants } = useQuery({
     queryKey: ['all-tenants-upload'],
@@ -80,6 +147,7 @@ const UploadPage = () => {
     },
     enabled: isSuperAdmin,
   });
+
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<'replace' | 'append'>('replace');
@@ -130,9 +198,7 @@ const UploadPage = () => {
       const sheetList: SheetInfo[] = workbook.SheetNames
         .map((name: string) => {
           const sheet = workbook.Sheets[name];
-          if (!sheet || !sheet['!ref']) {
-            return { name, rowCount: 0 };
-          }
+          if (!sheet || !sheet['!ref']) return { name, rowCount: 0 };
           try {
             const range = XLSX.utils.decode_range(sheet['!ref']);
             return { name, rowCount: range.e.r };
@@ -142,9 +208,7 @@ const UploadPage = () => {
         })
         .filter(s => s.rowCount > 0);
 
-      if (sheetList.length === 0) {
-        throw new Error('Nenhuma aba com dados foi encontrada no arquivo.');
-      }
+      if (sheetList.length === 0) throw new Error('Nenhuma aba com dados foi encontrada no arquivo.');
 
       setSheets(sheetList);
       (excelFile as any).__workbook = workbook;
@@ -175,7 +239,6 @@ const UploadPage = () => {
     }
     setFile(selectedFile);
     resetSheets();
-
     if (isExcelFile(selectedFile)) {
       detectSheets(selectedFile);
     }
@@ -185,9 +248,7 @@ const UploadPage = () => {
     e.preventDefault();
     setDragOver(false);
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) {
-      handleFileSelected(droppedFile);
-    }
+    if (droppedFile) handleFileSelected(droppedFile);
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -272,7 +333,6 @@ const UploadPage = () => {
     });
   };
 
-  // Parse mapping file (CSV or XLSX) - expects CANAL and SEGMENTO columns
   const parseMappingFile = async (f: File): Promise<Array<{ canal: string; segmento: string }>> => {
     let rawRows: any[];
 
@@ -296,7 +356,6 @@ const UploadPage = () => {
       rawRows = parsed.data;
     }
 
-    // Find CANAL and SEGMENTO columns (case-insensitive)
     if (rawRows.length === 0) throw new Error('Arquivo de mapeamento vazio');
 
     const headers = Object.keys(rawRows[0]);
@@ -317,14 +376,18 @@ const UploadPage = () => {
 
   const handleMappingUpload = async () => {
     if (!mappingFile || !user) return;
-    if (!tenantId) {
+
+    // Final tenant check right before sending — catches any timing issue
+    const effectiveTenantId = tenantId;
+    if (!effectiveTenantId) {
       toast.error(
         isSuperAdmin
-          ? 'Selecione um tenant no seletor do cabeçalho antes de enviar o mapeamento.'
-          : 'Tenant do seu perfil ainda não foi carregado. Aguarde alguns segundos e tente novamente.'
+          ? 'Selecione um tenant no seletor acima antes de enviar o mapeamento.'
+          : 'Tenant não carregado ainda. Aguarde alguns segundos e tente novamente.'
       );
       return;
     }
+
     setUploadingMapping(true);
     try {
       const rows = await parseMappingFile(mappingFile);
@@ -338,13 +401,13 @@ const UploadPage = () => {
       const { error: delError } = await supabase
         .from('channel_mapping')
         .delete()
-        .eq('tenant_id', tenantId);
+        .eq('tenant_id', effectiveTenantId);
       if (delError) throw delError;
 
-      // Insert in batches, including tenant_id on every row
+      // Insert in batches with tenant_id on every row
       const batchSize = 500;
       for (let i = 0; i < rows.length; i += batchSize) {
-        const batch = rows.slice(i, i + batchSize).map(r => ({ ...r, tenant_id: tenantId }));
+        const batch = rows.slice(i, i + batchSize).map(r => ({ ...r, tenant_id: effectiveTenantId }));
         const { error } = await supabase.from('channel_mapping' as any).insert(batch as any);
         if (error) throw error;
       }
@@ -362,7 +425,9 @@ const UploadPage = () => {
   const handleUpload = async () => {
     if (!file || !user) return;
 
-    if (!tenantId) {
+    // Final tenant check right before sending — catches any timing issue
+    const effectiveTenantId = tenantId;
+    if (!effectiveTenantId) {
       toast.error('Tenant não selecionado. Selecione um tenant antes de enviar dados.');
       return;
     }
@@ -402,7 +467,7 @@ const UploadPage = () => {
         .from('upload_batches')
         .insert({
           uploaded_by: user.id,
-          tenant_id: tenantId,
+          tenant_id: effectiveTenantId,
           file_name: file.name,
           total_rows: rows.length,
           status: 'uploading',
@@ -423,20 +488,19 @@ const UploadPage = () => {
         `Etapa 1/2 — Enviando dados (0/${totalChunks.toLocaleString('pt-BR')} chunks)`
       );
 
-      // Phase 1: Upload chunks in parallel batches (10% - 80%)
       const sendChunk = async (i: number) => {
         try {
           await invokeWithRetry(
             'process-csv',
             {
-              tenant_id: tenantId,
+              tenant_id: effectiveTenantId,
               rows: chunks[i],
               batch_id: batch.id,
               mode,
               chunk_index: i,
               total_chunks: totalChunks,
             },
-            tenantId,
+            effectiveTenantId,
             (attempt, err) => {
               console.warn(`[upload] Chunk ${i + 1} attempt ${attempt} failed:`, err?.message || err);
             }
@@ -483,11 +547,11 @@ const UploadPage = () => {
       await invokeWithRetry(
         'process-csv',
         {
-          tenant_id: tenantId,
+          tenant_id: effectiveTenantId,
           action: 'process',
           batch_id: batch.id,
         },
-        tenantId
+        effectiveTenantId
       );
 
       setProgress(100);
@@ -496,6 +560,7 @@ const UploadPage = () => {
           ? `${totalRows.toLocaleString('pt-BR')} registros processados (${failedChunks.length} chunks falharam)`
           : `${totalRows.toLocaleString('pt-BR')} registros processados com sucesso!`;
       setProgressText(successText);
+
       if (failedChunks.length > 0) {
         toast.warning(`Upload concluído com ${failedChunks.length} chunks falhos.`);
       } else {
@@ -526,256 +591,250 @@ const UploadPage = () => {
       </div>
 
       <div className="mx-auto max-w-2xl p-6 space-y-8">
-        {/* ===== Tenant selector for super_admin ===== */}
-        {isSuperAdmin && (
-          <div
-            className={`surface-card p-4 flex items-center gap-3 ${
-              !tenantId ? 'border border-yellow-500/40 bg-yellow-500/5' : ''
-            }`}
-          >
-            {!tenantId ? (
-              <AlertTriangle className="h-5 w-5 text-yellow-500 shrink-0" />
-            ) : (
-              <Building2 className="h-5 w-5 text-primary shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">
-                {tenantId ? 'Tenant ativo' : 'Selecione um tenant para continuar'}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {tenantId
-                  ? 'Todas as ações desta página serão aplicadas ao tenant selecionado.'
-                  : 'Nenhum tenant selecionado. Escolha um abaixo antes de enviar arquivos.'}
-              </p>
-            </div>
-            <Select
-              value={tenantId || ''}
-              onValueChange={(v) => setActiveTenantId(v || null)}
-            >
-              <SelectTrigger className="h-9 w-[220px] bg-primary/10 border-primary/30 text-xs">
-                <SelectValue placeholder="Selecionar Tenant" />
-              </SelectTrigger>
-              <SelectContent>
-                {(tenants || []).map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
 
-        {/* ===== SECTION 1: Channel Mapping Upload ===== */}
-        <div>
-          <h2 className="mb-3 text-sm font-medium text-foreground flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary" />
-            Tabela de Mapeamento de Canais
-          </h2>
-          <p className="text-xs text-muted-foreground mb-3">
-            Importe um arquivo com as colunas <span className="font-medium text-foreground">CANAL</span> e <span className="font-medium text-foreground">SEGMENTO</span> para classificação automática.
-          </p>
-          <div className="surface-card p-4 flex items-center gap-4">
-            <div className="flex-1">
-              <input
-                id="mapping-file-input"
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f && isValidFile(f)) {
-                    setMappingFile(f);
-                    setMappingCount(null);
-                  } else if (f) {
-                    toast.error('Formato não suportado. Envie .csv, .xlsx ou .xls');
-                  }
-                }}
+        {/* ===== Loading / tenant guard ===== */}
+        <TenantLoadingGuard>
+
+          {/* ===== Tenant selector for super_admin (when tenant already selected) ===== */}
+          {isSuperAdmin && tenantId && (
+            <div className="surface-card p-4 flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Tenant ativo</p>
+                <p className="text-xs text-muted-foreground">
+                  Todas as ações desta página serão aplicadas ao tenant selecionado.
+                </p>
+              </div>
+              <Select
+                value={tenantId || ''}
+                onValueChange={(v) => setActiveTenantId(v || null)}
+              >
+                <SelectTrigger className="h-9 w-[220px] bg-primary/10 border-primary/30 text-xs">
+                  <SelectValue placeholder="Selecionar Tenant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(tenants || []).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* ===== SECTION 1: Channel Mapping Upload ===== */}
+          <div>
+            <h2 className="mb-3 text-sm font-medium text-foreground flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              Tabela de Mapeamento de Canais
+            </h2>
+            <p className="text-xs text-muted-foreground mb-3">
+              Importe um arquivo com as colunas <span className="font-medium text-foreground">CANAL</span> e <span className="font-medium text-foreground">SEGMENTO</span> para classificação automática.
+            </p>
+            <div className="surface-card p-4 flex items-center gap-4">
+              <div className="flex-1">
+                <input
+                  id="mapping-file-input"
+                  type="file"
+                  accept=".csv,.xlsx,.xls"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f && isValidFile(f)) {
+                      setMappingFile(f);
+                      setMappingCount(null);
+                    } else if (f) {
+                      toast.error('Formato não suportado. Envie .csv, .xlsx ou .xls');
+                    }
+                  }}
+                  disabled={uploadingMapping}
+                />
+                {mappingFile ? (
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-foreground">{mappingFile.name}</span>
+                    {mappingCount !== null && (
+                      <span className="text-xs text-muted-foreground">({mappingCount} registros)</span>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => document.getElementById('mapping-file-input')?.click()}
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Selecionar arquivo de mapeamento...
+                  </button>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={mappingFile ? handleMappingUpload : () => document.getElementById('mapping-file-input')?.click()}
                 disabled={uploadingMapping}
-              />
-              {mappingFile ? (
-                <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4 text-primary" />
-                  <span className="text-sm text-foreground">{mappingFile.name}</span>
-                  {mappingCount !== null && (
-                    <span className="text-xs text-muted-foreground">({mappingCount} registros)</span>
+              >
+                {uploadingMapping ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : mappingFile ? (
+                  <>
+                    <Upload className="mr-1 h-3 w-3" />
+                    Importar
+                  </>
+                ) : (
+                  'Selecionar'
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* ===== SECTION 2: Upload Mode ===== */}
+          <div>
+            <h2 className="mb-3 text-sm font-medium text-foreground">Modo de Upload</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setMode('replace')}
+                className={`relative surface-card p-4 text-left transition-all cursor-pointer hover:border-primary/50 ${mode === 'replace' ? 'ring-2 ring-primary border-primary' : ''}`}
+              >
+                <Replace className="mb-2 h-5 w-5 text-destructive" />
+                <div className="text-sm font-medium text-foreground">Substituir Base</div>
+                <div className="text-xs text-muted-foreground mt-1">Remove dados existentes e importa nova base completa</div>
+                {mode === 'replace' && (
+                  <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('append')}
+                className={`relative surface-card p-4 text-left transition-all cursor-pointer hover:border-primary/50 ${mode === 'append' ? 'ring-2 ring-primary border-primary' : ''}`}
+              >
+                <PlusCircle className="mb-2 h-5 w-5 text-success" />
+                <div className="text-sm font-medium text-foreground">Adicionar Registros</div>
+                <div className="text-xs text-muted-foreground mt-1">Adiciona novos registros sem remover existentes</div>
+                {mode === 'append' && (
+                  <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Drop zone */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className={`surface-card flex flex-col items-center justify-center border-2 border-dashed p-12 transition-all ${
+              dragOver ? 'border-primary bg-primary/5' : 'border-border'
+            } ${uploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
+            onClick={() => !uploading && document.getElementById('file-input')?.click()}
+          >
+            <input
+              id="file-input"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              className="hidden"
+              onChange={handleFileSelect}
+              disabled={uploading}
+            />
+            {file ? (
+              <>
+                <FileSpreadsheet className="mb-3 h-10 w-10 text-primary" />
+                <div className="text-sm font-medium text-foreground">{file.name}</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                  <span>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                  {fileIsExcel && (
+                    <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+                      {file.name.toLowerCase().endsWith('.xls') ? 'XLS' : 'XLSX'}
+                    </span>
+                  )}
+                  {!fileIsExcel && (
+                    <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">CSV</span>
                   )}
                 </div>
-              ) : (
-                <button
-                  onClick={() => document.getElementById('mapping-file-input')?.click()}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Selecionar arquivo de mapeamento...
-                </button>
-              )}
+                {loadingSheets && (
+                  <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Lendo abas da planilha...
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <Upload className={`mb-3 h-10 w-10 text-muted-foreground ${dragOver ? 'animate-pulse-subtle' : ''}`} />
+                <div className="text-sm text-foreground">Arraste o arquivo ou clique para selecionar</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Suporta <span className="font-medium text-primary">.csv</span>, <span className="font-medium text-accent">.xlsx</span> e <span className="font-medium text-accent">.xls</span> com 100k+ registros
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Sheet selection for Excel with multiple sheets */}
+          {needsSheetSelection && !uploading && (
+            <div className="surface-card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Table2 className="h-4 w-4 text-accent" />
+                <span className="text-sm font-medium text-foreground">Selecionar Aba</span>
+                <span className="text-xs text-muted-foreground">({sheets.length} abas encontradas)</span>
+              </div>
+              <Select value={selectedSheet} onValueChange={setSelectedSheet}>
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Selecione a aba para importar" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sheets.map((s) => (
+                    <SelectItem key={s.name} value={s.name}>
+                      <div className="flex items-center gap-2">
+                        <span>{s.name}</span>
+                        <span className="text-xs text-muted-foreground">({s.rowCount.toLocaleString('pt-BR')} linhas)</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={mappingFile ? handleMappingUpload : () => document.getElementById('mapping-file-input')?.click()}
-              disabled={uploadingMapping}
-            >
-              {uploadingMapping ? (
+          )}
+
+          {/* Single sheet info */}
+          {fileIsExcel && sheets.length === 1 && !uploading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Table2 className="h-3 w-3" />
+              Aba: <span className="font-medium text-foreground">{sheets[0].name}</span>
+              ({sheets[0].rowCount.toLocaleString('pt-BR')} linhas)
+            </div>
+          )}
+
+          {/* Progress */}
+          {uploading && (
+            <div className="space-y-2">
+              <Progress value={progress} className="h-1" />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
-              ) : mappingFile ? (
+                {progressText}
+              </div>
+            </div>
+          )}
+
+          {/* Upload button */}
+          <div>
+            <Button
+              onClick={handleUpload}
+              disabled={!canUpload}
+              className="w-full"
+            >
+              {uploading ? (
                 <>
-                  <Upload className="mr-1 h-3 w-3" />
-                  Importar
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
                 </>
               ) : (
-                'Selecionar'
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  {mode === 'replace' ? 'Substituir e Processar' : 'Adicionar e Processar'}
+                </>
               )}
             </Button>
           </div>
-        </div>
 
-        {/* ===== SECTION 2: Reservations Upload ===== */}
-        <div>
-          <h2 className="mb-3 text-sm font-medium text-foreground">Modo de Upload</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setMode('replace')}
-              className={`relative surface-card p-4 text-left transition-all cursor-pointer hover:border-primary/50 ${mode === 'replace' ? 'ring-2 ring-primary border-primary' : ''}`}
-            >
-              <Replace className="mb-2 h-5 w-5 text-destructive" />
-              <div className="text-sm font-medium text-foreground">Substituir Base</div>
-              <div className="text-xs text-muted-foreground mt-1">Remove dados existentes e importa nova base completa</div>
-              {mode === 'replace' && (
-                <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('append')}
-              className={`relative surface-card p-4 text-left transition-all cursor-pointer hover:border-primary/50 ${mode === 'append' ? 'ring-2 ring-primary border-primary' : ''}`}
-            >
-              <PlusCircle className="mb-2 h-5 w-5 text-success" />
-              <div className="text-sm font-medium text-foreground">Adicionar Registros</div>
-              <div className="text-xs text-muted-foreground mt-1">Adiciona novos registros sem remover existentes</div>
-              {mode === 'append' && (
-                <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Drop zone */}
-        <div
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-          className={`surface-card flex flex-col items-center justify-center border-2 border-dashed p-12 transition-all ${
-            dragOver ? 'border-primary bg-primary/5' : 'border-border'
-          } ${uploading ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
-          onClick={() => !uploading && document.getElementById('file-input')?.click()}
-        >
-          <input
-            id="file-input"
-            type="file"
-            accept=".csv,.xlsx,.xls"
-            className="hidden"
-            onChange={handleFileSelect}
-            disabled={uploading}
-          />
-          {file ? (
-            <>
-              <FileSpreadsheet className="mb-3 h-10 w-10 text-primary" />
-              <div className="text-sm font-medium text-foreground">{file.name}</div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                <span>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
-                {fileIsExcel && (
-                  <span className="rounded bg-accent/20 px-1.5 py-0.5 text-[10px] font-medium text-accent">
-                    {file.name.toLowerCase().endsWith('.xls') ? 'XLS' : 'XLSX'}
-                  </span>
-                )}
-                {!fileIsExcel && (
-                  <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">CSV</span>
-                )}
-              </div>
-              {loadingSheets && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Lendo abas da planilha...
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <Upload className={`mb-3 h-10 w-10 text-muted-foreground ${dragOver ? 'animate-pulse-subtle' : ''}`} />
-              <div className="text-sm text-foreground">Arraste o arquivo ou clique para selecionar</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                Suporta <span className="font-medium text-primary">.csv</span>, <span className="font-medium text-accent">.xlsx</span> e <span className="font-medium text-accent">.xls</span> com 100k+ registros
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Sheet selection for Excel with multiple sheets */}
-        {needsSheetSelection && !uploading && (
-          <div className="surface-card p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Table2 className="h-4 w-4 text-accent" />
-              <span className="text-sm font-medium text-foreground">Selecionar Aba</span>
-              <span className="text-xs text-muted-foreground">({sheets.length} abas encontradas)</span>
-            </div>
-            <Select value={selectedSheet} onValueChange={setSelectedSheet}>
-              <SelectTrigger className="bg-background">
-                <SelectValue placeholder="Selecione a aba para importar" />
-              </SelectTrigger>
-              <SelectContent>
-                {sheets.map((s) => (
-                  <SelectItem key={s.name} value={s.name}>
-                    <div className="flex items-center gap-2">
-                      <span>{s.name}</span>
-                      <span className="text-xs text-muted-foreground">({s.rowCount.toLocaleString('pt-BR')} linhas)</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Single sheet info */}
-        {fileIsExcel && sheets.length === 1 && !uploading && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Table2 className="h-3 w-3" />
-            Aba: <span className="font-medium text-foreground">{sheets[0].name}</span>
-            ({sheets[0].rowCount.toLocaleString('pt-BR')} linhas)
-          </div>
-        )}
-
-        {/* Progress */}
-        {uploading && (
-          <div className="space-y-2">
-            <Progress value={progress} className="h-1" />
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              {progressText}
-            </div>
-          </div>
-        )}
-
-        {/* Upload button */}
-        <div>
-          <Button
-            onClick={handleUpload}
-            disabled={!canUpload}
-            className="w-full"
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processando...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                {mode === 'replace' ? 'Substituir e Processar' : 'Adicionar e Processar'}
-              </>
-            )}
-          </Button>
-        </div>
+        </TenantLoadingGuard>
       </div>
     </div>
   );
