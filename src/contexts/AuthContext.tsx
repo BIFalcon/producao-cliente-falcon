@@ -15,6 +15,8 @@ interface AuthContextType {
   isSuperAdmin: boolean;
   setActiveTenantId: (tenantId: string | null) => void;
   loading: boolean;
+  /** True while role/tenant are being fetched after login - distinct from auth loading */
+  roleLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -34,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return window.localStorage.getItem(ACTIVE_TENANT_STORAGE_KEY);
   });
   const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(false);
 
   const setActiveTenantId = (tenantId: string | null) => {
     setActiveTenantIdState(tenantId);
@@ -47,26 +50,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const fetchRoleAndTenant = async (userId: string) => {
-    const [{ data: roleData }, { data: profileData }] = await Promise.all([
-      supabase.from('user_roles').select('role').eq('user_id', userId).order('role', { ascending: true }).limit(1).maybeSingle(),
-      supabase.from('profiles').select('tenant_id').eq('user_id', userId).maybeSingle(),
-    ]);
-    // Prefer super_admin role if present
-    const { data: superCheck } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'super_admin')
-      .maybeSingle();
+    setRoleLoading(true);
+    try {
+      const [{ data: roleData }, { data: profileData }, { data: superCheck }] = await Promise.all([
+        supabase.from('user_roles').select('role').eq('user_id', userId).order('role', { ascending: true }).limit(1).maybeSingle(),
+        supabase.from('profiles').select('tenant_id').eq('user_id', userId).maybeSingle(),
+        supabase.from('user_roles').select('role').eq('user_id', userId).eq('role', 'super_admin').maybeSingle(),
+      ]);
 
-    const effectiveRole = (superCheck?.role || roleData?.role || null) as AppRole | null;
-    setRole(effectiveRole);
-    setProfileTenantId(profileData?.tenant_id || null);
-    // For non-super_admin, active tenant equals profile tenant (always overrides any stored value)
-    if (effectiveRole !== 'super_admin') {
-      setActiveTenantId(profileData?.tenant_id || null);
+      const effectiveRole = (superCheck?.role || roleData?.role || null) as AppRole | null;
+      const tenantFromProfile = profileData?.tenant_id || null;
+
+      setRole(effectiveRole);
+      setProfileTenantId(tenantFromProfile);
+
+      // For non-super_admin, active tenant always equals profile tenant
+      if (effectiveRole !== 'super_admin') {
+        setActiveTenantId(tenantFromProfile);
+      }
+      // For super_admin: keep localStorage value — already initialized in useState
+    } finally {
+      setRoleLoading(false);
     }
-    // For super_admin, keep whatever was restored from localStorage (don't overwrite)
   };
 
   useEffect(() => {
@@ -74,11 +79,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        // Use setTimeout to avoid Supabase deadlock on auth state change
         setTimeout(() => fetchRoleAndTenant(session.user.id), 0);
       } else {
         setRole(null);
         setProfileTenantId(null);
         setActiveTenantId(null);
+        setRoleLoading(false);
       }
       setLoading(false);
     });
@@ -88,8 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchRoleAndTenant(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     // Cross-tab sync: react to localStorage changes from other tabs
@@ -126,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider value={{
       user, session, role, profileTenantId, tenantId, isSuperAdmin,
-      setActiveTenantId, loading, signIn, signUp, signOut,
+      setActiveTenantId, loading, roleLoading, signIn, signUp, signOut,
     }}>
       {children}
     </AuthContext.Provider>
