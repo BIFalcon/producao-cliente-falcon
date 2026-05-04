@@ -179,10 +179,9 @@ const UsersPage = () => {
   }
 
   return (
-    <FiltersProvider>
-      <div className="min-h-screen bg-background">
-        <AppHeader />
-        <div className="p-4 lg:p-6 space-y-4">
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+      <div className="p-4 lg:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
@@ -450,8 +449,7 @@ const UsersPage = () => {
           </div>
           )}
         </div>
-      </div>
-    </FiltersProvider>
+    </div>
   );
 };
 
