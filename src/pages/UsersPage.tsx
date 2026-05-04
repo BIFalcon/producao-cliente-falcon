@@ -356,6 +356,31 @@ const UsersPage = () => {
             </DialogContent>
           </Dialog>
 
+          {/* Confirm Deactivate User Dialog */}
+          <AlertDialog open={!!confirmToggleUser} onOpenChange={(o) => { if (!o) setConfirmToggleUser(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Desativar usuário?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja desativar este usuário? Ele perderá acesso ao sistema imediatamente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    if (confirmToggleUser) {
+                      toggleActiveMutation.mutate({ target_user_id: confirmToggleUser.user_id, is_active: false });
+                      setConfirmToggleUser(null);
+                    }
+                  }}
+                >
+                  Confirmar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           {isSuperAdmin && !tenantId && (
             <div className="surface-card p-6 text-center text-sm text-muted-foreground">
               Selecione um tenant acima para visualizar e gerenciar usuários.
