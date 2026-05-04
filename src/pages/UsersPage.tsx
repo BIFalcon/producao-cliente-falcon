@@ -432,7 +432,13 @@ const UsersPage = () => {
                               className={`h-7 w-7 p-0 ${u.is_active ? 'text-destructive' : 'text-emerald-400'}`}
                               title={u.is_active ? 'Desativar' : 'Ativar'}
                               disabled={u.user_id === user?.id}
-                              onClick={() => toggleActiveMutation.mutate({ target_user_id: u.user_id, is_active: !u.is_active })}
+                              onClick={() => {
+                                if (u.is_active) {
+                                  setConfirmToggleUser(u);
+                                } else {
+                                  toggleActiveMutation.mutate({ target_user_id: u.user_id, is_active: true });
+                                }
+                              }}
                             >
                               {u.is_active ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
                             </Button>
