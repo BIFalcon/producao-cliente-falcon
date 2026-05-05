@@ -137,7 +137,7 @@ const UsersPage = () => {
     setFormHotels(prev => prev.includes(hotel) ? prev.filter(h => h !== hotel) : [...prev, hotel]);
   };
 
-  if (authLoading) {
+  if (authLoading || roleLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
@@ -145,7 +145,7 @@ const UsersPage = () => {
     );
   }
 
-  if (role !== 'master_admin') {
+  if (!isSuperAdmin && role !== 'master_admin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-3">
