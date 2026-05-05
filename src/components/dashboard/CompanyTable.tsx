@@ -9,12 +9,15 @@ import { Search } from 'lucide-react';
 
 const CompanyTable = () => {
   const { filters, currentYear, previousYear } = useFilters();
+  const { tenantId } = useAuth();
   const [search, setSearch] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['companies', filters, currentYear],
+    queryKey: ['companies', tenantId, filters, currentYear],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_company_table', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
