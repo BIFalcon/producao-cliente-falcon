@@ -2,12 +2,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-tenant-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 const normalizeText = (str: string | null | undefined): string => {
   if (!str) return '';
-  return str.toLowerCase()
+  return String(str).toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
@@ -24,6 +24,13 @@ const normalizeNights = (val: any): number => {
   return parseFloat(String(val)) || 0;
 };
 
+const errorResponse = (stage: string, detail: string, status = 500, extra: Record<string, unknown> = {}) => {
+  console.error(`[process-csv] ${stage}: ${detail}`, extra);
+  return new Response(JSON.stringify({ error: detail, stage, ...extra }), {
+    status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -32,9 +39,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return errorResponse('auth', 'Missing Authorization header', 401);
     }
 
     const supabase = createClient(
@@ -49,58 +54,97 @@ Deno.serve(async (req) => {
     );
     const { data: { user }, error: authError } = await userClient.auth.getUser();
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return errorResponse('auth', authError?.message || 'Unauthorized', 401);
+    }
+
+    let body: any;
+    try {
+      body = await req.json();
+    } catch (e: any) {
+      return errorResponse('parse-body', `Invalid JSON body: ${e.message}`, 400);
+    }
+
+    const { rows, batch_id, mode, chunk_index, total_chunks, action } = body;
+    const headerTenant = req.headers.get('x-tenant-id');
+    const tenant_id: string | null = body.tenant_id || headerTenant || null;
+
+    if (!tenant_id) {
+      return errorResponse('tenant', 'Missing tenant_id (body.tenant_id or x-tenant-id header)', 400, {
+        chunk_index, batch_id,
       });
     }
 
-    const body = await req.json();
-    const { rows, batch_id, mode, chunk_index, total_chunks, action } = body;
+    // Authorize: user must belong to tenant OR be super_admin
+    const [{ data: superCheck }, { data: profileCheck }] = await Promise.all([
+      supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'super_admin').maybeSingle(),
+      supabase.from('profiles').select('tenant_id').eq('user_id', user.id).maybeSingle(),
+    ]);
+    const isSuperAdmin = !!superCheck;
+    if (!isSuperAdmin && profileCheck?.tenant_id !== tenant_id) {
+      return errorResponse('authz', 'User not authorized for tenant', 403, { tenant_id });
+    }
 
-    // Separate action: only run process_reservations
+    // ─── PROCESS action ───
     if (action === 'process') {
       if (!batch_id) {
-        return new Response(JSON.stringify({ error: 'Missing batch_id' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return errorResponse('process', 'Missing batch_id', 400, { tenant_id });
       }
 
-      await supabase.from('upload_batches').update({ status: 'processing' }).eq('id', batch_id);
+      await supabase.from('upload_batches')
+        .update({ status: 'processing' })
+        .eq('id', batch_id)
+        .eq('tenant_id', tenant_id);
 
-      const { error: procError } = await supabase.rpc('process_reservations', { p_batch_id: batch_id });
+      const { error: procError } = await supabase.rpc('process_reservations', {
+        p_tenant_id: tenant_id,
+        p_batch_id: batch_id,
+      });
       if (procError) {
-        console.error('Processing error:', procError);
+        console.error('[process-csv] process_reservations failed:', procError);
         await supabase.from('upload_batches').update({
           status: 'error',
           error_message: procError.message,
-        }).eq('id', batch_id);
-        throw new Error(`Processing failed: ${procError.message}`);
+        }).eq('id', batch_id).eq('tenant_id', tenant_id);
+        return errorResponse('process_reservations', procError.message, 500, { tenant_id, batch_id });
       }
 
       await supabase.from('upload_batches').update({
         status: 'completed',
         completed_at: new Date().toISOString(),
-      }).eq('id', batch_id);
+      }).eq('id', batch_id).eq('tenant_id', tenant_id);
 
-      return new Response(JSON.stringify({ success: true, action: 'process' }), {
+      return new Response(JSON.stringify({ success: true, action: 'process', tenant_id, batch_id }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Normal upload action
+    // ─── UPLOAD chunk action ───
     if (!rows || !Array.isArray(rows) || !batch_id) {
-      return new Response(JSON.stringify({ error: 'Invalid payload' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      return errorResponse('validate', 'Invalid payload: rows[] and batch_id required', 400, {
+        tenant_id, has_rows: !!rows, batch_id, chunk_index,
       });
     }
 
-    // First chunk in replace mode: clear existing data
+    // First chunk in replace mode: clear existing data FOR THIS TENANT ONLY
     if (chunk_index === 0 && mode === 'replace') {
-      await supabase.from('raw_reservations').delete().not('id', 'is', null);
-      await supabase.from('processed_reservations').delete().not('id', 'is', null);
+      console.log(`[process-csv] Replace mode: clearing tenant ${tenant_id} data`);
+      const { error: delRawErr } = await supabase
+        .from('raw_reservations')
+        .delete()
+        .eq('tenant_id', tenant_id);
+      if (delRawErr) {
+        return errorResponse('delete-raw', delRawErr.message, 500, { tenant_id });
+      }
+      const { error: delProcErr } = await supabase
+        .from('processed_reservations')
+        .delete()
+        .eq('tenant_id', tenant_id);
+      if (delProcErr) {
+        return errorResponse('delete-processed', delProcErr.message, 500, { tenant_id });
+      }
     }
 
-    // Normalize all rows
+    // Normalize rows with tenant_id on every row
     const processedRows = rows.map((row: any) => {
       const roomRev = normalizeRevenue(row.room_revenue);
       const fbRev = normalizeRevenue(row.fb_revenue);
@@ -110,6 +154,7 @@ Deno.serve(async (req) => {
       }
 
       return {
+        tenant_id,
         property_name: normalizeText(row.property_name),
         reservation_status: normalizeText(row.reservation_status),
         confirmation_number: String(row.confirmation_number || '').trim(),
@@ -136,34 +181,38 @@ Deno.serve(async (req) => {
       };
     });
 
-    // Insert in batches of 200
+    // Insert in sub-batches of 200
     const batchSize = 200;
+    let insertedTotal = 0;
     for (let i = 0; i < processedRows.length; i += batchSize) {
-      const batch = processedRows.slice(i, i + batchSize);
-      const { error: insertError } = await supabase.from('raw_reservations').insert(batch);
+      const subBatch = processedRows.slice(i, i + batchSize);
+      const { error: insertError } = await supabase.from('raw_reservations').insert(subBatch);
       if (insertError) {
-        console.error('Insert error:', insertError);
-        throw new Error(`Insert failed: ${insertError.message}`);
+        return errorResponse('insert-raw', insertError.message, 500, {
+          tenant_id, batch_id, chunk_index, sub_batch_start: i, sub_batch_size: subBatch.length,
+        });
       }
+      insertedTotal += subBatch.length;
     }
 
-    // Update batch progress
+    // Update batch progress (scoped by tenant)
     await supabase.from('upload_batches').update({
-      processed_rows: rows.length * (chunk_index + 1),
+      processed_rows: rows.length * ((chunk_index ?? 0) + 1),
       status: 'uploading',
-    }).eq('id', batch_id);
+    }).eq('id', batch_id).eq('tenant_id', tenant_id);
 
     return new Response(JSON.stringify({
       success: true,
-      processed: processedRows.length,
-      chunk: chunk_index + 1,
+      tenant_id,
+      processed: insertedTotal,
+      chunk: (chunk_index ?? 0) + 1,
       total_chunks,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
-  } catch (error) {
-    console.error('Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: any) {
+    console.error('[process-csv] Unhandled error:', error);
+    return new Response(JSON.stringify({ error: error?.message || String(error), stage: 'unhandled' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
