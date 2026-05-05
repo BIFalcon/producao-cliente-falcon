@@ -26,11 +26,13 @@ const DashboardContent = () => {
     refetchOnMount: 'always',
     staleTime: 0,
     queryFn: async () => {
-      const { count } = await supabase
+      const { data, error } = await supabase
         .from('processed_reservations')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId!);
-      return (count || 0) > 0;
+        .select('id')
+        .eq('tenant_id', tenantId!)
+        .limit(1);
+      if (error) throw error;
+      return (data?.length || 0) > 0;
     },
   });
 
