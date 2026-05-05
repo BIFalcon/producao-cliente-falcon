@@ -22,9 +22,9 @@ const DashboardContent = () => {
   const { data: hasData, isLoading: hasDataLoading } = useQuery({
     queryKey: ['has-data', tenantId],
     enabled: !!tenantId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
+    staleTime: 0,
     queryFn: async () => {
       const { count } = await supabase
         .from('processed_reservations')
@@ -50,6 +50,7 @@ const DashboardContent = () => {
         (payload) => {
           const status = (payload.new as { status?: string } | null)?.status;
           if (status === 'completed') {
+            queryClient.setQueryData(['has-data', tenantId], true);
             queryClient.invalidateQueries({
               predicate: (query) => query.queryKey.includes(tenantId),
             });
