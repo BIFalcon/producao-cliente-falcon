@@ -8,12 +8,15 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 
 const CompanyCityAnalysis = () => {
   const { filters } = useFilters();
+  const { tenantId } = useAuth();
   const [expandedCity, setExpandedCity] = useState<{ city: string; state: string } | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['company-cities', filters],
+    queryKey: ['company-cities', tenantId, filters],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_company_city_analytics', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_year: filters.year,
         p_month: filters.month,
@@ -30,10 +33,12 @@ const CompanyCityAnalysis = () => {
   });
 
   const { data: drilldownData, isLoading: drilldownLoading } = useQuery({
-    queryKey: ['company-city-drilldown', expandedCity, filters],
+    queryKey: ['company-city-drilldown', tenantId, expandedCity, filters],
+    enabled: !!tenantId && !!expandedCity,
     queryFn: async () => {
       if (!expandedCity) return [];
       const { data, error } = await (supabase.rpc as any)('get_company_city_drilldown', {
+        p_tenant_id: tenantId,
         p_city: expandedCity.city,
         p_state: expandedCity.state,
         p_property: filters.property,
@@ -48,7 +53,6 @@ const CompanyCityAnalysis = () => {
         reservations: number;
       }>;
     },
-    enabled: !!expandedCity,
   });
 
   const toggleCity = (city: string, state: string) => {
