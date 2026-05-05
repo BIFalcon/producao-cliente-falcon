@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenue, formatPercent, toTitleCase } from '@/lib/formatters';
 import { Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,11 +10,14 @@ import { Button } from '@/components/ui/button';
 const AutoInsights = () => {
   const [open, setOpen] = useState(false);
   const { filters, currentYear, previousYear } = useFilters();
+  const { tenantId } = useAuth();
 
   const { data: companyData } = useQuery({
-    queryKey: ['insights-companies', filters, currentYear],
+    queryKey: ['insights-companies', tenantId, filters, currentYear],
+    enabled: open && !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_company_table', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
@@ -22,13 +26,14 @@ const AutoInsights = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: open,
   });
 
   const { data: channelData } = useQuery({
-    queryKey: ['insights-channels', filters, currentYear],
+    queryKey: ['insights-channels', tenantId, filters, currentYear],
+    enabled: open && !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_channel_comparison', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
@@ -37,13 +42,14 @@ const AutoInsights = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: open,
   });
 
   const { data: cityData } = useQuery({
-    queryKey: ['insights-cities', filters, currentYear],
+    queryKey: ['insights-cities', tenantId, filters, currentYear],
+    enabled: open && !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_guest_city_analytics', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_year: currentYear,
         p_month: filters.month,
@@ -52,13 +58,14 @@ const AutoInsights = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: open,
   });
 
   const { data: prevCityData } = useQuery({
-    queryKey: ['insights-cities-prev', filters, previousYear],
+    queryKey: ['insights-cities-prev', tenantId, filters, previousYear],
+    enabled: open && !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_guest_city_analytics', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_year: previousYear,
         p_month: filters.month,
@@ -67,7 +74,6 @@ const AutoInsights = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: open,
   });
 
   const generateInsights = () => {

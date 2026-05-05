@@ -2,19 +2,23 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatPercent, formatNumber, toTitleCase, MONTH_NAMES } from '@/lib/formatters';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 const AgentAnalysis = () => {
   const { filters, currentYear, previousYear } = useFilters();
+  const { tenantId } = useAuth();
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['agent-comparison', filters.property, currentYear, previousYear, filters.month],
+    queryKey: ['agent-comparison', tenantId, filters.property, currentYear, previousYear, filters.month],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_agent_comparison', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
@@ -40,10 +44,12 @@ const AgentAnalysis = () => {
   }, [data, search]);
 
   const { data: companiesData, isLoading: companiesLoading } = useQuery({
-    queryKey: ['agent-companies', expandedAgent, filters.property, currentYear, previousYear, filters.month],
+    queryKey: ['agent-companies', tenantId, expandedAgent, filters.property, currentYear, previousYear, filters.month],
+    enabled: !!tenantId && !!expandedAgent,
     queryFn: async () => {
       if (!expandedAgent) return [];
       const { data, error } = await (supabase.rpc as any)('get_agent_companies', {
+        p_tenant_id: tenantId,
         p_agent: expandedAgent,
         p_property: filters.property,
         p_current_year: currentYear,
@@ -60,7 +66,6 @@ const AgentAnalysis = () => {
         roomnights_current: number;
       }>;
     },
-    enabled: !!expandedAgent,
   });
 
   const currentLabel = filters.month

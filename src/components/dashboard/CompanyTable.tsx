@@ -2,18 +2,22 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatPercent, formatNumber, MONTH_NAMES } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
 const CompanyTable = () => {
   const { filters, currentYear, previousYear } = useFilters();
+  const { tenantId } = useAuth();
   const [search, setSearch] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['companies', filters, currentYear],
+    queryKey: ['companies', tenantId, filters, currentYear],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_company_table', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
