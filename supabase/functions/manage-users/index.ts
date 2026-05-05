@@ -99,17 +99,18 @@ Deno.serve(async (req) => {
 
       await supabaseAdmin
         .from('profiles')
-        .update({ full_name: full_name || '' })
+        .update({ full_name: full_name || '', tenant_id: tenantId })
         .eq('user_id', newUser.user.id);
 
       await supabaseAdmin
         .from('user_roles')
-        .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role' });
+        .upsert({ user_id: newUser.user.id, role, tenant_id: tenantId }, { onConflict: 'user_id,role' });
 
       // Set hotel permissions if provided and not master_admin
       if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0 && role !== 'master_admin') {
         const permRows = hotel_permissions.map((p: string) => ({
           user_id: newUser.user.id,
+          tenant_id: tenantId,
           property_name: p,
         }));
         await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
@@ -132,7 +133,8 @@ Deno.serve(async (req) => {
         const { data: admins } = await supabaseAdmin
           .from('user_roles')
           .select('user_id')
-          .eq('role', 'master_admin');
+          .eq('role', 'master_admin')
+          .eq('tenant_id', tenantId);
         if (!admins || admins.length <= 1) {
           return new Response(JSON.stringify({ error: 'Deve existir ao menos um Master Admin' }), {
             status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -140,8 +142,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id);
-      await supabaseAdmin.from('user_roles').insert({ user_id: target_user_id, role });
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id).eq('tenant_id', tenantId);
+      await supabaseAdmin.from('user_roles').insert({ user_id: target_user_id, role, tenant_id: tenantId });
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
