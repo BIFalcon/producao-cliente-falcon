@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Filters {
   property: string | null;
@@ -26,11 +27,14 @@ interface FiltersContextType {
 const FiltersContext = createContext<FiltersContextType | undefined>(undefined);
 
 export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { tenantId } = useAuth();
   const [filters, setFilters] = useState<Filters>({ property: null, year: null, month: null, channel: null });
   const [options, setOptions] = useState<FilterOptions>({ properties: [], years: [], channels: [] });
 
   const refreshOptions = useCallback(async () => {
-    const { data } = await supabase.rpc('get_filter_options');
+    if (!tenantId) return;
+    const { data } = await (supabase.rpc as any)('get_filter_options', { p_tenant_id: tenantId });
+    
     if (data && data[0]) {
       setOptions({
         properties: data[0].properties || [],
@@ -38,7 +42,7 @@ export const FiltersProvider: React.FC<{ children: React.ReactNode }> = ({ child
         channels: data[0].channels || [],
       });
     }
-  }, []);
+  }, [tenantId]);
 
   useEffect(() => {
     refreshOptions();
