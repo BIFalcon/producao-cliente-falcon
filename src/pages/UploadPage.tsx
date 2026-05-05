@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parseCSV, chunkArray, type ParsedRow } from '@/lib/csv-parser';
@@ -238,6 +238,7 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
 // ─── Main component ────────────────────────────────────────────────────────
 const UploadPage = () => {
   const { user, tenantId, isSuperAdmin, setActiveTenantId, roleLoading, loading } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: tenants } = useQuery({
     queryKey: ['all-tenants-upload'],
@@ -666,6 +667,10 @@ const UploadPage = () => {
       } else {
         toast.success('Upload concluído com sucesso!');
       }
+
+      await queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey.includes(effectiveTenantId),
+      });
 
       setTimeout(() => navigate('/'), 1500);
     } catch (err: any) {
