@@ -8,8 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle, History, CheckCircle2, XCircle } from 'lucide-react';
+import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle, History, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 1000;
@@ -138,6 +142,9 @@ const TenantLoadingGuard: React.FC<{ children: React.ReactNode }> = ({ children 
 
 // ─── Upload History section ───────────────────────────────────────────────
 const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
+  const queryClient = useQueryClient();
+  const [clearing, setClearing] = useState(false);
+
   const { data: batches, isLoading } = useQuery({
     queryKey: ['upload-history', tenantId],
     enabled: !!tenantId,
@@ -157,6 +164,26 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
       return hasActive ? 10_000 : false;
     },
   });
+
+  const errorCount = (batches || []).filter((b: any) => b.status === 'error').length;
+
+  const handleClearErrors = async () => {
+    setClearing(true);
+    try {
+      const { error } = await supabase
+        .from('upload_batches')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .eq('status', 'error');
+      if (error) throw error;
+      toast.success('Histórico de erros limpo com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['upload-history', tenantId] });
+    } catch (err: any) {
+      toast.error(`Erro ao limpar histórico: ${err.message || err}`);
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const formatDateTime = (iso: string) => {
     try {
@@ -195,14 +222,36 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-medium text-foreground flex items-center gap-2">
-        <History className="h-4 w-4 text-primary" />
-        Histórico de Uploads
-      </h2>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-medium text-foreground flex items-center gap-2">
+          <History className="h-4 w-4 text-primary" />
+          Histórico de Uploads <span className="text-xs text-muted-foreground font-normal">(últimos 10)</span>
+        </h2>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" disabled={errorCount === 0 || clearing} className="gap-1.5 h-8 text-xs">
+              {clearing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+              Limpar histórico de erros{errorCount > 0 ? ` (${errorCount})` : ''}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Limpar histórico de erros?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Isso vai remover permanentemente {errorCount} registro(s) de upload com status de erro deste tenant. Os dados das reservas não serão afetados. Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleClearErrors}>Limpar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
       <div className="surface-card overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-auto" style={{ maxHeight: 300 }}>
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 bg-background z-10">
               <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Data/hora</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Arquivo</th>
