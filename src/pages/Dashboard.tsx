@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppHeader from '@/components/AppHeader';
 import KPICards from '@/components/dashboard/KPICards';
@@ -12,18 +12,19 @@ import AutoInsights from '@/components/dashboard/AutoInsights';
 
 import { Button } from '@/components/ui/button';
 import { Database } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const DashboardContent = () => {
   const { role, tenantId } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: hasData, isLoading: hasDataLoading } = useQuery({
     queryKey: ['has-data', tenantId],
     enabled: !!tenantId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
+    staleTime: 0,
     queryFn: async () => {
       const { count } = await supabase
         .from('processed_reservations')
@@ -32,6 +33,36 @@ const DashboardContent = () => {
       return (count || 0) > 0;
     },
   });
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const channel = supabase
+      .channel(`dashboard-upload-batches-${tenantId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'upload_batches',
+          filter: `tenant_id=eq.${tenantId}`,
+        },
+        (payload) => {
+          const status = (payload.new as { status?: string } | null)?.status;
+          if (status === 'completed') {
+            queryClient.setQueryData(['has-data', tenantId], true);
+            queryClient.invalidateQueries({
+              predicate: (query) => query.queryKey.includes(tenantId),
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, tenantId]);
 
   // Enquanto carrega ou tenant não selecionado: silêncio total
   if (!tenantId || hasDataLoading || hasData === undefined) {
