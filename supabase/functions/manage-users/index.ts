@@ -159,12 +159,13 @@ Deno.serve(async (req) => {
       }
 
       // Clear existing permissions
-      await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id);
+      await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id).eq('tenant_id', tenantId);
 
       // Insert new permissions
       if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0) {
         const permRows = hotel_permissions.map((p: string) => ({
           user_id: target_user_id,
+          tenant_id: tenantId,
           property_name: p,
         }));
         await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
@@ -192,7 +193,8 @@ Deno.serve(async (req) => {
       await supabaseAdmin
         .from('profiles')
         .update({ is_active })
-        .eq('user_id', target_user_id);
+        .eq('user_id', target_user_id)
+        .eq('tenant_id', tenantId);
 
       if (!is_active) {
         await supabaseAdmin.auth.admin.updateUserById(target_user_id, { ban_duration: '876000h' });
