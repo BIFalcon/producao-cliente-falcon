@@ -35,17 +35,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: roleData } = await supabaseAdmin
+    const { data: superAdminCheck } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .eq('role', 'master_admin')
-      .single();
+      .eq('role', 'super_admin')
+      .maybeSingle();
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    const isSuperAdmin = !!superAdminCheck;
+
+    if (!isSuperAdmin) {
+      const { data: roleData } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'master_admin')
+        .maybeSingle();
+
+      if (!roleData) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     const body = await req.json();
