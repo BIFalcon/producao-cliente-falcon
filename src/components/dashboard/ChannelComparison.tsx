@@ -10,13 +10,16 @@ const NON_DRILLDOWN_CHANNELS = ['Particular'];
 
 const ChannelComparison = () => {
   const { filters, currentYear, previousYear } = useFilters();
+  const { tenantId } = useAuth();
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
 
   // Multi-year data
   const { data: multiyearData, isLoading } = useQuery({
-    queryKey: ['channel-multiyear', filters.property, filters.month],
+    queryKey: ['channel-multiyear', tenantId, filters.property, filters.month],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_channel_multiyear', {
+        p_tenant_id: tenantId,
         p_property: filters.property,
         p_month: filters.month,
       });
@@ -33,10 +36,12 @@ const ChannelComparison = () => {
 
   // Multi-year drilldown data
   const { data: drilldownData, isLoading: drilldownLoading } = useQuery({
-    queryKey: ['channel-drilldown-multiyear', expandedChannel, filters.property, filters.month],
+    queryKey: ['channel-drilldown-multiyear', tenantId, expandedChannel, filters.property, filters.month],
+    enabled: !!tenantId && !!expandedChannel,
     queryFn: async () => {
       if (!expandedChannel) return [];
       const { data, error } = await (supabase.rpc as any)('get_channel_drilldown_multiyear', {
+        p_tenant_id: tenantId,
         p_channel: expandedChannel,
         p_property: filters.property,
         p_month: filters.month,
@@ -50,7 +55,6 @@ const ChannelComparison = () => {
         room_revenue: number;
       }>;
     },
-    enabled: !!expandedChannel,
   });
 
   // Derive years and pivot data
