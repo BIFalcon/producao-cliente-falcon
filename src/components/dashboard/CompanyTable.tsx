@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatPercent, formatNumber, MONTH_NAMES } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
