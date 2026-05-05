@@ -668,6 +668,7 @@ const UploadPage = () => {
         toast.success('Upload concluído com sucesso!');
       }
 
+      queryClient.setQueryData(['has-data', effectiveTenantId], true);
       await queryClient.invalidateQueries({
         predicate: (query) => query.queryKey.includes(effectiveTenantId),
       });
