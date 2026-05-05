@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { FiltersProvider } from '@/contexts/FiltersContext';
 import AppHeader from '@/components/AppHeader';
 import KPICards from '@/components/dashboard/KPICards';
 
@@ -16,27 +17,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const DashboardContent = () => {
-  const { role, tenantId } = useAuth();
+  const { role } = useAuth();
 
   const { data: hasData } = useQuery({
-    queryKey: ['has-data', tenantId],
-    enabled: !!tenantId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    gcTime: 0,
-    staleTime: 0,
+    queryKey: ['has-data'],
     queryFn: async () => {
       const { count } = await supabase
         .from('processed_reservations')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId!);
+        .select('*', { count: 'exact', head: true });
       return (count || 0) > 0;
     },
   });
-
-  if (hasData === undefined) {
-    return null;
-  }
 
   if (hasData === false) {
     return (
@@ -78,10 +69,12 @@ const DashboardContent = () => {
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-      <DashboardContent />
-    </div>
+    <FiltersProvider>
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <DashboardContent />
+      </div>
+    </FiltersProvider>
   );
 };
 

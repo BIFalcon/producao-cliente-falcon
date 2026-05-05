@@ -4,17 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import AppHeader from '@/components/AppHeader';
+import { FiltersProvider } from '@/contexts/FiltersContext';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -47,13 +38,12 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const UsersPage = () => {
-  const { role, user, tenantId, isSuperAdmin, setActiveTenantId, loading: authLoading } = useAuth();
+  const { role, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [hotelEditUser, setHotelEditUser] = useState<UserRow | null>(null);
-  const [confirmToggleUser, setConfirmToggleUser] = useState<UserRow | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -62,36 +52,24 @@ const UsersPage = () => {
   const [formRole, setFormRole] = useState('viewer');
   const [formHotels, setFormHotels] = useState<string[]>([]);
 
-  const canManage = isSuperAdmin || role === 'master_admin';
-
-  // Tenants list (only for super_admin)
-  const { data: tenants } = useQuery({
-    queryKey: ['all-tenants-users'],
-    queryFn: async () => {
-      const { data } = await (supabase.rpc as any)('get_all_tenants');
-      return (data || []) as { id: string; name: string }[];
-    },
-    enabled: isSuperAdmin,
-  });
-
-  // Available properties from database (scoped to active tenant)
+  // Available properties from database
   const { data: allProperties } = useQuery({
-    queryKey: ['all-properties', tenantId],
+    queryKey: ['all-properties'],
     queryFn: async () => {
-      const { data } = await (supabase.rpc as any)('get_filter_options', { p_tenant_id: tenantId });
+      const { data } = await supabase.rpc('get_filter_options');
       return data?.[0]?.properties || [];
     },
-    enabled: canManage && !!tenantId,
+    enabled: role === 'master_admin',
   });
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ['all-users', tenantId],
+    queryKey: ['all-users'],
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('get_all_users', { p_tenant_id: tenantId });
+      const { data, error } = await (supabase.rpc as any)('get_all_users');
       if (error) throw error;
       return (data || []) as UserRow[];
     },
-    enabled: canManage && !!tenantId,
+    enabled: role === 'master_admin',
   });
 
   const resetForm = () => {
@@ -103,9 +81,7 @@ const UsersPage = () => {
   };
 
   const callManageUsers = async (body: any) => {
-    // For super_admin we always send target_tenant_id (the active tenant)
-    const payload = isSuperAdmin ? { ...body, target_tenant_id: tenantId } : body;
-    const { data, error } = await supabase.functions.invoke('manage-users', { body: payload });
+    const { data, error } = await supabase.functions.invoke('manage-users', { body });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     return data;
@@ -167,11 +143,11 @@ const UsersPage = () => {
     );
   }
 
-  if (!canManage) {
+  if (role !== 'master_admin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-3">
-          <p className="text-destructive text-sm">Acesso restrito a Master Admin ou Super Admin.</p>
+          <p className="text-destructive text-sm">Acesso restrito a Master Admin.</p>
           <Button variant="outline" size="sm" onClick={() => navigate('/')}>Voltar</Button>
         </div>
       </div>
@@ -179,9 +155,10 @@ const UsersPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-      <div className="p-4 lg:p-6 space-y-4">
+    <FiltersProvider>
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <div className="p-4 lg:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
@@ -196,29 +173,13 @@ const UsersPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {isSuperAdmin && (
-                <Select
-                  value={tenantId || ''}
-                  onValueChange={(v) => setActiveTenantId(v || null)}
-                >
-                  <SelectTrigger className="h-9 w-[200px] bg-primary/10 border-primary/30 text-xs">
-                    <SelectValue placeholder="Selecionar Tenant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(tenants || []).map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) resetForm(); }}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="gap-2" disabled={!tenantId}>
-                    <UserPlus className="h-4 w-4" />
-                    Criar Usuário
-                  </Button>
-                </DialogTrigger>
+            <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) resetForm(); }}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Criar Usuário
+                </Button>
+              </DialogTrigger>
               <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Criar Novo Usuário</DialogTitle>
@@ -280,7 +241,6 @@ const UsersPage = () => {
                 </form>
               </DialogContent>
             </Dialog>
-            </div>
           </div>
 
           {/* Edit Role Dialog */}
@@ -356,39 +316,7 @@ const UsersPage = () => {
             </DialogContent>
           </Dialog>
 
-          {/* Confirm Deactivate User Dialog */}
-          <AlertDialog open={!!confirmToggleUser} onOpenChange={(o) => { if (!o) setConfirmToggleUser(null); }}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Desativar usuário?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja desativar este usuário? Ele perderá acesso ao sistema imediatamente.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    if (confirmToggleUser) {
-                      toggleActiveMutation.mutate({ target_user_id: confirmToggleUser.user_id, is_active: false });
-                      setConfirmToggleUser(null);
-                    }
-                  }}
-                >
-                  Confirmar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          {isSuperAdmin && !tenantId && (
-            <div className="surface-card p-6 text-center text-sm text-muted-foreground">
-              Selecione um tenant acima para visualizar e gerenciar usuários.
-            </div>
-          )}
-
           {/* Users Table */}
-          {tenantId && (
           <div className="surface-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -457,13 +385,7 @@ const UsersPage = () => {
                               className={`h-7 w-7 p-0 ${u.is_active ? 'text-destructive' : 'text-emerald-400'}`}
                               title={u.is_active ? 'Desativar' : 'Ativar'}
                               disabled={u.user_id === user?.id}
-                              onClick={() => {
-                                if (u.is_active) {
-                                  setConfirmToggleUser(u);
-                                } else {
-                                  toggleActiveMutation.mutate({ target_user_id: u.user_id, is_active: true });
-                                }
-                              }}
+                              onClick={() => toggleActiveMutation.mutate({ target_user_id: u.user_id, is_active: !u.is_active })}
                             >
                               {u.is_active ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
                             </Button>
@@ -478,9 +400,9 @@ const UsersPage = () => {
               </table>
             </div>
           </div>
-          )}
         </div>
-    </div>
+      </div>
+    </FiltersProvider>
   );
 };
 

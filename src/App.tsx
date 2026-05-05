@@ -3,13 +3,10 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { FiltersProvider } from "@/contexts/FiltersContext";
 import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
 import UploadPage from "./pages/UploadPage";
 import UsersPage from "./pages/UsersPage";
-import TenantsPage from "./pages/TenantsPage";
-import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -32,8 +29,6 @@ const AppRoutes = () => (
     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
     <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
     <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
-    <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
-    <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
@@ -43,10 +38,8 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
-          <FiltersProvider>
-            <Sonner />
-            <AppRoutes />
-          </FiltersProvider>
+          <Sonner />
+          <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

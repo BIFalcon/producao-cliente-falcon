@@ -2,23 +2,16 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatNumber } from '@/lib/formatters';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 const AgentBreakdown = () => {
   const { filters } = useFilters();
-  const { tenantId } = useAuth();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['agents', tenantId, filters],
-    enabled: !!tenantId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ['agents', filters],
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('get_agent_breakdown', {
-        p_tenant_id: tenantId,
+      const { data, error } = await supabase.rpc('get_agent_breakdown', {
         p_property: filters.property,
         p_year: filters.year,
       });

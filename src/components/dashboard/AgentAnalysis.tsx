@@ -2,32 +2,19 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatPercent, formatNumber, toTitleCase, MONTH_NAMES } from '@/lib/formatters';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-
-const PAGE_SIZE = 50;
 
 const AgentAnalysis = () => {
   const { filters, currentYear, previousYear } = useFilters();
-  const { tenantId } = useAuth();
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-
-  React.useEffect(() => { setPage(1); }, [search]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['agent-comparison', tenantId, filters.property, currentYear, previousYear, filters.month],
-    enabled: !!tenantId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ['agent-comparison', filters.property, currentYear, previousYear, filters.month],
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_agent_comparison', {
-        p_tenant_id: tenantId,
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,
@@ -45,26 +32,18 @@ const AgentAnalysis = () => {
     },
   });
 
-  const searchFiltered = useMemo(() => {
+  const filtered = useMemo(() => {
     if (!data) return [];
-    if (!search.trim()) return data;
+    if (!search.trim()) return data.slice(0, 50);
     const q = search.toLowerCase();
-    return data.filter(r => r.travel_agent_name?.toLowerCase().includes(q));
+    return data.filter(r => r.travel_agent_name?.toLowerCase().includes(q)).slice(0, 50);
   }, [data, search]);
 
-  const totalPages = Math.max(1, Math.ceil(searchFiltered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const filtered = useMemo(
-    () => searchFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
-    [searchFiltered, safePage]
-  );
-
   const { data: companiesData, isLoading: companiesLoading } = useQuery({
-    queryKey: ['agent-companies', tenantId, expandedAgent, filters.property, currentYear, previousYear, filters.month],
+    queryKey: ['agent-companies', expandedAgent, filters.property, currentYear, previousYear, filters.month],
     queryFn: async () => {
       if (!expandedAgent) return [];
       const { data, error } = await (supabase.rpc as any)('get_agent_companies', {
-        p_tenant_id: tenantId,
         p_agent: expandedAgent,
         p_property: filters.property,
         p_current_year: currentYear,
@@ -81,10 +60,7 @@ const AgentAnalysis = () => {
         roomnights_current: number;
       }>;
     },
-    enabled: !!expandedAgent && !!tenantId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    enabled: !!expandedAgent,
   });
 
   const currentLabel = filters.month
@@ -106,7 +82,7 @@ const AgentAnalysis = () => {
         <div>
           <h3 className="text-sm font-semibold text-foreground">Agências de Viagem</h3>
           <p className="text-xs text-muted-foreground mt-1">
-            {searchFiltered.length}{search ? ` de ${data?.length || 0}` : ''} agências · {periodLabel}
+            {filtered.length}{search ? ` de ${data?.length || 0}` : ''} agências · {periodLabel}
           </p>
         </div>
         <div className="relative w-full sm:w-56">
@@ -186,29 +162,6 @@ const AgentAnalysis = () => {
           </tbody>
         </table>
       </div>
-      {searchFiltered.length > PAGE_SIZE && (
-        <div className="flex items-center justify-between gap-2 px-4 py-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            disabled={safePage <= 1}
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-          >
-            Anterior
-          </Button>
-          <span className="text-xs text-muted-foreground">Página {safePage} de {totalPages}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            disabled={safePage >= totalPages}
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-          >
-            Próximo
-          </Button>
-        </div>
-      )}
     </div>
   );
 };

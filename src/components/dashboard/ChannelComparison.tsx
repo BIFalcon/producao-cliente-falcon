@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, toTitleCase } from '@/lib/formatters';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -10,18 +9,13 @@ const NON_DRILLDOWN_CHANNELS = ['Particular'];
 
 const ChannelComparison = () => {
   const { filters, currentYear, previousYear } = useFilters();
-  const { tenantId } = useAuth();
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
 
+  // Multi-year data
   const { data: multiyearData, isLoading } = useQuery({
-    queryKey: ['channel-multiyear', tenantId, filters.property, filters.month],
-    enabled: !!tenantId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ['channel-multiyear', filters.property, filters.month],
     queryFn: async () => {
       const { data, error } = await (supabase.rpc as any)('get_channel_multiyear', {
-        p_tenant_id: tenantId,
         p_property: filters.property,
         p_month: filters.month,
       });
@@ -36,12 +30,12 @@ const ChannelComparison = () => {
     },
   });
 
+  // Multi-year drilldown data
   const { data: drilldownData, isLoading: drilldownLoading } = useQuery({
-    queryKey: ['channel-drilldown-multiyear', tenantId, expandedChannel, filters.property, filters.month],
+    queryKey: ['channel-drilldown-multiyear', expandedChannel, filters.property, filters.month],
     queryFn: async () => {
       if (!expandedChannel) return [];
       const { data, error } = await (supabase.rpc as any)('get_channel_drilldown_multiyear', {
-        p_tenant_id: tenantId,
         p_channel: expandedChannel,
         p_property: filters.property,
         p_month: filters.month,
@@ -55,12 +49,10 @@ const ChannelComparison = () => {
         room_revenue: number;
       }>;
     },
-    enabled: !!expandedChannel && !!tenantId,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000,
+    enabled: !!expandedChannel,
   });
 
+  // Derive years and pivot data
   const { years, channelRows } = useMemo(() => {
     if (!multiyearData || multiyearData.length === 0) return { years: [] as number[], channelRows: [] as any[] };
 
@@ -90,6 +82,7 @@ const ChannelComparison = () => {
     setExpandedChannel(prev => prev === channel ? null : channel);
   };
 
+  // Pivot drilldown data: group by entity, map revenues per year
   const drilldownRows = useMemo(() => {
     if (!drilldownData || drilldownData.length === 0) return [];
     const entityMap = new Map<string, Record<number, number>>();
