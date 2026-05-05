@@ -8,8 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle, History, CheckCircle2, XCircle } from 'lucide-react';
+import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle, History, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import * as XLSX from 'xlsx';
 
 const CHUNK_SIZE = 1000;
