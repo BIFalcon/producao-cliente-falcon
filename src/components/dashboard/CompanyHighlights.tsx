@@ -2,18 +2,22 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenue, formatNumber } from '@/lib/formatters';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const CompanyHighlights = () => {
   const { filters } = useFilters();
+  const { tenantId } = useAuth();
   const currentYear = filters.year || new Date().getFullYear();
   const previousYear = currentYear - 1;
 
   const { data } = useQuery({
-    queryKey: ['company-highlights', filters, currentYear],
+    queryKey: ['company-highlights', tenantId, filters, currentYear],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_company_table', {
+        p_tenant_id: tenantId!,
         p_property: filters.property,
         p_current_year: currentYear,
         p_previous_year: previousYear,

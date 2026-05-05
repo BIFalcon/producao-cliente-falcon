@@ -2,15 +2,19 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatNumber } from '@/lib/formatters';
 
 const ConcentrationMetrics = () => {
   const { filters } = useFilters();
+  const { tenantId } = useAuth();
 
   const { data } = useQuery({
-    queryKey: ['concentration', filters],
+    queryKey: ['concentration', tenantId, filters],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_concentration_metrics', {
+        p_tenant_id: tenantId!,
         p_property: filters.property,
         p_year: filters.year,
         p_channel: filters.channel,
