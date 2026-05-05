@@ -35,6 +35,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    const body = await req.json();
+    const { action, target_tenant_id } = body;
+
     const { data: superAdminCheck } = await supabaseAdmin
       .from('user_roles')
       .select('role')
@@ -43,6 +46,24 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const isSuperAdmin = !!superAdminCheck;
+    let tenantId: string | null = null;
+
+    if (isSuperAdmin) {
+      tenantId = target_tenant_id || null;
+    } else {
+      const { data: profileData } = await supabaseAdmin
+        .from('profiles')
+        .select('tenant_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      tenantId = profileData?.tenant_id || null;
+    }
+
+    if (!tenantId) {
+      return new Response(JSON.stringify({ error: 'Tenant não informado' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     if (!isSuperAdmin) {
       const { data: roleData } = await supabaseAdmin
@@ -50,17 +71,15 @@ Deno.serve(async (req) => {
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'master_admin')
+        .eq('tenant_id', tenantId)
         .maybeSingle();
 
       if (!roleData) {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        return new Response(JSON.stringify({ error: 'Acesso restrito a Master Admin' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
     }
-
-    const body = await req.json();
-    const { action } = body;
 
     if (action === 'create') {
       const { email, password, full_name, role, hotel_permissions } = body;
@@ -80,17 +99,18 @@ Deno.serve(async (req) => {
 
       await supabaseAdmin
         .from('profiles')
-        .update({ full_name: full_name || '' })
+        .update({ full_name: full_name || '', tenant_id: tenantId })
         .eq('user_id', newUser.user.id);
 
       await supabaseAdmin
         .from('user_roles')
-        .upsert({ user_id: newUser.user.id, role }, { onConflict: 'user_id,role' });
+        .upsert({ user_id: newUser.user.id, role, tenant_id: tenantId }, { onConflict: 'user_id,role' });
 
       // Set hotel permissions if provided and not master_admin
       if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0 && role !== 'master_admin') {
         const permRows = hotel_permissions.map((p: string) => ({
           user_id: newUser.user.id,
+          tenant_id: tenantId,
           property_name: p,
         }));
         await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
@@ -113,7 +133,8 @@ Deno.serve(async (req) => {
         const { data: admins } = await supabaseAdmin
           .from('user_roles')
           .select('user_id')
-          .eq('role', 'master_admin');
+          .eq('role', 'master_admin')
+          .eq('tenant_id', tenantId);
         if (!admins || admins.length <= 1) {
           return new Response(JSON.stringify({ error: 'Deve existir ao menos um Master Admin' }), {
             status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -121,8 +142,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id);
-      await supabaseAdmin.from('user_roles').insert({ user_id: target_user_id, role });
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id).eq('tenant_id', tenantId);
+      await supabaseAdmin.from('user_roles').insert({ user_id: target_user_id, role, tenant_id: tenantId });
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -138,12 +159,13 @@ Deno.serve(async (req) => {
       }
 
       // Clear existing permissions
-      await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id);
+      await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id).eq('tenant_id', tenantId);
 
       // Insert new permissions
       if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0) {
         const permRows = hotel_permissions.map((p: string) => ({
           user_id: target_user_id,
+          tenant_id: tenantId,
           property_name: p,
         }));
         await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
@@ -171,7 +193,8 @@ Deno.serve(async (req) => {
       await supabaseAdmin
         .from('profiles')
         .update({ is_active })
-        .eq('user_id', target_user_id);
+        .eq('user_id', target_user_id)
+        .eq('tenant_id', tenantId);
 
       if (!is_active) {
         await supabaseAdmin.auth.admin.updateUserById(target_user_id, { ban_duration: '876000h' });

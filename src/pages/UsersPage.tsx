@@ -38,7 +38,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const UsersPage = () => {
-  const { role, user, loading: authLoading } = useAuth();
+  const { role, user, loading: authLoading, roleLoading, isSuperAdmin, tenantId } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
@@ -54,22 +54,22 @@ const UsersPage = () => {
 
   // Available properties from database
   const { data: allProperties } = useQuery({
-    queryKey: ['all-properties'],
+    queryKey: ['all-properties', tenantId],
     queryFn: async () => {
-      const { data } = await supabase.rpc('get_filter_options');
+      const { data } = await (supabase.rpc as any)('get_filter_options', { p_tenant_id: tenantId });
       return data?.[0]?.properties || [];
     },
-    enabled: role === 'master_admin',
+    enabled: (role === 'master_admin' || isSuperAdmin) && !!tenantId,
   });
 
   const { data: users, isLoading } = useQuery({
-    queryKey: ['all-users'],
+    queryKey: ['all-users', tenantId],
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('get_all_users');
+      const { data, error } = await (supabase.rpc as any)('get_all_users', { p_tenant_id: tenantId });
       if (error) throw error;
       return (data || []) as UserRow[];
     },
-    enabled: role === 'master_admin',
+    enabled: (role === 'master_admin' || isSuperAdmin) && !!tenantId,
   });
 
   const resetForm = () => {
@@ -81,7 +81,9 @@ const UsersPage = () => {
   };
 
   const callManageUsers = async (body: any) => {
-    const { data, error } = await supabase.functions.invoke('manage-users', { body });
+    const { data, error } = await supabase.functions.invoke('manage-users', {
+      body: isSuperAdmin ? { ...body, target_tenant_id: tenantId } : body,
+    });
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     return data;
@@ -135,7 +137,7 @@ const UsersPage = () => {
     setFormHotels(prev => prev.includes(hotel) ? prev.filter(h => h !== hotel) : [...prev, hotel]);
   };
 
-  if (authLoading) {
+  if (authLoading || roleLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
@@ -143,7 +145,7 @@ const UsersPage = () => {
     );
   }
 
-  if (role !== 'master_admin') {
+  if (!isSuperAdmin && role !== 'master_admin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-3">
