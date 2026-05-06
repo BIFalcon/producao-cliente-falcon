@@ -93,14 +93,17 @@ Deno.serve(async (req) => {
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name: full_name || '' },
+        user_metadata: { full_name: full_name || '', tenant_id: tenantId },
       });
       if (createError) throw createError;
 
+      // Upsert garante que o profile exista mesmo se o trigger não tiver rodado
       await supabaseAdmin
         .from('profiles')
-        .update({ full_name: full_name || '', tenant_id: tenantId })
-        .eq('user_id', newUser.user.id);
+        .upsert(
+          { user_id: newUser.user.id, full_name: full_name || '', tenant_id: tenantId, is_active: true },
+          { onConflict: 'user_id' }
+        );
 
       await supabaseAdmin
         .from('user_roles')
