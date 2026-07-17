@@ -6,7 +6,7 @@ import { useFilters } from '@/contexts/FiltersContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, Database, Users, Building2, User } from 'lucide-react';
+import { LogOut, Database, Users, Building2, User, Briefcase } from 'lucide-react';
 import falconLogo from '@/assets/falcon-logo.png';
 import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
@@ -107,6 +107,10 @@ const AppHeader = () => {
               ))}
             </SelectContent>
           </Select>
+
+          <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
+            <Link to="/comercial"><Briefcase className="mr-1 h-3 w-3" />Comercial</Link>
+          </Button>
 
           {(isSuperAdmin || role === 'master_admin' || role === 'editor') && (
             <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
