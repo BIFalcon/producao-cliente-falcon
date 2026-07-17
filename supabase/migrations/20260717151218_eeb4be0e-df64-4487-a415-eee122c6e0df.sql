@@ -1,0 +1,1 @@
+ALTER FUNCTION public.process_reservations(uuid, uuid) SET search_path = public;
