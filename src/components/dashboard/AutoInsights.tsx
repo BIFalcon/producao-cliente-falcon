@@ -7,6 +7,16 @@ import { formatRevenue, formatPercent, toTitleCase } from '@/lib/formatters';
 import { Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+type InsightSegment =
+  | { kind: 'text'; value: string }
+  | { kind: 'strong'; value: string };
+
+interface Insight {
+  emoji: string;
+  title: string;
+  segments: InsightSegment[];
+}
+
 const AutoInsights = () => {
   const [open, setOpen] = useState(false);
   const { filters, currentYear, previousYear } = useFilters();
@@ -76,8 +86,8 @@ const AutoInsights = () => {
     },
   });
 
-  const generateInsights = () => {
-    const insights: string[] = [];
+  const generateInsights = (): Insight[] => {
+    const insights: Insight[] = [];
 
     if (companyData && companyData.length > 0) {
       const threshold = 5000;
@@ -90,17 +100,24 @@ const AutoInsights = () => {
       const topDecline = [...withPct].sort((a: any, b: any) => (a.pct_change || 0) - (b.pct_change || 0)).slice(0, 3);
 
       if (topGrowth.length > 0) {
-        const items = topGrowth.map((c: any) =>
-          `<strong>${toTitleCase(c.company_name)}</strong> (${formatPercent(c.pct_change)}, ${formatRevenue(c.absolute_change)})`
-        ).join(', ');
-        insights.push(`📈 <strong>Empresas com maior crescimento:</strong> ${items}`);
+        const segments: InsightSegment[] = [];
+        topGrowth.forEach((c: any, i: number) => {
+          if (i > 0) segments.push({ kind: 'text', value: ', ' });
+          segments.push({ kind: 'strong', value: toTitleCase(c.company_name) });
+          segments.push({ kind: 'text', value: ` (${formatPercent(c.pct_change)}, ${formatRevenue(c.absolute_change)})` });
+        });
+        insights.push({ emoji: '📈', title: 'Empresas com maior crescimento:', segments });
       }
 
-      if (topDecline.length > 0 && topDecline[0].pct_change < 0) {
-        const items = topDecline.filter((c: any) => c.pct_change < 0).map((c: any) =>
-          `<strong>${toTitleCase(c.company_name)}</strong> (${formatPercent(c.pct_change)}, ${formatRevenue(c.absolute_change)})`
-        ).join(', ');
-        if (items) insights.push(`📉 <strong>Empresas com maior queda:</strong> ${items}`);
+      const declines = topDecline.filter((c: any) => c.pct_change < 0);
+      if (declines.length > 0) {
+        const segments: InsightSegment[] = [];
+        declines.forEach((c: any, i: number) => {
+          if (i > 0) segments.push({ kind: 'text', value: ', ' });
+          segments.push({ kind: 'strong', value: toTitleCase(c.company_name) });
+          segments.push({ kind: 'text', value: ` (${formatPercent(c.pct_change)}, ${formatRevenue(c.absolute_change)})` });
+        });
+        insights.push({ emoji: '📉', title: 'Empresas com maior queda:', segments });
       }
     }
 
@@ -117,27 +134,35 @@ const AutoInsights = () => {
         .slice(0, 3);
 
       if (cityGrowth.length > 0) {
-        const items = cityGrowth.map((c: any) =>
-          `<strong>${toTitleCase(c.city)}</strong> (${c.pct > 0 ? '+' : ''}${c.pct.toFixed(1)}%, receita ${formatRevenue(c.revenue)})`
-        ).join(', ');
-        insights.push(`🏙️ <strong>Cidades com maior crescimento:</strong> ${items}`);
+        const segments: InsightSegment[] = [];
+        cityGrowth.forEach((c: any, i: number) => {
+          if (i > 0) segments.push({ kind: 'text', value: ', ' });
+          segments.push({ kind: 'strong', value: toTitleCase(c.city) });
+          segments.push({ kind: 'text', value: ` (${c.pct > 0 ? '+' : ''}${c.pct.toFixed(1)}%, receita ${formatRevenue(c.revenue)})` });
+        });
+        insights.push({ emoji: '🏙️', title: 'Cidades com maior crescimento:', segments });
       }
     }
 
     if (channelData && channelData.length > 0) {
       const totalCurrent = channelData.reduce((s: number, c: any) => s + (c.revenue_current || 0), 0);
       if (totalCurrent > 0) {
-        const channelShares = channelData.map((c: any) => {
+        const segments: InsightSegment[] = [];
+        channelData.forEach((c: any, i: number) => {
+          if (i > 0) segments.push({ kind: 'text', value: ' · ' });
           const share = ((c.revenue_current || 0) / totalCurrent * 100).toFixed(1);
           const change = c.pct_change !== null ? ` (var. ${formatPercent(c.pct_change)})` : '';
-          return `<strong>${c.sales_channel}</strong>: ${share}%${change}`;
-        }).join(' · ');
-        insights.push(`📊 <strong>Distribuição por canal:</strong> ${channelShares}`);
+          segments.push({ kind: 'strong', value: String(c.sales_channel ?? '') });
+          segments.push({ kind: 'text', value: `: ${share}%${change}` });
+        });
+        insights.push({ emoji: '📊', title: 'Distribuição por canal:', segments });
       }
     }
 
-    return insights.length > 0 ? insights : ['Sem dados suficientes para gerar insights.'];
+    return insights;
   };
+
+  const insights = generateInsights();
 
   return (
     <div>
@@ -153,10 +178,18 @@ const AutoInsights = () => {
             Insights Automáticos — {currentYear} vs {previousYear}
           </h3>
           <div className="space-y-2">
-            {generateInsights().map((insight, i) => (
-              <p key={i} className="text-xs leading-relaxed text-foreground/90"
-                 dangerouslySetInnerHTML={{ __html: insight }} />
-            ))}
+            {insights.length === 0 ? (
+              <p className="text-xs leading-relaxed text-foreground/90">Sem dados suficientes para gerar insights.</p>
+            ) : (
+              insights.map((insight, i) => (
+                <p key={i} className="text-xs leading-relaxed text-foreground/90">
+                  {insight.emoji} <strong>{insight.title}</strong>{' '}
+                  {insight.segments.map((seg, j) =>
+                    seg.kind === 'strong' ? <strong key={j}>{seg.value}</strong> : <span key={j}>{seg.value}</span>
+                  )}
+                </p>
+              ))
+            )}
           </div>
         </div>
       )}

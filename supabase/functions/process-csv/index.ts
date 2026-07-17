@@ -74,14 +74,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Authorize: user must belong to tenant OR be super_admin
-    const [{ data: superCheck }, { data: profileCheck }] = await Promise.all([
+    // Authorize: user must belong to tenant AND have editor/master_admin role (or be super_admin)
+    const [{ data: superCheck }, { data: profileCheck }, { data: roleRows }] = await Promise.all([
       supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'super_admin').maybeSingle(),
       supabase.from('profiles').select('tenant_id').eq('user_id', user.id).maybeSingle(),
+      supabase.from('user_roles').select('role').eq('user_id', user.id).eq('tenant_id', tenant_id),
     ]);
     const isSuperAdmin = !!superCheck;
     if (!isSuperAdmin && profileCheck?.tenant_id !== tenant_id) {
       return errorResponse('authz', 'User not authorized for tenant', 403, { tenant_id });
+    }
+    if (!isSuperAdmin) {
+      const roles = (roleRows || []).map((r: any) => r.role);
+      const canWrite = roles.includes('editor') || roles.includes('master_admin');
+      if (!canWrite) {
+        return errorResponse('authz', 'Requires editor or master_admin role', 403, { tenant_id });
+      }
     }
 
     // ─── PROCESS action ───

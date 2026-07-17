@@ -88,6 +88,18 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+      // Only existing super_admins can assign the super_admin role
+      if (role === 'super_admin' && !isSuperAdmin) {
+        return new Response(JSON.stringify({ error: 'Somente super_admin pode atribuir a role super_admin' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      const allowedRoles = ['master_admin', 'editor', 'viewer', 'super_admin'];
+      if (!allowedRoles.includes(role)) {
+        return new Response(JSON.stringify({ error: 'Role inválida' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
 
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -128,6 +140,18 @@ Deno.serve(async (req) => {
       const { target_user_id, role } = body;
       if (!target_user_id || !role) {
         return new Response(JSON.stringify({ error: 'Missing fields' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      // Only existing super_admins can assign the super_admin role
+      if (role === 'super_admin' && !isSuperAdmin) {
+        return new Response(JSON.stringify({ error: 'Somente super_admin pode atribuir a role super_admin' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      const allowedRolesUpdate = ['master_admin', 'editor', 'viewer', 'super_admin'];
+      if (!allowedRolesUpdate.includes(role)) {
+        return new Response(JSON.stringify({ error: 'Role inválida' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
