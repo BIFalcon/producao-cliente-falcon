@@ -10,6 +10,9 @@ import UploadPage from "./pages/UploadPage";
 import UsersPage from "./pages/UsersPage";
 import TenantsPage from "./pages/TenantsPage";
 import ProfilePage from "./pages/ProfilePage";
+import CrmDashboardPage from "./pages/CrmDashboardPage";
+import CrmAccountsPage from "./pages/CrmAccountsPage";
+import CrmAccountDetailPage from "./pages/CrmAccountDetailPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -34,6 +37,9 @@ const AppRoutes = () => (
     <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
     <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+    <Route path="/comercial" element={<ProtectedRoute><CrmDashboardPage /></ProtectedRoute>} />
+    <Route path="/comercial/contas" element={<ProtectedRoute><CrmAccountsPage /></ProtectedRoute>} />
+    <Route path="/comercial/contas/:id" element={<ProtectedRoute><CrmAccountDetailPage /></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
