@@ -46,6 +46,110 @@ export type Database = {
           },
         ]
       }
+      crm_accounts: {
+        Row: {
+          account_type: Database["public"]["Enums"]["crm_account_type"]
+          city: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          responsible_user_id: string | null
+          segment: string | null
+          stage: Database["public"]["Enums"]["crm_account_stage"]
+          tenant_id: string
+          travel_agent_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_type: Database["public"]["Enums"]["crm_account_type"]
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          responsible_user_id?: string | null
+          segment?: string | null
+          stage?: Database["public"]["Enums"]["crm_account_stage"]
+          tenant_id: string
+          travel_agent_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: Database["public"]["Enums"]["crm_account_type"]
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          responsible_user_id?: string | null
+          segment?: string | null
+          stage?: Database["public"]["Enums"]["crm_account_stage"]
+          tenant_id?: string
+          travel_agent_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_accounts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_visits: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          next_follow_up_date: string | null
+          summary: string
+          tenant_id: string
+          visit_date: string
+          visit_type: Database["public"]["Enums"]["crm_visit_type"]
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_follow_up_date?: string | null
+          summary: string
+          tenant_id: string
+          visit_date?: string
+          visit_type: Database["public"]["Enums"]["crm_visit_type"]
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          next_follow_up_date?: string | null
+          summary?: string
+          tenant_id?: string
+          visit_date?: string
+          visit_type?: Database["public"]["Enums"]["crm_visit_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_visits_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "crm_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_visits_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       processed_reservations: {
         Row: {
           arrival_date: string | null
@@ -725,6 +829,19 @@ export type Database = {
     }
     Enums: {
       app_role: "master_admin" | "editor" | "viewer" | "super_admin"
+      crm_account_stage:
+        | "prospectado"
+        | "contatado"
+        | "em_negociacao"
+        | "cliente_ativo"
+        | "inativo"
+      crm_account_type: "empresa" | "agencia"
+      crm_visit_type:
+        | "visita_presencial"
+        | "ligacao"
+        | "email"
+        | "whatsapp"
+        | "outro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -853,6 +970,21 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["master_admin", "editor", "viewer", "super_admin"],
+      crm_account_stage: [
+        "prospectado",
+        "contatado",
+        "em_negociacao",
+        "cliente_ativo",
+        "inativo",
+      ],
+      crm_account_type: ["empresa", "agencia"],
+      crm_visit_type: [
+        "visita_presencial",
+        "ligacao",
+        "email",
+        "whatsapp",
+        "outro",
+      ],
     },
   },
 } as const
