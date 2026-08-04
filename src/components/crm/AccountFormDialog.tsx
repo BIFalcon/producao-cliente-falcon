@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { ACCOUNT_TYPE_LABELS, CrmAccountStage, CrmAccountType, STAGE_LABELS, STAGE_ORDER } from '@/lib/crm';
 
@@ -28,6 +29,20 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [segment, setSegment] = useState('');
   const [stage, setStage] = useState<CrmAccountStage>('prospectado');
   const [notes, setNotes] = useState('');
+  const [properties, setProperties] = useState<string[]>([]);
+
+  const { data: allProperties } = useQuery({
+    queryKey: ['crm-account-properties', tenantId],
+    enabled: !!tenantId,
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_filter_options', { p_tenant_id: tenantId });
+      return (data?.[0]?.properties || []) as string[];
+    },
+  });
+
+  const toggleProperty = (prop: string) => {
+    setProperties((prev) => (prev.includes(prop) ? prev.filter((p) => p !== prop) : [...prev, prop]));
+  };
 
   useEffect(() => {
     if (account) {
@@ -38,6 +53,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setSegment(account.segment || '');
       setStage(account.stage);
       setNotes(account.notes || '');
+      setProperties(account.properties || []);
     } else {
       setAccountType('empresa');
       setCompanyName('');
@@ -46,6 +62,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setSegment('');
       setStage('prospectado');
       setNotes('');
+      setProperties([]);
     }
   }, [account, open]);
 
@@ -61,6 +78,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         segment: segment.trim() || null,
         stage,
         notes: notes.trim() || null,
+        properties,
       };
       if (accountType === 'empresa' && !payload.company_name) throw new Error('Nome da empresa é obrigatório');
       if (accountType === 'agencia' && !payload.travel_agent_name) throw new Error('Nome da agência é obrigatório');
@@ -134,6 +152,25 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
               <Label className="text-xs">Segmento</Label>
               <Input value={segment} onChange={(e) => setSegment(e.target.value)} placeholder="Ex: Óleo & Gás" />
             </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Hotéis atendidos</Label>
+            {allProperties && allProperties.length > 0 ? (
+              <div className="mt-1 max-h-40 space-y-2 overflow-y-auto rounded-md border border-border/60 p-3">
+                {allProperties.map((prop) => (
+                  <label key={prop} className="flex cursor-pointer items-center gap-2 text-sm">
+                    <Checkbox checked={properties.includes(prop)} onCheckedChange={() => toggleProperty(prop)} />
+                    <span className="text-foreground">{prop}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">Nenhum hotel disponível. Importe dados primeiro.</p>
+            )}
+            {properties.length > 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">{properties.length} hotel(is) selecionado(s)</p>
+            )}
           </div>
 
           <div>
