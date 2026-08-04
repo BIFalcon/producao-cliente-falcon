@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.process_reservations(uuid, uuid) TO postgres;

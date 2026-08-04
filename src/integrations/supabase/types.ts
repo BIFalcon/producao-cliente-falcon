@@ -54,6 +54,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          properties: string[]
           responsible_user_id: string | null
           segment: string | null
           stage: Database["public"]["Enums"]["crm_account_stage"]
@@ -68,6 +69,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          properties?: string[]
           responsible_user_id?: string | null
           segment?: string | null
           stage?: Database["public"]["Enums"]["crm_account_stage"]
@@ -82,6 +84,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          properties?: string[]
           responsible_user_id?: string | null
           segment?: string | null
           stage?: Database["public"]["Enums"]["crm_account_stage"]

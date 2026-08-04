@@ -13,7 +13,11 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { UserPlus, Shield, Edit2, UserX, UserCheck, ArrowLeft, Loader2, Hotel } from 'lucide-react';
+import { UserPlus, Shield, Edit2, UserX, UserCheck, ArrowLeft, Loader2, Hotel, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type UserRow = {
   user_id: string;
@@ -44,6 +48,7 @@ const UsersPage = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [hotelEditUser, setHotelEditUser] = useState<UserRow | null>(null);
+  const [deleteUser, setDeleteUser] = useState<UserRow | null>(null);
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -131,6 +136,17 @@ const UsersPage = () => {
       queryClient.invalidateQueries({ queryKey: ['all-users'] });
     },
     onError: (err: any) => toast.error(err.message || 'Erro ao atualizar status'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (params: { target_user_id: string }) =>
+      callManageUsers({ action: 'delete', ...params }),
+    onSuccess: () => {
+      toast.success('Usuário excluído');
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+      setDeleteUser(null);
+    },
+    onError: (err: any) => toast.error(err.message || 'Erro ao excluir usuário'),
   });
 
   const toggleHotel = (hotel: string) => {
@@ -318,6 +334,33 @@ const UsersPage = () => {
             </DialogContent>
           </Dialog>
 
+          {/* Delete User Dialog */}
+          <AlertDialog open={!!deleteUser} onOpenChange={(o) => { if (!o) setDeleteUser(null); }}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  O usuário <strong>{deleteUser?.full_name || deleteUser?.email}</strong> será removido permanentemente,
+                  junto com suas funções e permissões de hotel. Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleteMutation.isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (deleteUser) deleteMutation.mutate({ target_user_id: deleteUser.user_id });
+                  }}
+                >
+                  {deleteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Excluir
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           {/* Users Table */}
           <div className="surface-card overflow-hidden">
             <div className="overflow-x-auto">
@@ -390,6 +433,16 @@ const UsersPage = () => {
                               onClick={() => toggleActiveMutation.mutate({ target_user_id: u.user_id, is_active: !u.is_active })}
                             >
                               {u.is_active ? <UserX className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-destructive"
+                              title="Excluir usuário"
+                              disabled={u.user_id === user?.id}
+                              onClick={() => setDeleteUser(u)}
+                            >
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
                         </td>
