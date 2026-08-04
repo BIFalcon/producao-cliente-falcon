@@ -234,6 +234,81 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === 'delete') {
+      const { target_user_id } = body;
+      if (!target_user_id) {
+        return new Response(JSON.stringify({ error: 'Missing fields' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      if (target_user_id === user.id) {
+        return new Response(JSON.stringify({ error: 'Você não pode excluir sua própria conta' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Target must belong to the tenant being managed
+      const { data: targetProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, tenant_id')
+        .eq('user_id', target_user_id)
+        .maybeSingle();
+
+      if (!targetProfile || targetProfile.tenant_id !== tenantId) {
+        return new Response(JSON.stringify({ error: 'Usuário não pertence a este tenant' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Never allow deleting a super_admin unless the caller is a super_admin
+      const { data: targetSuper } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', target_user_id)
+        .eq('role', 'super_admin')
+        .maybeSingle();
+      if (targetSuper && !isSuperAdmin) {
+        return new Response(JSON.stringify({ error: 'Sem permissão para excluir este usuário' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Keep at least one master admin in the tenant
+      const { data: targetRole } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', target_user_id)
+        .eq('tenant_id', tenantId)
+        .eq('role', 'master_admin')
+        .maybeSingle();
+
+      if (targetRole) {
+        const { data: admins } = await supabaseAdmin
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'master_admin')
+          .eq('tenant_id', tenantId);
+        if (!admins || admins.length <= 1) {
+          return new Response(JSON.stringify({ error: 'Deve existir ao menos um Master Admin' }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+
+      await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id);
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id);
+      await supabaseAdmin.from('profiles').delete().eq('user_id', target_user_id);
+
+      const { error: delError } = await supabaseAdmin.auth.admin.deleteUser(target_user_id);
+      if (delError) throw delError;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+
     return new Response(JSON.stringify({ error: 'Unknown action' }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
