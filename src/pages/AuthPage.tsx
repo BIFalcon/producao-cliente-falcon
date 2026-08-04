@@ -14,39 +14,31 @@ const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [hasUsers, setHasUsers] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (user) navigate('/');
   }, [user, navigate]);
 
-  useEffect(() => {
-    supabase.rpc('has_any_users').then(({ data }) => {
-      setHasUsers(data ?? false);
-    });
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (!hasUsers) {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        toast.success('Conta Master Admin criada com sucesso!');
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       navigate('/');
     } catch (err: any) {
-      toast.error(err.message || 'Erro na autenticação');
+      const msg = err?.message || '';
+      if (/invalid login credentials/i.test(msg)) {
+        toast.error('E-mail ou senha inválidos');
+      } else {
+        toast.error(msg || 'Erro na autenticação');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  if (authLoading || hasUsers === null) {
+  if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -54,7 +46,8 @@ const AuthPage = () => {
     );
   }
 
-  const isFirstUser = !hasUsers;
+  const isFirstUser = false;
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
