@@ -23,7 +23,7 @@ const CrmAccountsPage = () => {
     enabled: !!tenantId,
     queryFn: async () => {
       let q = (supabase.from('crm_accounts') as any)
-        .select('id, account_type, company_name, travel_agent_name, city, segment, stage, updated_at, crm_visits(visit_date)')
+        .select('id, account_type, company_name, travel_agent_name, city, segment, stage, properties, updated_at, crm_visits(visit_date)')
         .eq('tenant_id', tenantId!)
         .order('updated_at', { ascending: false });
       if (stageFilter !== 'all') q = q.eq('stage', stageFilter);
@@ -82,16 +82,17 @@ const CrmAccountsPage = () => {
                   <th className="px-4 py-3 text-left">Tipo</th>
                   <th className="px-4 py-3 text-left">Cidade</th>
                   <th className="px-4 py-3 text-left">Segmento</th>
+                  <th className="px-4 py-3 text-left">Hotéis</th>
                   <th className="px-4 py-3 text-left">Estágio</th>
                   <th className="px-4 py-3 text-left">Última Interação</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-xs">Carregando...</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">Carregando...</td></tr>
                 )}
                 {!isLoading && filtered.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhuma conta encontrada</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhuma conta encontrada</td></tr>
                 )}
                 {filtered.map((a: any) => {
                   const name = a.account_type === 'agencia' ? a.travel_agent_name : a.company_name;
@@ -107,6 +108,9 @@ const CrmAccountsPage = () => {
                       <td className="px-4 py-3 text-muted-foreground">{ACCOUNT_TYPE_LABELS[a.account_type as 'empresa' | 'agencia']}</td>
                       <td className="px-4 py-3 text-muted-foreground">{a.city || '—'}</td>
                       <td className="px-4 py-3 text-muted-foreground">{a.segment || '—'}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                        {a.properties && a.properties.length > 0 ? a.properties.join(', ') : '—'}
+                      </td>
                       <td className="px-4 py-3">
                         <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
                               style={{ background: STAGE_COLORS[a.stage as CrmAccountStage] + '22', color: STAGE_COLORS[a.stage as CrmAccountStage] }}>
