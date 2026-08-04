@@ -267,7 +267,7 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                 batches.map((b: any) => (
                   <tr key={b.id} className="border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
                     <td className="px-3 py-2 text-foreground/80 text-xs whitespace-nowrap">{formatDateTime(b.created_at)}</td>
-                    <td className="px-3 py-2 text-foreground text-xs truncate max-w-[200px]">{b.file_name || '—'}</td>
+                    <td className="px-3 py-2 text-foreground text-xs break-all whitespace-normal min-w-[220px]" title={b.file_name || undefined}>{b.file_name || '—'}</td>
                     <td className="px-3 py-2 text-xs text-foreground/80">{b.mode === 'replace' ? 'Substituir' : b.mode === 'append' ? 'Adicionar' : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-foreground/80">{(b.total_rows || 0).toLocaleString('pt-BR')}</td>
                     <td className="px-3 py-2">{renderStatus(b.status)}</td>
