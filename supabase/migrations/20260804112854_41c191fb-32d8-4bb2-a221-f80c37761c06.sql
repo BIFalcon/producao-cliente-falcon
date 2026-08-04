@@ -1,0 +1,1 @@
+SELECT public.process_reservations((SELECT id FROM public.tenants WHERE name = 'Falcon - Nordeste'), NULL);
