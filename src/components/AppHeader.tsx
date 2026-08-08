@@ -1,18 +1,17 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFilters } from '@/contexts/FiltersContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LogOut, Database, Users, Building2, User, Briefcase } from 'lucide-react';
-import falconLogo from '@/assets/falcon-logo.png';
+import MultiSelectFilter from '@/components/MultiSelectFilter';
+import AppSidebar from '@/components/AppSidebar';
+import { Building2 } from 'lucide-react';
 import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
 const AppHeader = () => {
-  const { signOut, role, isSuperAdmin, tenantId, setActiveTenantId } = useAuth();
-  const { filters, options, setFilter } = useFilters();
+  const { isSuperAdmin, tenantId, setActiveTenantId } = useAuth();
+  const { filters, options, setFilter, toggleMulti } = useFilters();
 
   const { data: tenants } = useQuery({
     queryKey: ['all-tenants-header'],
@@ -24,20 +23,18 @@ const AppHeader = () => {
   });
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-      <div className="flex h-14 items-center justify-between px-4 lg:px-6">
-        <div className="flex items-center gap-3">
-          <img src={falconLogo} alt="Falcon" className="h-8 w-auto" />
-        </div>
+    <>
+      <AppSidebar />
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex min-h-14 flex-wrap items-center gap-2 px-4 py-2 lg:px-6">
+          <span className="mr-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Filtros
+          </span>
 
-        <div className="flex items-center gap-2">
           {isSuperAdmin && (
-            <Select
-              value={tenantId || ''}
-              onValueChange={(v) => setActiveTenantId(v || null)}
-            >
-              <SelectTrigger className="h-8 w-[180px] bg-primary/10 border-primary/30 text-xs">
-                <Building2 className="h-3 w-3 mr-1 text-primary" />
+            <Select value={tenantId || ''} onValueChange={(v) => setActiveTenantId(v || null)}>
+              <SelectTrigger className="h-9 w-[220px] border-primary/30 bg-primary/10 text-xs">
+                <Building2 className="mr-1 h-3.5 w-3.5 text-primary" />
                 <SelectValue placeholder="Selecionar Tenant" />
               </SelectTrigger>
               <SelectContent>
@@ -48,56 +45,46 @@ const AppHeader = () => {
             </Select>
           )}
 
-          <Select
-            value={filters.property || 'all'}
-            onValueChange={(v) => setFilter('property', v === 'all' ? null : v)}
-          >
-            <SelectTrigger className="h-8 w-[160px] bg-secondary text-xs">
-              <SelectValue placeholder="Hotel" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Hotéis</SelectItem>
-              {options.properties.map((p) => (
-                <SelectItem key={p} value={p}>{p}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelectFilter
+            label="Hotéis"
+            allLabel="Todos os Hotéis"
+            className="w-[220px]"
+            options={options.properties.map((p) => ({ value: p, label: p }))}
+            selected={filters.property}
+            onToggle={(v) => toggleMulti('property', v)}
+            onClear={() => setFilter('property', [])}
+          />
 
           <Select
             value={filters.year?.toString() || 'all'}
             onValueChange={(v) => setFilter('year', v === 'all' ? null : parseInt(v))}
           >
-            <SelectTrigger className="h-8 w-[100px] bg-secondary text-xs">
+            <SelectTrigger className="h-9 w-[130px] bg-secondary text-xs">
               <SelectValue placeholder="Ano" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">Todos os Anos</SelectItem>
               {options.years.map((y) => (
                 <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <Select
-            value={filters.month?.toString() || 'all'}
-            onValueChange={(v) => setFilter('month', v === 'all' ? null : parseInt(v))}
-          >
-            <SelectTrigger className="h-8 w-[120px] bg-secondary text-xs">
-              <SelectValue placeholder="Mês" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Meses</SelectItem>
-              {MONTH_NAMES_FULL.map((m, i) => (
-                <SelectItem key={i + 1} value={(i + 1).toString()}>{m}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelectFilter
+            label="Meses"
+            allLabel="Todos os Meses"
+            className="w-[190px]"
+            options={MONTH_NAMES_FULL.map((m, i) => ({ value: i + 1, label: m }))}
+            selected={filters.month}
+            onToggle={(v) => toggleMulti('month', v)}
+            onClear={() => setFilter('month', [])}
+          />
 
           <Select
             value={filters.channel || 'all'}
             onValueChange={(v) => setFilter('channel', v === 'all' ? null : v)}
           >
-            <SelectTrigger className="h-8 w-[140px] bg-secondary text-xs">
+            <SelectTrigger className="h-9 w-[190px] bg-secondary text-xs">
               <SelectValue placeholder="Canal" />
             </SelectTrigger>
             <SelectContent>
@@ -107,39 +94,9 @@ const AppHeader = () => {
               ))}
             </SelectContent>
           </Select>
-
-          <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-            <Link to="/comercial"><Briefcase className="mr-1 h-3 w-3" />Comercial</Link>
-          </Button>
-
-          {(isSuperAdmin || role === 'master_admin' || role === 'editor') && (
-            <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-              <Link to="/upload"><Database className="mr-1 h-3 w-3" />Central de Dados</Link>
-            </Button>
-          )}
-
-          {(isSuperAdmin || role === 'master_admin') && (
-            <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-              <Link to="/users"><Users className="mr-1 h-3 w-3" />Usuários</Link>
-            </Button>
-          )}
-
-          {isSuperAdmin && (
-            <Button variant="outline" size="sm" className="h-8 text-xs" asChild>
-              <Link to="/tenants"><Building2 className="mr-1 h-3 w-3" />Tenants</Link>
-            </Button>
-          )}
-
-          <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0 text-muted-foreground" title="Meu perfil">
-            <Link to="/profile"><User className="h-4 w-4" /></Link>
-          </Button>
-
-          <Button variant="ghost" size="sm" onClick={signOut} className="h-8 text-xs text-muted-foreground">
-            <LogOut className="mr-1 h-3 w-3" />Sair
-          </Button>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 };
 

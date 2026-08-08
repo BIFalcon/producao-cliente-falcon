@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatPercent, formatNumber, toTitleCase, MONTH_NAMES } from '@/lib/formatters';
+import { monthsLabel } from '@/lib/formatters';
 import { ChevronDown, ChevronRight, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -68,12 +69,9 @@ const AgentAnalysis = () => {
     },
   });
 
-  const currentLabel = filters.month
-    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${currentYear}`
-    : `${currentYear}`;
-  const previousLabel = filters.month
-    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${previousYear}`
-    : `${previousYear}`;
+  const monthPart = monthsLabel(filters.month);
+  const currentLabel = monthPart ? `${monthPart} ${currentYear}` : `${currentYear}`;
+  const previousLabel = monthPart ? `${monthPart} ${previousYear}` : `${previousYear}`;
 
   const periodLabel = `${currentLabel} vs ${previousLabel}`;
 

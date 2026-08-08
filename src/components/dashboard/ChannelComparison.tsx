@@ -138,7 +138,7 @@ const ChannelComparison = () => {
                       </td>
                       <td className="px-4 py-2 text-foreground font-medium">{row.channel}</td>
                       {years.map((y, i) => (
-                        <td key={y} className={`px-4 py-2 text-right font-mono ${i === 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        <td key={y} className={`px-4 py-2 text-right font-mono ${i === 0 ? 'text-foreground font-semibold' : 'text-foreground/70'}`}>
                           {formatRevenueTable(row.revenues[y] || 0)}
                         </td>
                       ))}
@@ -152,7 +152,7 @@ const ChannelComparison = () => {
                             <td className="px-4 py-1.5"></td>
                             <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.name)}</td>
                             {years.map((y, i) => (
-                              <td key={y} className={`px-4 py-1.5 text-right font-mono text-xs ${i === 0 ? 'text-foreground/80' : 'text-muted-foreground'}`}>
+                              <td key={y} className={`px-4 py-1.5 text-right font-mono text-xs ${i === 0 ? 'text-foreground/90' : 'text-foreground/60'}`}>
                                 {formatRevenueTable(sub.revenues[y] || 0)}
                               </td>
                             ))}

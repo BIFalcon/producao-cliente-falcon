@@ -510,7 +510,7 @@ export type Database = {
     }
     Functions: {
       get_agent_breakdown: {
-        Args: { p_property?: string; p_tenant_id: string; p_year?: number }
+        Args: { p_property?: string[]; p_tenant_id: string; p_year?: number }
         Returns: {
           companies: string[]
           reservations: number
@@ -522,9 +522,9 @@ export type Database = {
         Args: {
           p_agent: string
           p_current_year?: number
-          p_month?: number
+          p_month?: number[]
           p_previous_year?: number
-          p_property?: string
+          p_property?: string[]
           p_tenant_id: string
         }
         Returns: {
@@ -540,9 +540,9 @@ export type Database = {
       get_agent_comparison: {
         Args: {
           p_current_year?: number
-          p_month?: number
+          p_month?: number[]
           p_previous_year?: number
-          p_property?: string
+          p_property?: string[]
           p_tenant_id: string
         }
         Returns: {
@@ -583,7 +583,7 @@ export type Database = {
         Returns: string[]
       }
       get_channel_analytics: {
-        Args: { p_property?: string; p_tenant_id: string; p_year?: number }
+        Args: { p_property?: string[]; p_tenant_id: string; p_year?: number }
         Returns: {
           reservations: number
           revenue: number
@@ -594,9 +594,9 @@ export type Database = {
       get_channel_comparison: {
         Args: {
           p_current_year?: number
-          p_month?: number
+          p_month?: number[]
           p_previous_year?: number
-          p_property?: string
+          p_property?: string[]
           p_tenant_id: string
         }
         Returns: {
@@ -611,9 +611,9 @@ export type Database = {
         Args: {
           p_channel: string
           p_current_year?: number
-          p_month?: number
+          p_month?: number[]
           p_previous_year?: number
-          p_property?: string
+          p_property?: string[]
           p_tenant_id: string
         }
         Returns: {
@@ -629,8 +629,8 @@ export type Database = {
       get_channel_drilldown_multiyear: {
         Args: {
           p_channel: string
-          p_month?: number
-          p_property?: string
+          p_month?: number[]
+          p_property?: string[]
           p_tenant_id: string
         }
         Returns: {
@@ -642,7 +642,7 @@ export type Database = {
         }[]
       }
       get_channel_multiyear: {
-        Args: { p_month?: number; p_property?: string; p_tenant_id: string }
+        Args: { p_month?: number[]; p_property?: string[]; p_tenant_id: string }
         Returns: {
           departure_year: number
           revenue: number
@@ -654,7 +654,7 @@ export type Database = {
       get_city_analytics: {
         Args: {
           p_channel?: string
-          p_property?: string
+          p_property?: string[]
           p_tenant_id: string
           p_year?: number
         }
@@ -670,8 +670,8 @@ export type Database = {
       get_company_city_analytics: {
         Args: {
           p_channel?: string
-          p_month?: number
-          p_property?: string
+          p_month?: number[]
+          p_property?: string[]
           p_tenant_id: string
           p_year?: number
         }
@@ -686,8 +686,8 @@ export type Database = {
         Args: {
           p_channel?: string
           p_city: string
-          p_month?: number
-          p_property?: string
+          p_month?: number[]
+          p_property?: string[]
           p_state?: string
           p_tenant_id: string
           p_year?: number
@@ -703,7 +703,7 @@ export type Database = {
           p_channel?: string
           p_current_year?: number
           p_previous_year?: number
-          p_property?: string
+          p_property?: string[]
           p_tenant_id: string
         }
         Returns: {
@@ -721,7 +721,7 @@ export type Database = {
       get_concentration_metrics: {
         Args: {
           p_channel?: string
-          p_property?: string
+          p_property?: string[]
           p_tenant_id: string
           p_year?: number
         }
@@ -735,8 +735,8 @@ export type Database = {
       get_dashboard_kpis: {
         Args: {
           p_channel?: string
-          p_month?: number
-          p_property?: string
+          p_month?: number[]
+          p_property?: string[]
           p_tenant_id: string
           p_year?: number
         }
@@ -759,8 +759,8 @@ export type Database = {
       get_guest_city_analytics: {
         Args: {
           p_channel?: string
-          p_month?: number
-          p_property?: string
+          p_month?: number[]
+          p_property?: string[]
           p_tenant_id: string
           p_year?: number
         }
@@ -776,8 +776,8 @@ export type Database = {
         Args: {
           p_channel?: string
           p_city: string
-          p_month?: number
-          p_property?: string
+          p_month?: number[]
+          p_property?: string[]
           p_state?: string
           p_tenant_id: string
           p_year?: number
@@ -792,7 +792,7 @@ export type Database = {
       get_monthly_revenue: {
         Args: {
           p_channel?: string
-          p_property?: string
+          p_property?: string[]
           p_tenant_id: string
           p_year?: number
         }

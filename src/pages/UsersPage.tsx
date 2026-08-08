@@ -174,7 +174,7 @@ const UsersPage = () => {
 
   return (
     <FiltersProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pl-14">
         <AppHeader />
         <div className="p-4 lg:p-6 space-y-4">
           <div className="flex items-center justify-between">

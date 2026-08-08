@@ -48,7 +48,7 @@ const CrmDashboardPage = () => {
   const negociando = byStage['em_negociacao'] || 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pl-14">
       <AppHeader />
       <div className="space-y-4 p-4 lg:p-6">
         <div className="flex items-center justify-between">
