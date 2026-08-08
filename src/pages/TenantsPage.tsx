@@ -22,7 +22,7 @@ const TenantsPage = () => {
   if (!isSuperAdmin) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pl-14">
       <AppHeader />
       <div className="p-4 lg:p-6">
         <div className="surface-card p-6">

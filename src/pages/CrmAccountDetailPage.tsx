@@ -109,7 +109,7 @@ const CrmAccountDetailPage = () => {
 
   if (!account) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pl-14">
         <AppHeader />
         <div className="p-6 text-sm text-muted-foreground">Carregando...</div>
       </div>
@@ -120,7 +120,7 @@ const CrmAccountDetailPage = () => {
   const lastVisitDays = daysBetween(visits?.[0]?.visit_date);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pl-14">
       <AppHeader />
       <div className="space-y-4 p-4 lg:p-6">
         <div className="flex items-center gap-2">

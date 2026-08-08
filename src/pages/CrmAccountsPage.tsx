@@ -44,7 +44,7 @@ const CrmAccountsPage = () => {
   }, [data, search]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pl-14">
       <AppHeader />
       <div className="space-y-4 p-4 lg:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">

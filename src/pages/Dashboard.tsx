@@ -111,7 +111,7 @@ const DashboardContent = () => {
 
 const Dashboard = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pl-14">
       <AppHeader />
       <DashboardContent />
     </div>

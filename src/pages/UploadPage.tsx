@@ -735,7 +735,7 @@ const UploadPage = () => {
   const canUpload = file && !uploading && !loadingSheets && (!needsSheetSelection || selectedSheet);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pl-14">
       <div className="border-b px-4 py-3" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
