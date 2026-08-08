@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFilters } from '@/contexts/FiltersContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatRevenueTable, formatPercent, formatNumber, MONTH_NAMES } from '@/lib/formatters';
+import { monthsLabel } from '@/lib/formatters';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
@@ -42,12 +43,9 @@ const CompanyTable = () => {
     return data.filter(r => r.company_name?.toLowerCase().includes(q)).slice(0, 50);
   }, [data, search]);
 
-  const currentLabel = filters.month
-    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${currentYear}`
-    : `${currentYear}`;
-  const previousLabel = filters.month
-    ? `${MONTH_NAMES[(filters.month || 1) - 1]} ${previousYear}`
-    : `${previousYear}`;
+  const monthPart = monthsLabel(filters.month);
+  const currentLabel = monthPart ? `${monthPart} ${currentYear}` : `${currentYear}`;
+  const previousLabel = monthPart ? `${monthPart} ${previousYear}` : `${previousYear}`;
 
   if (isLoading) {
     return (

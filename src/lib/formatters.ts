@@ -61,3 +61,10 @@ export const toTitleCase = (text: string | null | undefined): string => {
     })
     .join(' ');
 };
+
+// Rótulo de período para seleção múltipla de meses
+export const monthsLabel = (months: number[] = []): string => {
+  if (!months || months.length === 0) return '';
+  if (months.length === 1) return MONTH_NAMES[months[0] - 1];
+  return `${months.length} meses`;
+};
