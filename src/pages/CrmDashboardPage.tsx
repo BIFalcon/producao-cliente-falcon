@@ -15,7 +15,7 @@ const CrmDashboardPage = () => {
     enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.from('crm_accounts') as any)
-        .select('id, stage, account_type, company_name, travel_agent_name')
+        .select('id, stage, account_status, account_type, company_name, travel_agent_name')
         .eq('tenant_id', tenantId!);
       if (error) throw error;
       return data as any[];
