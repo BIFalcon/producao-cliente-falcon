@@ -9,7 +9,20 @@ import { ArrowLeft, Pencil, Plus, CalendarClock, TrendingUp, MapPin, Phone, Mail
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
 import VisitFormDialog from '@/components/crm/VisitFormDialog';
-import { ACCOUNT_TYPE_LABELS, STAGE_COLORS, STAGE_LABELS, VISIT_TYPE_LABELS, CrmAccountStage, CrmVisitType, formatDateBR, daysBetween } from '@/lib/crm';
+import {
+  ACCOUNT_TYPE_LABELS,
+  ACCOUNT_STATUS_LABELS,
+  ACCOUNT_STATUS_COLORS,
+  STAGE_COLORS,
+  STAGE_LABELS,
+  STAGE_DESCRIPTIONS,
+  VISIT_TYPE_LABELS,
+  CrmAccountStage,
+  CrmAccountStatus,
+  CrmVisitType,
+  formatDateBR,
+  daysBetween,
+} from '@/lib/crm';
 import { formatRevenue, MONTH_NAMES } from '@/lib/formatters';
 
 const visitIcon = (type: CrmVisitType) => {
@@ -133,13 +146,25 @@ const CrmAccountDetailPage = () => {
         <div className="surface-card p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <h1 className="text-2xl font-semibold text-foreground">{name}</h1>
                 <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
                       style={{ background: STAGE_COLORS[account.stage as CrmAccountStage] + '22', color: STAGE_COLORS[account.stage as CrmAccountStage] }}>
                   {STAGE_LABELS[account.stage as CrmAccountStage]}
                 </span>
+                {account.account_status && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
+                        style={{
+                          background: ACCOUNT_STATUS_COLORS[account.account_status as CrmAccountStatus] + '22',
+                          color: ACCOUNT_STATUS_COLORS[account.account_status as CrmAccountStatus],
+                        }}>
+                    Conta {ACCOUNT_STATUS_LABELS[account.account_status as CrmAccountStatus]}
+                  </span>
+                )}
               </div>
+              <p className="mb-1 text-xs text-muted-foreground">
+                {STAGE_DESCRIPTIONS[account.stage as CrmAccountStage]}
+              </p>
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <span>{ACCOUNT_TYPE_LABELS[account.account_type as 'empresa' | 'agencia']}</span>
                 {account.city && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {account.city}</span>}

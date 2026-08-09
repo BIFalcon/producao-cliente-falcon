@@ -10,7 +10,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { ACCOUNT_TYPE_LABELS, CrmAccountStage, CrmAccountType, STAGE_LABELS, STAGE_ORDER } from '@/lib/crm';
+import {
+  ACCOUNT_TYPE_LABELS,
+  ACCOUNT_STATUS_LABELS,
+  CrmAccountStage,
+  CrmAccountStatus,
+  CrmAccountType,
+  FINAL_STAGE,
+  STAGE_DESCRIPTIONS,
+  STAGE_LABELS,
+  STAGE_ORDER,
+} from '@/lib/crm';
 
 interface AccountFormDialogProps {
   open: boolean;
@@ -27,7 +37,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [travelAgentName, setTravelAgentName] = useState('');
   const [city, setCity] = useState('');
   const [segment, setSegment] = useState('');
-  const [stage, setStage] = useState<CrmAccountStage>('prospectado');
+  const [stage, setStage] = useState<CrmAccountStage>('prospeccao');
+  const [accountStatus, setAccountStatus] = useState<CrmAccountStatus | null>(null);
   const [notes, setNotes] = useState('');
   const [properties, setProperties] = useState<string[]>([]);
 
@@ -52,6 +63,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setCity(account.city || '');
       setSegment(account.segment || '');
       setStage(account.stage);
+      setAccountStatus(account.account_status ?? null);
       setNotes(account.notes || '');
       setProperties(account.properties || []);
     } else {
@@ -60,11 +72,21 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setTravelAgentName('');
       setCity('');
       setSegment('');
-      setStage('prospectado');
+      setStage('prospeccao');
+      setAccountStatus(null);
       setNotes('');
       setProperties([]);
     }
   }, [account, open]);
+
+  // O Status da Conta só existe a partir do estágio "Fechamento" e nasce como Ativo.
+  useEffect(() => {
+    if (stage === FINAL_STAGE) {
+      setAccountStatus((prev) => prev ?? 'ativo');
+    } else {
+      setAccountStatus(null);
+    }
+  }, [stage]);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -77,6 +99,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         city: city.trim() || null,
         segment: segment.trim() || null,
         stage,
+        account_status: stage === FINAL_STAGE ? (accountStatus ?? 'ativo') : null,
         notes: notes.trim() || null,
         properties,
       };
@@ -119,17 +142,43 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Estágio</Label>
+              <Label className="text-xs">Estágio do Funil</Label>
               <Select value={stage} onValueChange={(v) => setStage(v as CrmAccountStage)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {STAGE_ORDER.map((s) => (
-                    <SelectItem key={s} value={s}>{STAGE_LABELS[s]}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      <span className="flex flex-col">
+                        <span>{STAGE_LABELS[s]}</span>
+                        <span className="text-xs text-muted-foreground">{STAGE_DESCRIPTIONS[s]}</span>
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="mt-1 text-xs text-muted-foreground">{STAGE_DESCRIPTIONS[stage]}</p>
             </div>
           </div>
+
+          {stage === FINAL_STAGE && (
+            <div>
+              <Label className="text-xs">Status da Conta</Label>
+              <Select
+                value={accountStatus ?? 'ativo'}
+                onValueChange={(v) => setAccountStatus(v as CrmAccountStatus)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(ACCOUNT_STATUS_LABELS) as CrmAccountStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>{ACCOUNT_STATUS_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Nasce como Ativo no Fechamento. Marque Inativo se o cliente parar de gerar movimento.
+              </p>
+            </div>
+          )}
 
           {accountType === 'empresa' ? (
             <div>

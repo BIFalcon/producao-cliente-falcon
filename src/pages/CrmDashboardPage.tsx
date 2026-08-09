@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppHeader from '@/components/AppHeader';
-import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER, CrmAccountStage, formatDateBR, daysBetween } from '@/lib/crm';
+import { STAGE_COLORS, STAGE_LABELS, STAGE_DESCRIPTIONS, STAGE_ORDER, CrmAccountStage, formatDateBR, daysBetween } from '@/lib/crm';
 import { Users, CalendarClock, TrendingUp, AlertTriangle } from 'lucide-react';
 
 const CrmDashboardPage = () => {
@@ -15,7 +15,7 @@ const CrmDashboardPage = () => {
     enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.from('crm_accounts') as any)
-        .select('id, stage, account_type, company_name, travel_agent_name')
+        .select('id, stage, account_status, account_type, company_name, travel_agent_name')
         .eq('tenant_id', tenantId!);
       if (error) throw error;
       return data as any[];
@@ -44,8 +44,8 @@ const CrmDashboardPage = () => {
     return acc;
   }, {});
   const total = accounts?.length || 0;
-  const ativos = byStage['cliente_ativo'] || 0;
-  const negociando = byStage['em_negociacao'] || 0;
+  const ativos = (accounts ?? []).filter((a) => a.account_status === 'ativo').length;
+  const negociando = byStage['negociacao'] || 0;
 
   return (
     <div className="min-h-screen bg-background pl-14">
@@ -73,6 +73,7 @@ const CrmDashboardPage = () => {
               <span className="text-xs uppercase tracking-wider text-muted-foreground">Clientes Ativos</span>
             </div>
             <div className="text-2xl font-bold font-mono">{ativos}</div>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Status da Conta = Ativo</p>
           </div>
           <div className="surface-card px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
@@ -92,20 +93,27 @@ const CrmDashboardPage = () => {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="surface-card p-6">
-            <h3 className="mb-4 text-sm font-semibold">Funil por Estágio</h3>
-            <div className="space-y-2">
-              {STAGE_ORDER.map((s) => {
+            <h3 className="text-sm font-semibold">Funil de Conquista</h3>
+            <p className="mb-4 text-xs text-muted-foreground">7 etapas, da prospecção ao fechamento</p>
+            <div className="space-y-3">
+              {STAGE_ORDER.map((s, idx) => {
                 const count = byStage[s] || 0;
                 const pct = total > 0 ? (count / total) * 100 : 0;
                 return (
                   <div key={s}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-foreground">{STAGE_LABELS[s as CrmAccountStage]}</span>
-                      <span className="text-muted-foreground font-mono">{count} ({pct.toFixed(0)}%)</span>
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="font-mono text-[10px] text-muted-foreground">{idx + 1}</span>
+                          <span className="font-medium text-foreground">{STAGE_LABELS[s]}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{STAGE_DESCRIPTIONS[s]}</p>
+                      </div>
+                      <span className="shrink-0 text-xs text-foreground/70 font-mono">{count} ({pct.toFixed(0)}%)</span>
                     </div>
                     <div className="h-2 rounded-full bg-secondary overflow-hidden">
                       <div className="h-full rounded-full transition-all"
-                           style={{ width: `${pct}%`, background: STAGE_COLORS[s as CrmAccountStage] }} />
+                           style={{ width: `${pct}%`, background: STAGE_COLORS[s] }} />
                     </div>
                   </div>
                 );
