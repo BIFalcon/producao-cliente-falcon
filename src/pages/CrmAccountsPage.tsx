@@ -35,7 +35,7 @@ const CrmAccountsPage = () => {
     enabled: !!tenantId,
     queryFn: async () => {
       let q = (supabase.from('crm_accounts') as any)
-        .select('id, account_type, company_name, travel_agent_name, city, segment, stage, properties, updated_at, crm_visits(visit_date)')
+        .select('id, account_type, company_name, travel_agent_name, city, segment, stage, account_status, properties, updated_at, crm_visits(visit_date)')
         .eq('tenant_id', tenantId!)
         .order('updated_at', { ascending: false });
       if (stageFilter !== 'all') q = q.eq('stage', stageFilter);
