@@ -93,20 +93,27 @@ const CrmDashboardPage = () => {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="surface-card p-6">
-            <h3 className="mb-4 text-sm font-semibold">Funil por Estágio</h3>
-            <div className="space-y-2">
-              {STAGE_ORDER.map((s) => {
+            <h3 className="text-sm font-semibold">Funil de Conquista</h3>
+            <p className="mb-4 text-xs text-muted-foreground">7 etapas, da prospecção ao fechamento</p>
+            <div className="space-y-3">
+              {STAGE_ORDER.map((s, idx) => {
                 const count = byStage[s] || 0;
                 const pct = total > 0 ? (count / total) * 100 : 0;
                 return (
                   <div key={s}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-foreground">{STAGE_LABELS[s as CrmAccountStage]}</span>
-                      <span className="text-muted-foreground font-mono">{count} ({pct.toFixed(0)}%)</span>
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="font-mono text-[10px] text-muted-foreground">{idx + 1}</span>
+                          <span className="font-medium text-foreground">{STAGE_LABELS[s]}</span>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">{STAGE_DESCRIPTIONS[s]}</p>
+                      </div>
+                      <span className="shrink-0 text-xs text-foreground/70 font-mono">{count} ({pct.toFixed(0)}%)</span>
                     </div>
                     <div className="h-2 rounded-full bg-secondary overflow-hidden">
                       <div className="h-full rounded-full transition-all"
-                           style={{ width: `${pct}%`, background: STAGE_COLORS[s as CrmAccountStage] }} />
+                           style={{ width: `${pct}%`, background: STAGE_COLORS[s] }} />
                     </div>
                   </div>
                 );
