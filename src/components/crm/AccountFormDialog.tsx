@@ -141,17 +141,43 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
               </Select>
             </div>
             <div>
-              <Label className="text-xs">Estágio</Label>
+              <Label className="text-xs">Estágio do Funil</Label>
               <Select value={stage} onValueChange={(v) => setStage(v as CrmAccountStage)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {STAGE_ORDER.map((s) => (
-                    <SelectItem key={s} value={s}>{STAGE_LABELS[s]}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      <span className="flex flex-col">
+                        <span>{STAGE_LABELS[s]}</span>
+                        <span className="text-xs text-muted-foreground">{STAGE_DESCRIPTIONS[s]}</span>
+                      </span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="mt-1 text-xs text-muted-foreground">{STAGE_DESCRIPTIONS[stage]}</p>
             </div>
           </div>
+
+          {stage === FINAL_STAGE && (
+            <div>
+              <Label className="text-xs">Status da Conta</Label>
+              <Select
+                value={accountStatus ?? 'ativo'}
+                onValueChange={(v) => setAccountStatus(v as CrmAccountStatus)}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(ACCOUNT_STATUS_LABELS) as CrmAccountStatus[]).map((s) => (
+                    <SelectItem key={s} value={s}>{ACCOUNT_STATUS_LABELS[s]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Nasce como Ativo no Fechamento. Marque Inativo se o cliente parar de gerar movimento.
+              </p>
+            </div>
+          )}
 
           {accountType === 'empresa' ? (
             <div>
