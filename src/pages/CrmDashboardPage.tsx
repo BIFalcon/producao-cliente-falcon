@@ -73,6 +73,7 @@ const CrmDashboardPage = () => {
               <span className="text-xs uppercase tracking-wider text-muted-foreground">Clientes Ativos</span>
             </div>
             <div className="text-2xl font-bold font-mono">{ativos}</div>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">Status da Conta = Ativo</p>
           </div>
           <div className="surface-card px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
