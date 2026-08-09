@@ -9,7 +9,19 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search } from 'lucide-react';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
-import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER, ACCOUNT_TYPE_LABELS, CrmAccountStage, formatDateBR } from '@/lib/crm';
+import {
+  STAGE_COLORS,
+  STAGE_LABELS,
+  STAGE_DESCRIPTIONS,
+  STAGE_ORDER,
+  ACCOUNT_TYPE_LABELS,
+  ACCOUNT_STATUS_LABELS,
+  ACCOUNT_STATUS_COLORS,
+  CrmAccountStage,
+  CrmAccountStatus,
+  formatDateBR,
+} from '@/lib/crm';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CrmAccountsPage = () => {
   const { tenantId } = useAuth();
