@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppHeader from '@/components/AppHeader';
-import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER, CrmAccountStage, formatDateBR, daysBetween } from '@/lib/crm';
+import { STAGE_COLORS, STAGE_LABELS, STAGE_DESCRIPTIONS, STAGE_ORDER, CrmAccountStage, formatDateBR, daysBetween } from '@/lib/crm';
 import { Users, CalendarClock, TrendingUp, AlertTriangle } from 'lucide-react';
 
 const CrmDashboardPage = () => {
