@@ -37,7 +37,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [travelAgentName, setTravelAgentName] = useState('');
   const [city, setCity] = useState('');
   const [segment, setSegment] = useState('');
-  const [stage, setStage] = useState<CrmAccountStage>('prospectado');
+  const [stage, setStage] = useState<CrmAccountStage>('prospeccao');
+  const [accountStatus, setAccountStatus] = useState<CrmAccountStatus | null>(null);
   const [notes, setNotes] = useState('');
   const [properties, setProperties] = useState<string[]>([]);
 
