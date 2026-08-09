@@ -99,6 +99,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         city: city.trim() || null,
         segment: segment.trim() || null,
         stage,
+        account_status: stage === FINAL_STAGE ? (accountStatus ?? 'ativo') : null,
         notes: notes.trim() || null,
         properties,
       };
