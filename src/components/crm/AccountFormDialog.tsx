@@ -63,6 +63,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setCity(account.city || '');
       setSegment(account.segment || '');
       setStage(account.stage);
+      setAccountStatus(account.account_status ?? null);
       setNotes(account.notes || '');
       setProperties(account.properties || []);
     } else {
@@ -71,11 +72,21 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setTravelAgentName('');
       setCity('');
       setSegment('');
-      setStage('prospectado');
+      setStage('prospeccao');
+      setAccountStatus(null);
       setNotes('');
       setProperties([]);
     }
   }, [account, open]);
+
+  // O Status da Conta só existe a partir do estágio "Fechamento" e nasce como Ativo.
+  useEffect(() => {
+    if (stage === FINAL_STAGE) {
+      setAccountStatus((prev) => prev ?? 'ativo');
+    } else {
+      setAccountStatus(null);
+    }
+  }, [stage]);
 
   const mutation = useMutation({
     mutationFn: async () => {
