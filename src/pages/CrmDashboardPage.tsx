@@ -44,8 +44,8 @@ const CrmDashboardPage = () => {
     return acc;
   }, {});
   const total = accounts?.length || 0;
-  const ativos = byStage['cliente_ativo'] || 0;
-  const negociando = byStage['em_negociacao'] || 0;
+  const ativos = (accounts ?? []).filter((a) => a.account_status === 'ativo').length;
+  const negociando = byStage['negociacao'] || 0;
 
   return (
     <div className="min-h-screen bg-background pl-14">
