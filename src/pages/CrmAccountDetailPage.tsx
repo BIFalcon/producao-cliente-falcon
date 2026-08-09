@@ -9,7 +9,20 @@ import { ArrowLeft, Pencil, Plus, CalendarClock, TrendingUp, MapPin, Phone, Mail
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
 import VisitFormDialog from '@/components/crm/VisitFormDialog';
-import { ACCOUNT_TYPE_LABELS, STAGE_COLORS, STAGE_LABELS, VISIT_TYPE_LABELS, CrmAccountStage, CrmVisitType, formatDateBR, daysBetween } from '@/lib/crm';
+import {
+  ACCOUNT_TYPE_LABELS,
+  ACCOUNT_STATUS_LABELS,
+  ACCOUNT_STATUS_COLORS,
+  STAGE_COLORS,
+  STAGE_LABELS,
+  STAGE_DESCRIPTIONS,
+  VISIT_TYPE_LABELS,
+  CrmAccountStage,
+  CrmAccountStatus,
+  CrmVisitType,
+  formatDateBR,
+  daysBetween,
+} from '@/lib/crm';
 import { formatRevenue, MONTH_NAMES } from '@/lib/formatters';
 
 const visitIcon = (type: CrmVisitType) => {
