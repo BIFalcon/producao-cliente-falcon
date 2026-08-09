@@ -48,6 +48,9 @@ export type Database = {
       }
       crm_accounts: {
         Row: {
+          account_status:
+            | Database["public"]["Enums"]["crm_account_status"]
+            | null
           account_type: Database["public"]["Enums"]["crm_account_type"]
           city: string | null
           company_name: string | null
@@ -63,6 +66,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_status?:
+            | Database["public"]["Enums"]["crm_account_status"]
+            | null
           account_type: Database["public"]["Enums"]["crm_account_type"]
           city?: string | null
           company_name?: string | null
@@ -78,6 +84,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_status?:
+            | Database["public"]["Enums"]["crm_account_status"]
+            | null
           account_type?: Database["public"]["Enums"]["crm_account_type"]
           city?: string | null
           company_name?: string | null
@@ -833,11 +842,14 @@ export type Database = {
     Enums: {
       app_role: "master_admin" | "editor" | "viewer" | "super_admin"
       crm_account_stage:
-        | "prospectado"
-        | "contatado"
-        | "em_negociacao"
-        | "cliente_ativo"
-        | "inativo"
+        | "prospeccao"
+        | "lead_identificado"
+        | "contato_realizado"
+        | "oportunidade"
+        | "proposta_enviada"
+        | "negociacao"
+        | "fechamento"
+      crm_account_status: "ativo" | "inativo"
       crm_account_type: "empresa" | "agencia"
       crm_visit_type:
         | "visita_presencial"
@@ -974,12 +986,15 @@ export const Constants = {
     Enums: {
       app_role: ["master_admin", "editor", "viewer", "super_admin"],
       crm_account_stage: [
-        "prospectado",
-        "contatado",
-        "em_negociacao",
-        "cliente_ativo",
-        "inativo",
+        "prospeccao",
+        "lead_identificado",
+        "contato_realizado",
+        "oportunidade",
+        "proposta_enviada",
+        "negociacao",
+        "fechamento",
       ],
+      crm_account_status: ["ativo", "inativo"],
       crm_account_type: ["empresa", "agencia"],
       crm_visit_type: [
         "visita_presencial",
