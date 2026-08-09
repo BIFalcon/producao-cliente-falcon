@@ -10,7 +10,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { ACCOUNT_TYPE_LABELS, CrmAccountStage, CrmAccountType, STAGE_LABELS, STAGE_ORDER } from '@/lib/crm';
+import {
+  ACCOUNT_TYPE_LABELS,
+  ACCOUNT_STATUS_LABELS,
+  CrmAccountStage,
+  CrmAccountStatus,
+  CrmAccountType,
+  FINAL_STAGE,
+  STAGE_DESCRIPTIONS,
+  STAGE_LABELS,
+  STAGE_ORDER,
+} from '@/lib/crm';
 
 interface AccountFormDialogProps {
   open: boolean;
