@@ -75,11 +75,16 @@ const CrmAccountsPage = () => {
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome, cidade..." className="pl-8 h-9" />
           </div>
           <Select value={stageFilter} onValueChange={setStageFilter}>
-            <SelectTrigger className="h-9 w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[220px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os Estágios</SelectItem>
               {STAGE_ORDER.map((s) => (
-                <SelectItem key={s} value={s}>{STAGE_LABELS[s]}</SelectItem>
+                <SelectItem key={s} value={s}>
+                  <span className="flex flex-col">
+                    <span>{STAGE_LABELS[s]}</span>
+                    <span className="text-xs text-muted-foreground">{STAGE_DESCRIPTIONS[s]}</span>
+                  </span>
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -95,19 +100,22 @@ const CrmAccountsPage = () => {
                   <th className="px-4 py-3 text-left">Cidade</th>
                   <th className="px-4 py-3 text-left">Segmento</th>
                   <th className="px-4 py-3 text-left">Hotéis</th>
-                  <th className="px-4 py-3 text-left">Estágio</th>
+                  <th className="px-4 py-3 text-left">Estágio do Funil</th>
+                  <th className="px-4 py-3 text-left">Status da Conta</th>
                   <th className="px-4 py-3 text-left">Última Interação</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">Carregando...</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">Carregando...</td></tr>
                 )}
                 {!isLoading && filtered.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhuma conta encontrada</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground text-xs">Nenhuma conta encontrada</td></tr>
                 )}
                 {filtered.map((a: any) => {
                   const name = a.account_type === 'agencia' ? a.travel_agent_name : a.company_name;
+                  const stage = a.stage as CrmAccountStage;
+                  const status = a.account_status as CrmAccountStatus | null;
                   const lastVisit = (a.crm_visits || [])
                     .map((v: any) => v.visit_date)
                     .sort()
@@ -124,10 +132,25 @@ const CrmAccountsPage = () => {
                         {a.properties && a.properties.length > 0 ? a.properties.join(', ') : '—'}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
-                              style={{ background: STAGE_COLORS[a.stage as CrmAccountStage] + '22', color: STAGE_COLORS[a.stage as CrmAccountStage] }}>
-                          {STAGE_LABELS[a.stage as CrmAccountStage]}
-                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
+                                  style={{ background: STAGE_COLORS[stage] + '22', color: STAGE_COLORS[stage] }}>
+                              {STAGE_LABELS[stage]}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>{STAGE_DESCRIPTIONS[stage]}</TooltipContent>
+                        </Tooltip>
+                      </td>
+                      <td className="px-4 py-3">
+                        {status ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
+                                style={{ background: ACCOUNT_STATUS_COLORS[status] + '22', color: ACCOUNT_STATUS_COLORS[status] }}>
+                            {ACCOUNT_STATUS_LABELS[status]}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs font-mono">{lastVisit ? formatDateBR(lastVisit) : '—'}</td>
                     </tr>
