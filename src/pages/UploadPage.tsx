@@ -442,6 +442,22 @@ const UploadPage = () => {
     return date.toISOString().split('T')[0];
   };
 
+  // Detecta a linha de cabeçalho: alguns relatórios têm título/linhas em branco no topo.
+  const detectHeaderRow = (matrix: any[][]): number => {
+    const limit = Math.min(matrix.length, 30);
+    let bestIdx = 0;
+    let bestScore = -1;
+    for (let i = 0; i < limit; i++) {
+      const row = matrix[i] || [];
+      const score = row.filter(
+        c => typeof c === 'string' && COLUMN_MAP[c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()]
+      ).length;
+      if (score > bestScore) { bestScore = score; bestIdx = i; }
+      if (score >= 5) return i;
+    }
+    return bestScore > 0 ? bestIdx : 0;
+  };
+
   const parseExcelLocally = async (excelFile: File, sheetName: string): Promise<ParsedRow[]> => {
     let workbook = (excelFile as any).__workbook;
     if (!workbook) {
@@ -451,14 +467,13 @@ const UploadPage = () => {
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) throw new Error(`Aba "${sheetName}" não encontrada`);
 
-    const rawRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
-    if (rawRows.length === 0) throw new Error('Planilha vazia');
+    const matrix: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, blankrows: false });
+    if (matrix.length === 0) throw new Error('Planilha vazia');
 
-    const rawHeaders = Object.keys(rawRows[0]);
-    const headerMap: Record<string, string> = {};
-    rawHeaders.forEach(h => { headerMap[h] = normalizeHeader(h); });
+    const headerIdx = detectHeaderRow(matrix);
+    const headerRow = (matrix[headerIdx] || []).map(h => (h === null || h === undefined ? '' : String(h)));
+    const normalizedHeaders = headerRow.map(h => (h ? normalizeHeader(h) : ''));
 
-    const normalizedHeaders = Object.values(headerMap);
     const REQUIRED = ['property_name', 'reservation_status', 'confirmation_number'];
     const missing = REQUIRED.filter(c => !normalizedHeaders.includes(c));
     if (missing.length > 0) {
@@ -471,17 +486,30 @@ const UploadPage = () => {
     }
 
     const dateColumns = ['reservation_date', 'arrival_date', 'departure_date'];
-    return rawRows.map((row: any) => {
+    const rows: ParsedRow[] = [];
+
+    for (let r = headerIdx + 1; r < matrix.length; r++) {
+      const row = matrix[r] || [];
+      if (row.every(c => c === null || c === undefined || c === '')) continue;
       const normalized: any = {};
-      for (const [rawKey, normKey] of Object.entries(headerMap)) {
-        let value = row[rawKey];
-        if (dateColumns.includes(normKey) && typeof value === 'number') {
-          value = excelDateToJSDate(value);
+      let hasValue = false;
+      for (let c = 0; c < normalizedHeaders.length; c++) {
+        const key = normalizedHeaders[c];
+        if (!key) continue;
+        let value = row[c] ?? null;
+        if (dateColumns.includes(key)) {
+          if (typeof value === 'number') value = excelDateToJSDate(value);
+          else if (value instanceof Date) value = value.toISOString().split('T')[0];
+          else if (typeof value === 'string' && value.trim()) value = value.trim().slice(0, 10);
         }
-        normalized[normKey] = value;
+        if (value !== null && value !== '') hasValue = true;
+        normalized[key] = value;
       }
-      return normalized as ParsedRow;
-    });
+      if (hasValue) rows.push(normalized as ParsedRow);
+    }
+
+    if (rows.length === 0) throw new Error('Nenhuma linha de dados encontrada na planilha');
+    return rows;
   };
 
   const parseMappingFile = async (f: File): Promise<Array<{ canal: string; segmento: string }>> => {
