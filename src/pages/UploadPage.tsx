@@ -425,6 +425,7 @@ const UploadPage = () => {
     'total revenue': 'total_revenue', 'receita total': 'total_revenue', 'revenue': 'total_revenue', 'receita': 'total_revenue',
     'room type': 'room_type', 'tipo de quarto': 'room_type', 'tipo quarto': 'room_type', 'roomtype': 'room_type',
     'source name': 'source_name', 'source': 'source_name', 'fonte': 'source_name', 'nome da fonte': 'source_name',
+    'individual first name': 'individual_first_name', 'first name': 'individual_first_name', 'nome individual': 'individual_first_name', 'primeiro nome': 'individual_first_name',
     'rate code': 'rate_code', 'codigo tarifa': 'rate_code', 'codigo de tarifa': 'rate_code',
     'rate code description': 'rate_code_description', 'descricao tarifa': 'rate_code_description', 'rate description': 'rate_code_description',
   };
