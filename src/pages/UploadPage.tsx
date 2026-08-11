@@ -442,21 +442,22 @@ const UploadPage = () => {
     return date.toISOString().split('T')[0];
   };
 
-  // Detecta a linha de cabeçalho: alguns relatórios têm título/linhas em branco no topo.
+  const REQUIRED_COLUMNS = ['property_name', 'reservation_status', 'confirmation_number'];
+
+  // Procura a linha de cabeçalho nas primeiras 15 linhas: usa a primeira que
+  // contiver as 3 colunas obrigatórias (aceitando sinônimos do COLUMN_MAP).
   const detectHeaderRow = (matrix: any[][]): number => {
-    const limit = Math.min(matrix.length, 30);
-    let bestIdx = 0;
-    let bestScore = -1;
+    const limit = Math.min(matrix.length, 15);
     for (let i = 0; i < limit; i++) {
       const row = matrix[i] || [];
-      const score = row.filter(
-        c => typeof c === 'string' && COLUMN_MAP[c.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim()]
-      ).length;
-      if (score > bestScore) { bestScore = score; bestIdx = i; }
-      if (score >= 5) return i;
+      const keys = row
+        .filter(c => typeof c === 'string' || typeof c === 'number')
+        .map(c => normalizeHeader(String(c)));
+      if (REQUIRED_COLUMNS.every(req => keys.includes(req))) return i;
     }
-    return bestScore > 0 ? bestIdx : 0;
+    return -1;
   };
+
 
   const parseExcelLocally = async (excelFile: File, sheetName: string): Promise<ParsedRow[]> => {
     let workbook = (excelFile as any).__workbook;
