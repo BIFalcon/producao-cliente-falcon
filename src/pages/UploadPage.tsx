@@ -472,19 +472,14 @@ const UploadPage = () => {
     if (matrix.length === 0) throw new Error('Planilha vazia');
 
     const headerIdx = detectHeaderRow(matrix);
+    if (headerIdx === -1) {
+      throw new Error(
+        'Colunas obrigatórias não encontradas nas primeiras 15 linhas: Property Name / Hotel, Reservation Status, Confirmation Number'
+      );
+    }
     const headerRow = (matrix[headerIdx] || []).map(h => (h === null || h === undefined ? '' : String(h)));
     const normalizedHeaders = headerRow.map(h => (h ? normalizeHeader(h) : ''));
 
-    const REQUIRED = ['property_name', 'reservation_status', 'confirmation_number'];
-    const missing = REQUIRED.filter(c => !normalizedHeaders.includes(c));
-    if (missing.length > 0) {
-      const names: Record<string, string> = {
-        'property_name': 'Property Name / Hotel',
-        'reservation_status': 'Reservation Status',
-        'confirmation_number': 'Confirmation Number',
-      };
-      throw new Error(`Colunas obrigatórias não encontradas: ${missing.map(c => names[c] || c).join(', ')}`);
-    }
 
     const dateColumns = ['reservation_date', 'arrival_date', 'departure_date'];
     const rows: ParsedRow[] = [];
