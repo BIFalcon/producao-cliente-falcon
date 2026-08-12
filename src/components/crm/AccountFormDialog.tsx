@@ -29,7 +29,7 @@ interface AccountFormDialogProps {
 }
 
 const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChange, account }) => {
-  const { tenantId } = useAuth();
+  const { tenantId, user } = useAuth();
   const qc = useQueryClient();
 
   const [accountType, setAccountType] = useState<CrmAccountType>('empresa');
@@ -41,6 +41,9 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [accountStatus, setAccountStatus] = useState<CrmAccountStatus | null>(null);
   const [notes, setNotes] = useState('');
   const [properties, setProperties] = useState<string[]>([]);
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
 
   const { data: allProperties } = useQuery({
     queryKey: ['crm-account-properties', tenantId],
@@ -50,6 +53,19 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       return (data?.[0]?.properties || []) as string[];
     },
   });
+
+  const { data: tenantUsers } = useQuery({
+    queryKey: ['crm-tenant-users', tenantId],
+    enabled: !!tenantId,
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_tenant_users_basic', { p_tenant_id: tenantId });
+      return (data || []) as { user_id: string; full_name: string }[];
+    },
+  });
+
+  const responsibleName = account?.responsible_user_id
+    ? tenantUsers?.find((u) => u.user_id === account.responsible_user_id)?.full_name || null
+    : null;
 
   const toggleProperty = (prop: string) => {
     setProperties((prev) => (prev.includes(prop) ? prev.filter((p) => p !== prop) : [...prev, prop]));
@@ -66,6 +82,9 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setAccountStatus(account.account_status ?? null);
       setNotes(account.notes || '');
       setProperties(account.properties || []);
+      setContactName(account.contact_name || '');
+      setContactEmail(account.contact_email || '');
+      setContactPhone(account.contact_phone || '');
     } else {
       setAccountType('empresa');
       setCompanyName('');
@@ -76,6 +95,9 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setAccountStatus(null);
       setNotes('');
       setProperties([]);
+      setContactName('');
+      setContactEmail('');
+      setContactPhone('');
     }
   }, [account, open]);
 
@@ -102,7 +124,11 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         account_status: stage === FINAL_STAGE ? (accountStatus ?? 'ativo') : null,
         notes: notes.trim() || null,
         properties,
+        contact_name: contactName.trim() || null,
+        contact_email: contactEmail.trim() || null,
+        contact_phone: contactPhone.trim() || null,
       };
+      if (!account?.id) payload.responsible_user_id = user?.id ?? null;
       if (accountType === 'empresa' && !payload.company_name) throw new Error('Nome da empresa é obrigatório');
       if (accountType === 'agencia' && !payload.travel_agent_name) throw new Error('Nome da agência é obrigatório');
 
@@ -202,6 +228,29 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
               <Input value={segment} onChange={(e) => setSegment(e.target.value)} placeholder="Ex: Óleo & Gás" />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Contato</Label>
+              <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Nome da pessoa de contato" />
+            </div>
+            <div>
+              <Label className="text-xs">Telefone</Label>
+              <Input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="(21) 99999-9999" />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">E-mail</Label>
+            <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contato@empresa.com" />
+          </div>
+
+          {account?.id && (
+            <div>
+              <Label className="text-xs">Executivo responsável</Label>
+              <p className="mt-1 text-sm text-foreground">{responsibleName || '— não vinculado'}</p>
+            </div>
+          )}
 
           <div>
             <Label className="text-xs">Hotéis atendidos</Label>

@@ -54,6 +54,9 @@ export type Database = {
           account_type: Database["public"]["Enums"]["crm_account_type"]
           city: string | null
           company_name: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           id: string
           notes: string | null
@@ -72,6 +75,9 @@ export type Database = {
           account_type: Database["public"]["Enums"]["crm_account_type"]
           city?: string | null
           company_name?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -90,6 +96,9 @@ export type Database = {
           account_type?: Database["public"]["Enums"]["crm_account_type"]
           city?: string | null
           company_name?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           id?: string
           notes?: string | null
@@ -810,6 +819,13 @@ export type Database = {
           reservations: number
           revenue: number
           year: number
+        }[]
+      }
+      get_tenant_users_basic: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          full_name: string
+          user_id: string
         }[]
       }
       has_any_users: { Args: never; Returns: boolean }
