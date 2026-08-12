@@ -57,6 +57,15 @@ const CrmAccountDetailPage = () => {
     },
   });
 
+  const { data: tenantUsers } = useQuery({
+    queryKey: ['crm-tenant-users', tenantId],
+    enabled: !!tenantId,
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)('get_tenant_users_basic', { p_tenant_id: tenantId });
+      return (data || []) as { user_id: string; full_name: string }[];
+    },
+  });
+
   const { data: visits } = useQuery({
     queryKey: ['crm-account-visits', id],
     enabled: !!id,
@@ -169,6 +178,10 @@ const CrmAccountDetailPage = () => {
                 <span>{ACCOUNT_TYPE_LABELS[account.account_type as 'empresa' | 'agencia']}</span>
                 {account.city && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {account.city}</span>}
                 {account.segment && <span>· {account.segment}</span>}
+                {account.contact_name && <span>· Contato: {account.contact_name}</span>}
+                {account.contact_email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {account.contact_email}</span>}
+                {account.contact_phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {account.contact_phone}</span>}
+                <span>· Executivo: {tenantUsers?.find((u) => u.user_id === account.responsible_user_id)?.full_name || '—'}</span>
               </div>
               {account.notes && (
                 <p className="mt-3 max-w-2xl text-sm text-foreground/80 whitespace-pre-wrap">{account.notes}</p>

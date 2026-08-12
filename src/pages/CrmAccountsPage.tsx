@@ -7,8 +7,9 @@ import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
+import AccountImportDialog from '@/components/crm/AccountImportDialog';
 import {
   STAGE_COLORS,
   STAGE_LABELS,
@@ -29,6 +30,7 @@ const CrmAccountsPage = () => {
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['crm-accounts-list', tenantId, stageFilter],
@@ -64,9 +66,14 @@ const CrmAccountsPage = () => {
             <h1 className="text-xl font-semibold text-foreground">Contas Comerciais</h1>
             <p className="text-xs text-muted-foreground">Empresas e agências em relacionamento comercial</p>
           </div>
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-1 h-4 w-4" /> Nova Conta
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="mr-1 h-4 w-4" /> Importar Planilha
+            </Button>
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-1 h-4 w-4" /> Nova Conta
+            </Button>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -163,6 +170,7 @@ const CrmAccountsPage = () => {
       </div>
 
       <AccountFormDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <AccountImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 };
