@@ -1,3 +1,4 @@
+import { applyHotelRename } from '@/lib/hotel-renames';
 import Papa from 'papaparse';
 
 const COLUMN_MAP: Record<string, string> = {
@@ -114,7 +115,10 @@ export const parseCSV = (file: File): Promise<ParsedRow[]> => {
       skipEmptyLines: true,
       transformHeader: normalizeHeader,
       complete: (results) => {
-        resolve(results.data as ParsedRow[]);
+        const rows = (results.data as ParsedRow[]).map(row =>
+          row.property_name ? { ...row, property_name: applyHotelRename(row.property_name) as string } : row
+        );
+        resolve(rows);
       },
       error: (error) => {
         reject(error);

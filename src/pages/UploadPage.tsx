@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { applyHotelRename } from '@/lib/hotel-renames';
 import { Upload, Replace, PlusCircle, ArrowLeft, FileSpreadsheet, Loader2, Table2, MapPin, Building2, AlertTriangle, History, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -498,6 +499,7 @@ const UploadPage = () => {
           else if (value instanceof Date) value = value.toISOString().split('T')[0];
           else if (typeof value === 'string' && value.trim()) value = value.trim().slice(0, 10);
         }
+        if (key === 'property_name') value = applyHotelRename(value);
         if (value !== null && value !== '') hasValue = true;
         normalized[key] = value;
       }
