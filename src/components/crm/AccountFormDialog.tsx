@@ -245,12 +245,24 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
             <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contato@empresa.com" />
           </div>
 
-          {account?.id && (
-            <div>
-              <Label className="text-xs">Executivo responsável</Label>
-              <p className="mt-1 text-sm text-foreground">{responsibleName || '— não vinculado'}</p>
-            </div>
-          )}
+          <div>
+            <Label className="text-xs">Executivo responsável</Label>
+            <Select value={responsibleUserId ?? 'none'} onValueChange={(v) => setResponsibleUserId(v === 'none' ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar executivo" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— não vinculado</SelectItem>
+                {(tenantUsers || []).map((u) => (
+                  <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {account?.id
+                ? `Atual: ${responsibleName || '— não vinculado'}`
+                : 'Preenchido automaticamente com você; pode ser alterado.'}
+            </p>
+          </div>
+
 
           <div>
             <Label className="text-xs">Hotéis atendidos</Label>
