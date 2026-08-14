@@ -44,6 +44,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [responsibleUserId, setResponsibleUserId] = useState<string | null>(null);
+
 
   const { data: allProperties } = useQuery({
     queryKey: ['crm-account-properties', tenantId],
