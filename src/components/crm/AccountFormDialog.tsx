@@ -102,6 +102,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setContactName('');
       setContactEmail('');
       setContactPhone('');
+      setResponsibleUserId(user?.id ?? null);
+
     }
   }, [account, open]);
 
