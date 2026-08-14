@@ -828,6 +828,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_tenant_users_with_hotels: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          full_name: string
+          hotels: string[]
+          role: string
+          user_id: string
+        }[]
+      }
       has_any_users: { Args: never; Returns: boolean }
       has_any_users_in_tenant: {
         Args: { _tenant_id: string }
