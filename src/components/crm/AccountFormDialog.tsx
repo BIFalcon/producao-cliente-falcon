@@ -134,7 +134,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         contact_email: contactEmail.trim() || null,
         contact_phone: contactPhone.trim() || null,
       };
-      if (!account?.id) payload.responsible_user_id = user?.id ?? null;
+      payload.responsible_user_id = responsibleUserId ?? (account?.id ? null : user?.id ?? null);
       if (accountType === 'empresa' && !payload.company_name) throw new Error('Nome da empresa é obrigatório');
       if (accountType === 'agencia' && !payload.travel_agent_name) throw new Error('Nome da agência é obrigatório');
 
