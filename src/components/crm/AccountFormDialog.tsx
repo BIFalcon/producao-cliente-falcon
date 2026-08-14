@@ -44,6 +44,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
+  const [responsibleUserId, setResponsibleUserId] = useState<string | null>(null);
+
 
   const { data: allProperties } = useQuery({
     queryKey: ['crm-account-properties', tenantId],
@@ -85,6 +87,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setContactName(account.contact_name || '');
       setContactEmail(account.contact_email || '');
       setContactPhone(account.contact_phone || '');
+      setResponsibleUserId(account.responsible_user_id ?? null);
+
     } else {
       setAccountType('empresa');
       setCompanyName('');
@@ -98,6 +102,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setContactName('');
       setContactEmail('');
       setContactPhone('');
+      setResponsibleUserId(user?.id ?? null);
+
     }
   }, [account, open]);
 
@@ -128,7 +134,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         contact_email: contactEmail.trim() || null,
         contact_phone: contactPhone.trim() || null,
       };
-      if (!account?.id) payload.responsible_user_id = user?.id ?? null;
+      payload.responsible_user_id = responsibleUserId ?? (account?.id ? null : user?.id ?? null);
       if (accountType === 'empresa' && !payload.company_name) throw new Error('Nome da empresa é obrigatório');
       if (accountType === 'agencia' && !payload.travel_agent_name) throw new Error('Nome da agência é obrigatório');
 
@@ -245,12 +251,24 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
             <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contato@empresa.com" />
           </div>
 
-          {account?.id && (
-            <div>
-              <Label className="text-xs">Executivo responsável</Label>
-              <p className="mt-1 text-sm text-foreground">{responsibleName || '— não vinculado'}</p>
-            </div>
-          )}
+          <div>
+            <Label className="text-xs">Executivo responsável</Label>
+            <Select value={responsibleUserId ?? 'none'} onValueChange={(v) => setResponsibleUserId(v === 'none' ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Selecionar executivo" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— não vinculado</SelectItem>
+                {(tenantUsers || []).map((u) => (
+                  <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {account?.id
+                ? `Atual: ${responsibleName || '— não vinculado'}`
+                : 'Preenchido automaticamente com você; pode ser alterado.'}
+            </p>
+          </div>
+
 
           <div>
             <Label className="text-xs">Hotéis atendidos</Label>
