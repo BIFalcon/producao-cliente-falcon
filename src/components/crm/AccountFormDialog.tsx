@@ -87,6 +87,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setContactName(account.contact_name || '');
       setContactEmail(account.contact_email || '');
       setContactPhone(account.contact_phone || '');
+      setResponsibleUserId(account.responsible_user_id ?? null);
+
     } else {
       setAccountType('empresa');
       setCompanyName('');
