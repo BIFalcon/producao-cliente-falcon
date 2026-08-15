@@ -301,7 +301,7 @@ const UploadPage = () => {
 
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
-  const [mode, setMode] = useState<'replace' | 'append'>('replace');
+  const [mode, setMode] = useState<'replace' | 'append'>('append');
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressText, setProgressText] = useState('');
