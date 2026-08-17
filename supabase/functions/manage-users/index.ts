@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      const allowedRoles = ['master_admin', 'editor', 'viewer', 'super_admin'];
+      const allowedRoles = ['master_admin', 'editor', 'viewer', 'gerente_geral', 'super_admin'];
       if (!allowedRoles.includes(role)) {
         return new Response(JSON.stringify({ error: 'Role inválida' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      const allowedRolesUpdate = ['master_admin', 'editor', 'viewer', 'super_admin'];
+      const allowedRolesUpdate = ['master_admin', 'editor', 'viewer', 'gerente_geral', 'super_admin'];
       if (!allowedRolesUpdate.includes(role)) {
         return new Response(JSON.stringify({ error: 'Role inválida' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -32,13 +32,15 @@ type UserRow = {
 const ROLE_LABELS: Record<string, string> = {
   master_admin: 'Master Admin',
   editor: 'Editor',
-  viewer: 'Viewer',
+  viewer: 'Comercial',
+  gerente_geral: 'Gerente Geral',
 };
 
 const ROLE_COLORS: Record<string, string> = {
   master_admin: 'bg-primary/20 text-primary border-primary/30',
   editor: 'bg-accent/20 text-accent-foreground border-accent/30',
   viewer: 'bg-muted text-muted-foreground border-border',
+  gerente_geral: 'bg-secondary text-secondary-foreground border-border',
 };
 
 const UsersPage = () => {
@@ -228,7 +230,8 @@ const UsersPage = () => {
                       <SelectContent>
                         <SelectItem value="master_admin">Master Admin</SelectItem>
                         <SelectItem value="editor">Editor</SelectItem>
-                        <SelectItem value="viewer">Viewer</SelectItem>
+                        <SelectItem value="viewer">Comercial</SelectItem>
+                        <SelectItem value="gerente_geral">Gerente Geral</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -275,7 +278,8 @@ const UsersPage = () => {
                     <SelectContent>
                       <SelectItem value="master_admin">Master Admin</SelectItem>
                       <SelectItem value="editor">Editor</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
+                      <SelectItem value="viewer">Comercial</SelectItem>
+                      <SelectItem value="gerente_geral">Gerente Geral</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
