@@ -65,6 +65,7 @@ export type Database = {
           responsible_user_id: string | null
           segment: string | null
           stage: Database["public"]["Enums"]["crm_account_stage"]
+          sub_segment: string | null
           tenant_id: string
           travel_agent_name: string | null
           updated_at: string
@@ -87,6 +88,7 @@ export type Database = {
           responsible_user_id?: string | null
           segment?: string | null
           stage?: Database["public"]["Enums"]["crm_account_stage"]
+          sub_segment?: string | null
           tenant_id: string
           travel_agent_name?: string | null
           updated_at?: string
@@ -109,6 +111,7 @@ export type Database = {
           responsible_user_id?: string | null
           segment?: string | null
           stage?: Database["public"]["Enums"]["crm_account_stage"]
+          sub_segment?: string | null
           tenant_id?: string
           travel_agent_name?: string | null
           updated_at?: string
@@ -530,6 +533,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_crm: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_crm: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_agent_breakdown: {
         Args: { p_property?: string[]; p_tenant_id: string; p_year?: number }
         Returns: {
@@ -876,7 +887,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "master_admin" | "editor" | "viewer" | "super_admin"
+      app_role:
+        | "master_admin"
+        | "editor"
+        | "viewer"
+        | "super_admin"
+        | "gerente_geral"
       crm_account_stage:
         | "prospeccao"
         | "lead_identificado"
@@ -893,6 +909,9 @@ export type Database = {
         | "email"
         | "whatsapp"
         | "outro"
+        | "reuniao_comercial_interna"
+        | "treinamento"
+        | "eventos_feiras"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1020,7 +1039,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["master_admin", "editor", "viewer", "super_admin"],
+      app_role: [
+        "master_admin",
+        "editor",
+        "viewer",
+        "super_admin",
+        "gerente_geral",
+      ],
       crm_account_stage: [
         "prospeccao",
         "lead_identificado",
@@ -1038,6 +1063,9 @@ export const Constants = {
         "email",
         "whatsapp",
         "outro",
+        "reuniao_comercial_interna",
+        "treinamento",
+        "eventos_feiras",
       ],
     },
   },

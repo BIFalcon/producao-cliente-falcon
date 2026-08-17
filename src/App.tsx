@@ -30,6 +30,17 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const CrmRoute = ({ children }: { children: React.ReactNode }) => {
+  const { role, roleLoading } = useAuth();
+  if (roleLoading) return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+  if (role === 'gerente_geral') return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
 const AppRoutes = () => (
   <Routes>
     <Route path="/auth" element={<AuthPage />} />
@@ -38,10 +49,10 @@ const AppRoutes = () => (
     <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
     <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-    <Route path="/comercial" element={<ProtectedRoute><CrmDashboardPage /></ProtectedRoute>} />
-    <Route path="/comercial/contas" element={<ProtectedRoute><CrmAccountsPage /></ProtectedRoute>} />
-    <Route path="/comercial/interacoes" element={<ProtectedRoute><CrmInteractionsPage /></ProtectedRoute>} />
-    <Route path="/comercial/contas/:id" element={<ProtectedRoute><CrmAccountDetailPage /></ProtectedRoute>} />
+    <Route path="/comercial" element={<ProtectedRoute><CrmRoute><CrmDashboardPage /></CrmRoute></ProtectedRoute>} />
+    <Route path="/comercial/contas" element={<ProtectedRoute><CrmRoute><CrmAccountsPage /></CrmRoute></ProtectedRoute>} />
+    <Route path="/comercial/interacoes" element={<ProtectedRoute><CrmRoute><CrmInteractionsPage /></CrmRoute></ProtectedRoute>} />
+    <Route path="/comercial/contas/:id" element={<ProtectedRoute><CrmRoute><CrmAccountDetailPage /></CrmRoute></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );

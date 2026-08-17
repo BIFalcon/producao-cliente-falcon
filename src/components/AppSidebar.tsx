@@ -18,7 +18,7 @@ const AppSidebar = () => {
 
   const items: NavItem[] = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard, visible: true },
-    { to: '/comercial', label: 'Comercial', icon: Briefcase, visible: true, matchPrefix: true },
+    { to: '/comercial', label: 'Comercial', icon: Briefcase, visible: role !== 'gerente_geral', matchPrefix: true },
     {
       to: '/upload',
       label: 'Central de Dados',

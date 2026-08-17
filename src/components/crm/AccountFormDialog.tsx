@@ -16,6 +16,8 @@ import {
   CrmAccountStage,
   CrmAccountStatus,
   CrmAccountType,
+  CrmAccountSubSegment,
+  SUB_SEGMENT_LABELS,
   FINAL_STAGE,
   STAGE_DESCRIPTIONS,
   STAGE_LABELS,
@@ -37,6 +39,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [travelAgentName, setTravelAgentName] = useState('');
   const [city, setCity] = useState('');
   const [segment, setSegment] = useState('');
+  const [subSegment, setSubSegment] = useState<CrmAccountSubSegment | null>(null);
   const [stage, setStage] = useState<CrmAccountStage>('prospeccao');
   const [accountStatus, setAccountStatus] = useState<CrmAccountStatus | null>(null);
   const [notes, setNotes] = useState('');
@@ -81,6 +84,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setTravelAgentName(account.travel_agent_name || '');
       setCity(account.city || '');
       setSegment(account.segment || '');
+      setSubSegment((account.sub_segment as CrmAccountSubSegment) ?? null);
       setStage(account.stage);
       setAccountStatus(account.account_status ?? null);
       setNotes(account.notes || '');
@@ -97,6 +101,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setTravelAgentName('');
       setCity('');
       setSegment('');
+      setSubSegment(null);
       setStage('prospeccao');
       setAccountStatus(null);
       setNotes('');
@@ -129,6 +134,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         travel_agent_name: accountType === 'agencia' ? travelAgentName.trim() : (travelAgentName.trim() || null),
         city: city.trim() || null,
         segment: segment.trim() || null,
+        sub_segment: subSegment,
         stage,
         account_status: stage === FINAL_STAGE ? (accountStatus ?? 'ativo') : null,
         notes: notes.trim() || null,
@@ -215,6 +221,22 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
               </p>
             </div>
           )}
+
+          <div>
+            <Label className="text-xs">Subsegmentação</Label>
+            <Select
+              value={subSegment ?? 'none'}
+              onValueChange={(v) => setSubSegment(v === 'none' ? null : (v as CrmAccountSubSegment))}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— não informado</SelectItem>
+                {(Object.keys(SUB_SEGMENT_LABELS) as CrmAccountSubSegment[]).map((s) => (
+                  <SelectItem key={s} value={s}>{SUB_SEGMENT_LABELS[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {accountType === 'empresa' ? (
             <div>

@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { CrmVisitType, VISIT_TYPE_LABELS } from '@/lib/crm';
+import { CrmVisitType, VISIT_TYPE_LABELS, todayLocalISO } from '@/lib/crm';
 
 interface VisitFormDialogProps {
   open: boolean;
@@ -23,7 +23,7 @@ const VisitFormDialog: React.FC<VisitFormDialogProps> = ({ open, onOpenChange, a
   const qc = useQueryClient();
 
   const [visitType, setVisitType] = useState<CrmVisitType>('visita_presencial');
-  const [visitDate, setVisitDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [visitDate, setVisitDate] = useState<string>(todayLocalISO());
   const [summary, setSummary] = useState('');
   const [nextFollowUp, setNextFollowUp] = useState('');
 
@@ -35,7 +35,7 @@ const VisitFormDialog: React.FC<VisitFormDialogProps> = ({ open, onOpenChange, a
       setNextFollowUp(visit.next_follow_up_date || '');
     } else {
       setVisitType('visita_presencial');
-      setVisitDate(new Date().toISOString().slice(0, 10));
+      setVisitDate(todayLocalISO());
       setSummary('');
       setNextFollowUp('');
     }
