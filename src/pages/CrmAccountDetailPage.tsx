@@ -182,6 +182,9 @@ const CrmAccountDetailPage = () => {
                 {account.contact_email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {account.contact_email}</span>}
                 {account.contact_phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {account.contact_phone}</span>}
                 <span>· Executivo: {tenantUsers?.find((u) => u.user_id === account.responsible_user_id)?.full_name || '—'}</span>
+                {account.agreed_rate != null && (
+                  <span>· Tarifa acordo: R$ {Number(account.agreed_rate).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                )}
               </div>
               {account.notes && (
                 <p className="mt-3 max-w-2xl text-sm text-foreground/80 whitespace-pre-wrap">{account.notes}</p>
