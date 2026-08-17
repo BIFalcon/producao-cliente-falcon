@@ -156,11 +156,11 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-md flex-col gap-3 overflow-hidden">
         <DialogHeader>
           <DialogTitle>{account?.id ? 'Editar Conta' : 'Nova Conta Comercial'}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3">
+        <div className="grid flex-1 gap-3 overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Tipo</Label>
