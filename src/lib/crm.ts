@@ -80,6 +80,9 @@ export const VISIT_TYPE_LABELS: Record<CrmVisitType, string> = {
   ligacao: 'Ligação',
   email: 'E-mail',
   whatsapp: 'WhatsApp',
+  reuniao_comercial_interna: 'Reunião comercial interna',
+  treinamento: 'Treinamento',
+  eventos_feiras: 'Eventos e Feiras',
   outro: 'Outro',
 };
 
@@ -88,15 +91,35 @@ export const ACCOUNT_TYPE_LABELS: Record<CrmAccountType, string> = {
   agencia: 'Agência',
 };
 
+export const SUB_SEGMENT_LABELS: Record<CrmAccountSubSegment, string> = {
+  evento: 'Evento',
+  mensalista: 'Mensalista',
+  grupo: 'Grupo',
+};
+
+/** Data de hoje no fuso local (evita deslocamento de 1 dia do UTC) */
+export const todayLocalISO = (): string => {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+};
+
+/** Converte 'YYYY-MM-DD' em Date local (sem interpretar como UTC) */
+const parseDateOnly = (iso: string): Date => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return new Date(iso);
+};
+
 export const daysBetween = (dateISO: string | null | undefined): number | null => {
   if (!dateISO) return null;
-  const d = new Date(dateISO);
+  const d = parseDateOnly(dateISO);
   const diff = Date.now() - d.getTime();
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 };
 
 export const formatDateBR = (iso: string | null | undefined): string => {
   if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return parseDateOnly(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
