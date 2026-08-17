@@ -38,6 +38,7 @@ const AgentAnalysis = () => {
         pct_change: number | null;
         roomnights_current: number;
         roomnights_previous: number;
+        adr_current: number | null;
       }>;
     },
   });
@@ -92,6 +93,7 @@ const AgentAnalysis = () => {
         pct_change: number | null;
         roomnights_current: number;
         roomnights_previous: number;
+        adr_current: number | null;
       }>;
     },
   });
@@ -137,6 +139,7 @@ const AgentAnalysis = () => {
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('roomnights_previous')}>
                 Roomnights {previousLabel}<SortIcon column="roomnights_previous" />
               </th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Diária Média</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('revenue_current')}>
                 Receita {currentLabel}<SortIcon column="revenue_current" />
               </th>
@@ -163,6 +166,7 @@ const AgentAnalysis = () => {
                       <td className="px-4 py-2 text-foreground font-medium truncate max-w-[200px]">{toTitleCase(row.travel_agent_name)}</td>
                       <td className="px-4 py-2 text-right font-mono text-foreground">{formatNumber(Math.round(row.roomnights_current || 0))}</td>
                       <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(Math.round(row.roomnights_previous || 0))}</td>
+                      <td className="px-4 py-2 text-right font-mono text-foreground">{row.adr_current ? formatRevenueTable(row.adr_current) : '—'}</td>
                       <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue_current)}</td>
                       <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRevenueTable(row.revenue_previous)}</td>
                       <td className={`px-4 py-2 text-right font-mono ${(row.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
@@ -171,7 +175,7 @@ const AgentAnalysis = () => {
                     </tr>
                     {isExpanded && (
                       companiesLoading ? (
-                        <tr><td colSpan={7} className="px-8 py-4 text-center text-xs text-muted-foreground">Carregando...</td></tr>
+                        <tr><td colSpan={8} className="px-8 py-4 text-center text-xs text-muted-foreground">Carregando...</td></tr>
                       ) : companiesData && companiesData.length > 0 ? (
                         companiesData.map((sub, j) => (
                           <tr key={j} className="border-b bg-secondary/10" style={{ borderColor: 'rgba(255,255,255,0.02)' }}>
@@ -179,6 +183,7 @@ const AgentAnalysis = () => {
                             <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.company_name)}</td>
                             <td className="px-4 py-1.5 text-right font-mono text-xs text-foreground/80">{formatNumber(Math.round(sub.roomnights_current || 0))}</td>
                             <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatNumber(Math.round(sub.roomnights_previous || 0))}</td>
+                            <td className="px-4 py-1.5 text-right font-mono text-xs text-foreground/80">{sub.adr_current ? formatRevenueTable(sub.adr_current) : '—'}</td>
                             <td className="px-4 py-1.5 text-right font-mono text-xs text-foreground/80">{formatRevenueTable(sub.revenue_current)}</td>
                             <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatRevenueTable(sub.revenue_previous)}</td>
                             <td className={`px-4 py-1.5 text-right font-mono text-xs ${(sub.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
@@ -187,7 +192,7 @@ const AgentAnalysis = () => {
                           </tr>
                         ))
                       ) : (
-                        <tr><td colSpan={7} className="px-8 py-4 text-center text-xs text-muted-foreground">Sem empresas vinculadas</td></tr>
+                        <tr><td colSpan={8} className="px-8 py-4 text-center text-xs text-muted-foreground">Sem empresas vinculadas</td></tr>
                       )
                     )}
                   </React.Fragment>
@@ -195,7 +200,7 @@ const AgentAnalysis = () => {
               })
             ) : (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   {search ? 'Nenhuma agência encontrada' : 'Sem dados'}
                 </td>
               </tr>

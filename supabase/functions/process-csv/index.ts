@@ -180,6 +180,7 @@ Deno.serve(async (req) => {
         room_revenue: roomRev,
         fb_revenue: fbRev,
         total_revenue: totalRev,
+        avg_daily_rate: normalizeRevenue(row.avg_daily_rate) || null,
         room_type: normalizeText(row.room_type),
         source_name: normalizeText(row.source_name),
         individual_first_name: normalizeText(row.individual_first_name),
