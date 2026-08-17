@@ -1081,8 +1081,12 @@ const UploadPage = () => {
             </Button>
           </div>
 
+          {/* ===== SECTION: Reclassify channels ===== */}
+          {tenantId && <ReclassifyPanel tenantId={tenantId} />}
+
           {/* ===== SECTION: Upload History ===== */}
           {tenantId && <UploadHistory tenantId={tenantId} />}
+
 
         </TenantLoadingGuard>
       </div>
