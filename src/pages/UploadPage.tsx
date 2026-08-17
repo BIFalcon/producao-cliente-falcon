@@ -285,6 +285,71 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
   );
 };
 
+// ─── Reclassify channels section ──────────────────────────────────────────
+const ReclassifyPanel: React.FC<{ tenantId: string }> = ({ tenantId }) => {
+  const queryClient = useQueryClient();
+  const [running, setRunning] = useState(false);
+
+  const handleReclassify = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await (supabase.rpc as any)('reclassify_tenant_channels', {
+        p_tenant_id: tenantId,
+      });
+      if (error) throw error;
+      const updated = Number(data ?? 0);
+      toast.success(
+        updated > 0
+          ? `${updated.toLocaleString('pt-BR')} reserva(s) reclassificada(s).`
+          : 'Nenhuma reserva precisava de correção.'
+      );
+      queryClient.invalidateQueries({ predicate: (q) => q.queryKey.includes(tenantId) });
+    } catch (e: any) {
+      toast.error(e?.message || 'Falha ao reclassificar');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <div className="mb-6">
+      <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground">
+        <RefreshCw className="h-4 w-4 text-primary" />
+        Reclassificar canais da base
+      </h2>
+      <div className="surface-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-muted-foreground">
+          Reaplica as regras fixas de canal (OTA = Booking/Expedia/Decolar, Operadoras e Layover) em toda
+          a base já processada deste tenant. Use quando registros antigos ficaram no canal errado. Nenhum
+          dado de reserva é apagado.
+        </p>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" disabled={running} className="h-8 shrink-0 gap-1.5 text-xs">
+              {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+              Reclassificar agora
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reclassificar canais?</AlertDialogTitle>
+              <AlertDialogDescription>
+                As reservas com Booking, Expedia ou Decolar irão para OTA; E-HTL e Azul Viagens para
+                Operadoras; e Layover / Azul Linhas Aéreas para Layover. Receitas e reservas não são
+                alteradas, apenas o canal.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleReclassify}>Reclassificar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main component ────────────────────────────────────────────────────────
 const UploadPage = () => {
   const { user, tenantId, isSuperAdmin, setActiveTenantId, roleLoading, loading } = useAuth();
