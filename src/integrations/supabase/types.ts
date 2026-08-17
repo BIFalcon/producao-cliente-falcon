@@ -52,6 +52,7 @@ export type Database = {
             | Database["public"]["Enums"]["crm_account_status"]
             | null
           account_type: Database["public"]["Enums"]["crm_account_type"]
+          agreed_rate: number | null
           city: string | null
           company_name: string | null
           contact_email: string | null
@@ -73,6 +74,7 @@ export type Database = {
             | Database["public"]["Enums"]["crm_account_status"]
             | null
           account_type: Database["public"]["Enums"]["crm_account_type"]
+          agreed_rate?: number | null
           city?: string | null
           company_name?: string | null
           contact_email?: string | null
@@ -94,6 +96,7 @@ export type Database = {
             | Database["public"]["Enums"]["crm_account_status"]
             | null
           account_type?: Database["public"]["Enums"]["crm_account_type"]
+          agreed_rate?: number | null
           city?: string | null
           company_name?: string | null
           contact_email?: string | null
@@ -553,6 +556,7 @@ export type Database = {
           revenue_current: number
           revenue_previous: number
           roomnights_current: number
+          roomnights_previous: number
         }[]
       }
       get_agent_comparison: {
@@ -570,6 +574,7 @@ export type Database = {
           revenue_current: number
           revenue_previous: number
           roomnights_current: number
+          roomnights_previous: number
           travel_agent_name: string
         }[]
       }
@@ -720,6 +725,7 @@ export type Database = {
         Args: {
           p_channel?: string
           p_current_year?: number
+          p_month?: number[]
           p_previous_year?: number
           p_property?: string[]
           p_tenant_id: string
@@ -734,6 +740,7 @@ export type Database = {
           revenue_share: number
           room_revenue_current: number
           roomnights_current: number
+          roomnights_previous: number
         }[]
       }
       get_concentration_metrics: {

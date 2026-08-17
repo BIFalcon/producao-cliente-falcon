@@ -36,6 +36,7 @@ export const exportAccountsToExcel = (
     'E-mail': a.contact_email || '',
     'Telefone': a.contact_phone || '',
     'Executivo Comercial': userName(a.responsible_user_id ?? null),
+    'Tarifa Acordo': a.agreed_rate ?? '',
     'Observações': a.notes || '',
     'Última Interação': (() => {
       const last = (a.crm_visits || []).map((v: any) => v.visit_date).sort().pop();

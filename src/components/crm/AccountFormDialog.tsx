@@ -45,6 +45,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [responsibleUserId, setResponsibleUserId] = useState<string | null>(null);
+  const [agreedRate, setAgreedRate] = useState('');
 
 
   const { data: allProperties } = useQuery({
@@ -88,6 +89,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setContactEmail(account.contact_email || '');
       setContactPhone(account.contact_phone || '');
       setResponsibleUserId(account.responsible_user_id ?? null);
+      setAgreedRate(account.agreed_rate != null ? String(account.agreed_rate) : '');
 
     } else {
       setAccountType('empresa');
@@ -103,6 +105,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setContactEmail('');
       setContactPhone('');
       setResponsibleUserId(user?.id ?? null);
+      setAgreedRate('');
 
     }
   }, [account, open]);
@@ -133,6 +136,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         contact_name: contactName.trim() || null,
         contact_email: contactEmail.trim() || null,
         contact_phone: contactPhone.trim() || null,
+        agreed_rate: agreedRate.trim() ? Number(agreedRate.replace(',', '.')) : null,
       };
       payload.responsible_user_id = responsibleUserId ?? (account?.id ? null : user?.id ?? null);
       if (accountType === 'empresa' && !payload.company_name) throw new Error('Nome da empresa é obrigatório');
@@ -156,11 +160,11 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-md flex-col gap-3 overflow-hidden">
         <DialogHeader>
           <DialogTitle>{account?.id ? 'Editar Conta' : 'Nova Conta Comercial'}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3">
+        <div className="grid flex-1 gap-3 overflow-y-auto pr-1">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Tipo</Label>
@@ -246,9 +250,20 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
             </div>
           </div>
 
-          <div>
-            <Label className="text-xs">E-mail</Label>
-            <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contato@empresa.com" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">E-mail</Label>
+              <Input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="contato@empresa.com" />
+            </div>
+            <div>
+              <Label className="text-xs">Tarifa acordo (R$)</Label>
+              <Input
+                inputMode="decimal"
+                value={agreedRate}
+                onChange={(e) => setAgreedRate(e.target.value)}
+                placeholder="Ex: 320,00"
+              />
+            </div>
           </div>
 
           <div>
