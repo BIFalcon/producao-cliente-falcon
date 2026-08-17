@@ -1,0 +1,2 @@
+SET LOCAL statement_timeout = '600s';
+SELECT public.process_reservations('083146fa-6330-4c58-806d-9d80add3a26b'::uuid, NULL);
