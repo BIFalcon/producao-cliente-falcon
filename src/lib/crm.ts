@@ -11,11 +11,16 @@ export type CrmAccountStatus = 'ativo' | 'inativo';
 
 export type CrmAccountType = 'empresa' | 'agencia';
 
+export type CrmAccountSubSegment = 'evento' | 'mensalista' | 'grupo';
+
 export type CrmVisitType =
   | 'visita_presencial'
   | 'ligacao'
   | 'email'
   | 'whatsapp'
+  | 'reuniao_comercial_interna'
+  | 'treinamento'
+  | 'eventos_feiras'
   | 'outro';
 
 export const STAGE_LABELS: Record<CrmAccountStage, string> = {
