@@ -180,6 +180,7 @@ export type Database = {
       processed_reservations: {
         Row: {
           arrival_date: string | null
+          avg_daily_rate: number | null
           city: string | null
           company_name: string | null
           confirmation_number: string
@@ -203,6 +204,7 @@ export type Database = {
         }
         Insert: {
           arrival_date?: string | null
+          avg_daily_rate?: number | null
           city?: string | null
           company_name?: string | null
           confirmation_number: string
@@ -226,6 +228,7 @@ export type Database = {
         }
         Update: {
           arrival_date?: string | null
+          avg_daily_rate?: number | null
           city?: string | null
           company_name?: string | null
           confirmation_number?: string
@@ -299,6 +302,7 @@ export type Database = {
         Row: {
           arrival_date: string | null
           arrival_time: string | null
+          avg_daily_rate: number | null
           city: string | null
           company_name: string | null
           confirmation_number: string | null
@@ -327,6 +331,7 @@ export type Database = {
         Insert: {
           arrival_date?: string | null
           arrival_time?: string | null
+          avg_daily_rate?: number | null
           city?: string | null
           company_name?: string | null
           confirmation_number?: string | null
@@ -355,6 +360,7 @@ export type Database = {
         Update: {
           arrival_date?: string | null
           arrival_time?: string | null
+          avg_daily_rate?: number | null
           city?: string | null
           company_name?: string | null
           confirmation_number?: string | null

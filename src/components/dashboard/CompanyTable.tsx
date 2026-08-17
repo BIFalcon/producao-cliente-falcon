@@ -38,6 +38,7 @@ const CompanyTable = () => {
         pct_change: number | null;
         roomnights_current: number;
         roomnights_previous: number;
+        adr_current: number | null;
       }>;
     },
   });
@@ -115,6 +116,7 @@ const CompanyTable = () => {
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('roomnights_previous')}>
                 Roomnights {previousLabel}<SortIcon column="roomnights_previous" />
               </th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Diária Média</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('revenue_current')}>
                 Receita {currentLabel}<SortIcon column="revenue_current" />
               </th>
@@ -131,6 +133,7 @@ const CompanyTable = () => {
                   <td className="px-4 py-2 text-foreground font-medium truncate max-w-[200px]">{row.company_name}</td>
                   <td className="px-4 py-2 text-right font-mono text-foreground">{formatNumber(Math.round(row.roomnights_current || 0))}</td>
                   <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(Math.round(row.roomnights_previous || 0))}</td>
+                  <td className="px-4 py-2 text-right font-mono text-foreground">{row.adr_current ? formatRevenueTable(row.adr_current) : '—'}</td>
                   <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue_current)}</td>
                   <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatRevenueTable(row.revenue_previous)}</td>
                   <td className={`px-4 py-2 text-right font-mono ${(row.pct_change || 0) >= 0 ? 'var-positive' : 'var-negative'}`}>
@@ -140,7 +143,7 @@ const CompanyTable = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                   {search ? 'Nenhuma empresa encontrada' : 'Sem dados de empresas disponíveis'}
                 </td>
               </tr>
