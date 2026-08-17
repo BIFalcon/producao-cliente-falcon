@@ -870,6 +870,10 @@ export type Database = {
         Args: { p_batch_id?: string; p_tenant_id: string }
         Returns: undefined
       }
+      reclassify_tenant_channels: {
+        Args: { p_tenant_id: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "master_admin" | "editor" | "viewer" | "super_admin"
