@@ -533,6 +533,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_crm: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
+      can_view_crm: {
+        Args: { _tenant_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_agent_breakdown: {
         Args: { p_property?: string[]; p_tenant_id: string; p_year?: number }
         Returns: {
