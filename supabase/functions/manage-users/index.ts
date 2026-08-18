@@ -345,6 +345,10 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Soltar referências que bloqueiam a exclusão em auth.users
+      await supabaseAdmin.from('crm_accounts').update({ responsible_user_id: null }).eq('responsible_user_id', target_user_id);
+      await supabaseAdmin.from('crm_visits').update({ created_by: null }).eq('created_by', target_user_id);
+      await supabaseAdmin.from('upload_batches').delete().eq('uploaded_by', target_user_id);
       await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id);
       await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id);
       await supabaseAdmin.from('profiles').delete().eq('user_id', target_user_id);
