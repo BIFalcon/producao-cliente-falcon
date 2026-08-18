@@ -239,13 +239,63 @@ const CrmAccountDetailPage = () => {
           </div>
         </div>
 
+        <div className="surface-card p-6">
+          <div className="mb-1 flex items-center gap-2">
+            {postClosing && postClosing.reservations > 0
+              ? <CheckCircle2 className="h-4 w-4 text-accent" />
+              : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
+            <h3 className="text-sm font-semibold">Produção após o Fechamento</h3>
+          </div>
+          {!account.closed_at ? (
+            <p className="text-xs text-muted-foreground">
+              Conta ainda não fechada. Ao mover para o estágio Fechamento, passamos a acompanhar os check-ins reais desta conta.
+            </p>
+          ) : postClosing && postClosing.reservations > 0 ? (
+            <>
+              <p className="mb-3 text-xs text-accent">
+                Cliente produziu — check-ins registrados a partir de {formatDateBR(account.closed_at)}.
+              </p>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                <div>
+                  <div className="text-xs text-muted-foreground">Receita</div>
+                  <div className="font-mono text-lg font-semibold text-primary">{formatRevenue(postClosing.revenue)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Reservas</div>
+                  <div className="font-mono text-lg font-semibold">{postClosing.reservations}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Roomnights</div>
+                  <div className="font-mono text-lg font-semibold">{Math.round(postClosing.roomnights)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">1º Check-in</div>
+                  <div className="font-mono text-sm">{formatDateBR(postClosing.first_checkin)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Último Check-in</div>
+                  <div className="font-mono text-sm">{formatDateBR(postClosing.last_checkin)}</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Fechada em {formatDateBR(account.closed_at)}, mas ainda sem check-ins na produção com este nome.
+            </p>
+          )}
+        </div>
+
+        {id && <AccountFollowers accountId={id} canManage={isAdmin || isResponsible} />}
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="surface-card p-6">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Timeline de Interações</h3>
-              <Button size="sm" onClick={() => { setEditVisit(null); setVisitOpen(true); }}>
-                <Plus className="mr-1 h-4 w-4" /> Nova
-              </Button>
+              {canEdit && (
+                <Button size="sm" onClick={() => { setEditVisit(null); setVisitOpen(true); }}>
+                  <Plus className="mr-1 h-4 w-4" /> Nova
+                </Button>
+              )}
             </div>
             {visits && visits.length > 0 ? (
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2">
