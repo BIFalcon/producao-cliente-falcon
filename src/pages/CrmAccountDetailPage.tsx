@@ -5,10 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Pencil, Plus, CalendarClock, TrendingUp, MapPin, Phone, Mail, MessageCircle, Building2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, CalendarClock, TrendingUp, MapPin, Phone, Mail, MessageCircle, Building2, Eye, CheckCircle2, CircleDashed } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
 import VisitFormDialog from '@/components/crm/VisitFormDialog';
+import AccountFollowers, { useAccountFollowers } from '@/components/crm/AccountFollowers';
+import { useCrmProduction } from '@/hooks/useCrmProduction';
+import { SUB_SEGMENT_LABELS, CrmAccountSubSegment } from '@/lib/crm';
 import {
   ACCOUNT_TYPE_LABELS,
   ACCOUNT_STATUS_LABELS,
@@ -38,7 +41,7 @@ const visitIcon = (type: CrmVisitType) => {
 
 const CrmAccountDetailPage = () => {
   const { id } = useParams();
-  const { tenantId } = useAuth();
+  const { tenantId, user, role, isSuperAdmin } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [visitOpen, setVisitOpen] = useState(false);
   const [editVisit, setEditVisit] = useState<any | null>(null);
@@ -97,6 +100,15 @@ const CrmAccountDetailPage = () => {
       return data as any[];
     },
   });
+
+  const { data: followers } = useAccountFollowers(id);
+  const { data: productionMap } = useCrmProduction();
+  const postClosing = id ? productionMap?.get(id) : undefined;
+
+  const isFollower = !!followers?.some((f) => f.user_id === user?.id);
+  const isResponsible = !!account && account.responsible_user_id === user?.id;
+  const isAdmin = isSuperAdmin || role === 'master_admin' || role === 'editor';
+  const canEdit = isAdmin || isResponsible || !isFollower;
 
   const productionSummary = useMemo(() => {
     if (!production || production.length === 0) return null;
@@ -178,6 +190,8 @@ const CrmAccountDetailPage = () => {
                 <span>{ACCOUNT_TYPE_LABELS[account.account_type as 'empresa' | 'agencia']}</span>
                 {account.city && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {account.city}</span>}
                 {account.segment && <span>· {account.segment}</span>}
+                {account.sub_segment && <span>· {SUB_SEGMENT_LABELS[account.sub_segment as CrmAccountSubSegment] || account.sub_segment}</span>}
+                {account.closed_at && <span>· Fechamento: {formatDateBR(account.closed_at)}</span>}
                 {account.contact_name && <span>· Contato: {account.contact_name}</span>}
                 {account.contact_email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {account.contact_email}</span>}
                 {account.contact_phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {account.contact_phone}</span>}
@@ -190,9 +204,15 @@ const CrmAccountDetailPage = () => {
                 <p className="mt-3 max-w-2xl text-sm text-foreground/80 whitespace-pre-wrap">{account.notes}</p>
               )}
             </div>
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Pencil className="mr-1 h-3 w-3" /> Editar
-            </Button>
+            {canEdit ? (
+              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                <Pencil className="mr-1 h-3 w-3" /> Editar
+              </Button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
+                <Eye className="h-3 w-3" /> Você segue esta conta (somente leitura)
+              </span>
+            )}
           </div>
         </div>
 
@@ -219,19 +239,69 @@ const CrmAccountDetailPage = () => {
           </div>
         </div>
 
+        <div className="surface-card p-6">
+          <div className="mb-1 flex items-center gap-2">
+            {postClosing && postClosing.reservations > 0
+              ? <CheckCircle2 className="h-4 w-4 text-accent" />
+              : <CircleDashed className="h-4 w-4 text-muted-foreground" />}
+            <h3 className="text-sm font-semibold">Produção após o Fechamento</h3>
+          </div>
+          {!account.closed_at ? (
+            <p className="text-xs text-muted-foreground">
+              Conta ainda não fechada. Ao mover para o estágio Fechamento, passamos a acompanhar os check-ins reais desta conta.
+            </p>
+          ) : postClosing && postClosing.reservations > 0 ? (
+            <>
+              <p className="mb-3 text-xs text-accent">
+                Cliente produziu — check-ins registrados a partir de {formatDateBR(account.closed_at)}.
+              </p>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                <div>
+                  <div className="text-xs text-muted-foreground">Receita</div>
+                  <div className="font-mono text-lg font-semibold text-primary">{formatRevenue(postClosing.revenue)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Reservas</div>
+                  <div className="font-mono text-lg font-semibold">{postClosing.reservations}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Roomnights</div>
+                  <div className="font-mono text-lg font-semibold">{Math.round(postClosing.roomnights)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">1º Check-in</div>
+                  <div className="font-mono text-sm">{formatDateBR(postClosing.first_checkin)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Último Check-in</div>
+                  <div className="font-mono text-sm">{formatDateBR(postClosing.last_checkin)}</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Fechada em {formatDateBR(account.closed_at)}, mas ainda sem check-ins na produção com este nome.
+            </p>
+          )}
+        </div>
+
+        {id && <AccountFollowers accountId={id} canManage={isAdmin || isResponsible} />}
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="surface-card p-6">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Timeline de Interações</h3>
-              <Button size="sm" onClick={() => { setEditVisit(null); setVisitOpen(true); }}>
-                <Plus className="mr-1 h-4 w-4" /> Nova
-              </Button>
+              {canEdit && (
+                <Button size="sm" onClick={() => { setEditVisit(null); setVisitOpen(true); }}>
+                  <Plus className="mr-1 h-4 w-4" /> Nova
+                </Button>
+              )}
             </div>
             {visits && visits.length > 0 ? (
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2">
                 {visits.map((v: any) => (
-                  <div key={v.id} className="flex gap-3 rounded-md border border-border/40 p-3 hover:bg-secondary/30 cursor-pointer"
-                       onClick={() => { setEditVisit(v); setVisitOpen(true); }}>
+                  <div key={v.id} className={`flex gap-3 rounded-md border border-border/40 p-3 ${canEdit ? 'cursor-pointer hover:bg-secondary/30' : ''}`}
+                       onClick={canEdit ? () => { setEditVisit(v); setVisitOpen(true); } : undefined}>
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
                       {visitIcon(v.visit_type as CrmVisitType)}
                     </div>

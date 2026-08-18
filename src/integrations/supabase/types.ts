@@ -46,6 +46,48 @@ export type Database = {
           },
         ]
       }
+      crm_account_followers: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_account_followers_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "crm_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_account_followers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_accounts: {
         Row: {
           account_status:
@@ -54,6 +96,7 @@ export type Database = {
           account_type: Database["public"]["Enums"]["crm_account_type"]
           agreed_rate: number | null
           city: string | null
+          closed_at: string | null
           company_name: string | null
           contact_email: string | null
           contact_name: string | null
@@ -77,6 +120,7 @@ export type Database = {
           account_type: Database["public"]["Enums"]["crm_account_type"]
           agreed_rate?: number | null
           city?: string | null
+          closed_at?: string | null
           company_name?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -100,6 +144,7 @@ export type Database = {
           account_type?: Database["public"]["Enums"]["crm_account_type"]
           agreed_rate?: number | null
           city?: string | null
+          closed_at?: string | null
           company_name?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -771,6 +816,18 @@ export type Database = {
           top1_share: number
           top3_share: number
           top5_share: number
+        }[]
+      }
+      get_crm_production: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          account_id: string
+          closed_at: string
+          first_checkin: string
+          last_checkin: string
+          reservations: number
+          revenue: number
+          roomnights: number
         }[]
       }
       get_current_tenant_id: { Args: never; Returns: string }
