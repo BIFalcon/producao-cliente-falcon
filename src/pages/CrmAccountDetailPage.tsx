@@ -101,6 +101,15 @@ const CrmAccountDetailPage = () => {
     },
   });
 
+  const { data: followers } = useAccountFollowers(id);
+  const { data: productionMap } = useCrmProduction();
+  const postClosing = id ? productionMap?.get(id) : undefined;
+
+  const isFollower = !!followers?.some((f) => f.user_id === user?.id);
+  const isResponsible = !!account && account.responsible_user_id === user?.id;
+  const isAdmin = isSuperAdmin || role === 'master_admin' || role === 'editor';
+  const canEdit = isAdmin || isResponsible || !isFollower;
+
   const productionSummary = useMemo(() => {
     if (!production || production.length === 0) return null;
     const now = Date.now();
