@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
       }
 
 
-      return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+      return new Response(JSON.stringify({ success: true, user_id: userId }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
