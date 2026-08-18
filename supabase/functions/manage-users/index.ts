@@ -101,35 +101,84 @@ Deno.serve(async (req) => {
         });
       }
 
+      let userId: string | null = null;
+
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
         user_metadata: { full_name: full_name || '', tenant_id: tenantId },
       });
-      if (createError) throw createError;
+
+      if (createError) {
+        const isEmailExists = (createError as any).code === 'email_exists' ||
+          /already been registered/i.test(createError.message || '');
+        if (!isEmailExists) throw createError;
+
+        // Conta de auth órfã (profile removido antes): localizar e reaproveitar
+        let existing: { id: string } | null = null;
+        for (let page = 1; page <= 20 && !existing; page++) {
+          const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 200 });
+          if (listError) throw listError;
+          existing = (list.users.find(
+            (u: any) => (u.email || '').toLowerCase() === String(email).toLowerCase()
+          ) as any) || null;
+          if (!list.users.length || list.users.length < 200) break;
+        }
+
+        if (!existing) {
+          return new Response(JSON.stringify({ error: 'E-mail já registrado e não foi possível localizar a conta. Contate o suporte.' }), {
+            status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // Se já pertence a outro tenant, bloquear
+        const { data: otherProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('tenant_id')
+          .eq('user_id', existing.id)
+          .maybeSingle();
+        if (otherProfile && otherProfile.tenant_id && otherProfile.tenant_id !== tenantId) {
+          return new Response(JSON.stringify({ error: 'Este e-mail já está em uso por outro cliente (tenant).' }), {
+            status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        await supabaseAdmin.auth.admin.updateUserById(existing.id, {
+          password,
+          email_confirm: true,
+          ban_duration: 'none',
+          user_metadata: { full_name: full_name || '', tenant_id: tenantId },
+        });
+        userId = existing.id;
+      } else {
+        userId = newUser.user.id;
+      }
 
       // Upsert garante que o profile exista mesmo se o trigger não tiver rodado
       await supabaseAdmin
         .from('profiles')
         .upsert(
-          { user_id: newUser.user.id, full_name: full_name || '', tenant_id: tenantId, is_active: true },
+          { user_id: userId, full_name: full_name || '', tenant_id: tenantId, is_active: true },
           { onConflict: 'user_id' }
         );
 
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', userId).eq('tenant_id', tenantId);
       await supabaseAdmin
         .from('user_roles')
-        .upsert({ user_id: newUser.user.id, role, tenant_id: tenantId }, { onConflict: 'user_id,role' });
+        .upsert({ user_id: userId, role, tenant_id: tenantId }, { onConflict: 'user_id,role' });
 
       // Set hotel permissions if provided and not master_admin
+      await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', userId).eq('tenant_id', tenantId);
       if (hotel_permissions && Array.isArray(hotel_permissions) && hotel_permissions.length > 0 && role !== 'master_admin') {
         const permRows = hotel_permissions.map((p: string) => ({
-          user_id: newUser.user.id,
+          user_id: userId,
           tenant_id: tenantId,
           property_name: p,
         }));
         await supabaseAdmin.from('user_hotel_permissions').insert(permRows);
       }
+
 
       return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
