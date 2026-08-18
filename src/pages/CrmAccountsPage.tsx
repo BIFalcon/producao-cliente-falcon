@@ -171,6 +171,7 @@ const CrmAccountsPage = () => {
                   <th className="px-4 py-3 text-left">Estágio do Funil</th>
                   <th className="px-4 py-3 text-left">Status da Conta</th>
                   <th className="px-4 py-3 text-left">Última Interação</th>
+                  <th className="px-4 py-3 text-left">Produção pós-fechamento</th>
                 </tr>
               </thead>
               <tbody>
@@ -222,6 +223,21 @@ const CrmAccountsPage = () => {
                         )}
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{lastVisit ? formatDateBR(lastVisit) : '—'}</td>
+                      <td className="px-4 py-3 text-xs">
+                        {(() => {
+                          const prod = productionMap?.get(a.id);
+                          if (!prod?.closed_at) return <span className="text-muted-foreground">—</span>;
+                          if (prod.reservations > 0) {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 text-accent">
+                                <Check className="h-3.5 w-3.5" />
+                                <span className="font-mono">{formatRevenue(prod.revenue)}</span>
+                              </span>
+                            );
+                          }
+                          return <span className="text-muted-foreground">Sem produção</span>;
+                        })()}
+                      </td>
                     </tr>
                   );
                 })}
