@@ -13,6 +13,8 @@ import { Download, Plus, Search, Upload } from 'lucide-react';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
 import AccountImportDialog from '@/components/crm/AccountImportDialog';
 import { useCrmUsers, accountMatchesExecutive, accountMatchesHotels } from '@/hooks/useCrmUsers';
+import { useCrmProduction } from '@/hooks/useCrmProduction';
+import { formatRevenue } from '@/lib/formatters';
 import { exportAccountsToExcel } from '@/lib/crm-export';
 import {
   STAGE_COLORS,
@@ -34,6 +36,7 @@ const CrmAccountsPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: users } = useCrmUsers();
+  const { data: productionMap } = useCrmProduction();
 
   const [stageFilter, setStageFilter] = useState<string>(searchParams.get('stage') || 'all');
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all');
