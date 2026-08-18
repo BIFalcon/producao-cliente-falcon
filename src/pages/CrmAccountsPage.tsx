@@ -9,7 +9,7 @@ import CrmNav from '@/components/crm/CrmNav';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download, Plus, Search, Upload } from 'lucide-react';
+import { Check, Download, Plus, Search, Upload } from 'lucide-react';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
 import AccountImportDialog from '@/components/crm/AccountImportDialog';
 import { useCrmUsers, accountMatchesExecutive, accountMatchesHotels } from '@/hooks/useCrmUsers';
