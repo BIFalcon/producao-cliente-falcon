@@ -300,8 +300,8 @@ const CrmAccountDetailPage = () => {
             {visits && visits.length > 0 ? (
               <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2">
                 {visits.map((v: any) => (
-                  <div key={v.id} className="flex gap-3 rounded-md border border-border/40 p-3 hover:bg-secondary/30 cursor-pointer"
-                       onClick={() => { setEditVisit(v); setVisitOpen(true); }}>
+                  <div key={v.id} className={`flex gap-3 rounded-md border border-border/40 p-3 ${canEdit ? 'cursor-pointer hover:bg-secondary/30' : ''}`}
+                       onClick={canEdit ? () => { setEditVisit(v); setVisitOpen(true); } : undefined}>
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
                       {visitIcon(v.visit_type as CrmVisitType)}
                     </div>
