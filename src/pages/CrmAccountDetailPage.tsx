@@ -9,6 +9,9 @@ import { ArrowLeft, Pencil, Plus, CalendarClock, TrendingUp, MapPin, Phone, Mail
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
 import VisitFormDialog from '@/components/crm/VisitFormDialog';
+import AccountFollowers, { useAccountFollowers } from '@/components/crm/AccountFollowers';
+import { useCrmProduction } from '@/hooks/useCrmProduction';
+import { SUB_SEGMENT_LABELS, CrmAccountSubSegment } from '@/lib/crm';
 import {
   ACCOUNT_TYPE_LABELS,
   ACCOUNT_STATUS_LABELS,
@@ -38,7 +41,7 @@ const visitIcon = (type: CrmVisitType) => {
 
 const CrmAccountDetailPage = () => {
   const { id } = useParams();
-  const { tenantId } = useAuth();
+  const { tenantId, user, role, isSuperAdmin } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [visitOpen, setVisitOpen] = useState(false);
   const [editVisit, setEditVisit] = useState<any | null>(null);
