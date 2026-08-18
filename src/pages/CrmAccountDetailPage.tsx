@@ -190,6 +190,8 @@ const CrmAccountDetailPage = () => {
                 <span>{ACCOUNT_TYPE_LABELS[account.account_type as 'empresa' | 'agencia']}</span>
                 {account.city && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {account.city}</span>}
                 {account.segment && <span>· {account.segment}</span>}
+                {account.sub_segment && <span>· {SUB_SEGMENT_LABELS[account.sub_segment as CrmAccountSubSegment] || account.sub_segment}</span>}
+                {account.closed_at && <span>· Fechamento: {formatDateBR(account.closed_at)}</span>}
                 {account.contact_name && <span>· Contato: {account.contact_name}</span>}
                 {account.contact_email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {account.contact_email}</span>}
                 {account.contact_phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {account.contact_phone}</span>}
@@ -202,9 +204,15 @@ const CrmAccountDetailPage = () => {
                 <p className="mt-3 max-w-2xl text-sm text-foreground/80 whitespace-pre-wrap">{account.notes}</p>
               )}
             </div>
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Pencil className="mr-1 h-3 w-3" /> Editar
-            </Button>
+            {canEdit ? (
+              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                <Pencil className="mr-1 h-3 w-3" /> Editar
+              </Button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
+                <Eye className="h-3 w-3" /> Você segue esta conta (somente leitura)
+              </span>
+            )}
           </div>
         </div>
 
