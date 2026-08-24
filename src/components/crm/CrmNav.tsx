@@ -5,6 +5,7 @@ const tabs = [
   { to: '/comercial', label: 'Dashboard' },
   { to: '/comercial/contas', label: 'Contas Comerciais' },
   { to: '/comercial/interacoes', label: 'Interações' },
+  { to: '/comercial/tarefas', label: 'Tarefas Futuras' },
 ];
 
 const CrmNav = () => {
