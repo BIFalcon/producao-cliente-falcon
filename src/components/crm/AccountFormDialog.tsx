@@ -345,6 +345,36 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
             </div>
           </div>
 
+          <div className="rounded-md border border-border/60 p-3">
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Acordo</div>
+            <div className="grid gap-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Room Nights acordo</Label>
+                  <Input inputMode="decimal" value={agreedRoomnights}
+                         onChange={(e) => setAgreedRoomnights(e.target.value)} placeholder="Ex: 250" />
+                </div>
+                <div>
+                  <Label className="text-xs">Receita projetada (R$)</Label>
+                  <Input inputMode="decimal" value={projectedRevenue}
+                         onChange={(e) => setProjectedRevenue(e.target.value)} placeholder="Ex: 80000,00" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Período — início</Label>
+                  <Input type="date" value={agreementStart} onChange={(e) => setAgreementStart(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Período — fim</Label>
+                  <Input type="date" value={agreementEnd} onChange={(e) => setAgreementEnd(e.target.value)} />
+                </div>
+              </div>
+              <CrmAttachmentField scope="contas" label="Anexo do acordo" value={attachment} onChange={setAttachment} />
+            </div>
+          </div>
+
+
           <div>
             <Label className="text-xs">Executivo responsável</Label>
             <Select value={responsibleUserId ?? 'none'} onValueChange={(v) => setResponsibleUserId(v === 'none' ? null : v)}>
