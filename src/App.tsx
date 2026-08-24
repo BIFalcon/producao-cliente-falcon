@@ -53,6 +53,7 @@ const AppRoutes = () => (
     <Route path="/comercial" element={<ProtectedRoute><CrmRoute><CrmDashboardPage /></CrmRoute></ProtectedRoute>} />
     <Route path="/comercial/contas" element={<ProtectedRoute><CrmRoute><CrmAccountsPage /></CrmRoute></ProtectedRoute>} />
     <Route path="/comercial/interacoes" element={<ProtectedRoute><CrmRoute><CrmInteractionsPage /></CrmRoute></ProtectedRoute>} />
+    <Route path="/comercial/tarefas" element={<ProtectedRoute><CrmRoute><CrmTasksPage /></CrmRoute></ProtectedRoute>} />
     <Route path="/comercial/contas/:id" element={<ProtectedRoute><CrmRoute><CrmAccountDetailPage /></CrmRoute></ProtectedRoute>} />
     <Route path="*" element={<NotFound />} />
   </Routes>
