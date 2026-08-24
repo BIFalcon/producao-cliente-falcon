@@ -785,19 +785,30 @@ const UploadPage = () => {
         throw new Error('Todos os chunks falharam. Verifique a conexão e tente novamente.');
       }
 
-      // Phase 2: Process reservations (80% - 100%)
-      setProgress(82);
-      setProgressText('Etapa 2/2 — Processando classificações e agregações...');
-
-      await invokeWithRetry(
-        'process-csv',
-        {
-          tenant_id: effectiveTenantId,
-          action: 'process',
-          batch_id: batch.id,
-        },
-        effectiveTenantId
+           // Phase 2: Process reservations (80% - 100%), um hotel de cada vez —
+      // evita estourar o limite de 150s de resposta da Edge Function quando
+      // o arquivo tem vários hotéis juntos.
+      const distinctProperties = Array.from(
+        new Set(rows.map((r) => r.property_name).filter((p): p is string => !!p))
       );
+
+      for (let i = 0; i < distinctProperties.length; i++) {
+        const propertyName = distinctProperties[i];
+        setProgress(82 + Math.round((i / distinctProperties.length) * 18));
+        setProgressText(
+          `Etapa 2/2 — Processando ${propertyName} (${i + 1}/${distinctProperties.length})...`
+        );
+        await invokeWithRetry(
+          'process-csv',
+          {
+            tenant_id: effectiveTenantId,
+            action: 'process',
+            batch_id: batch.id,
+            property_name: propertyName,
+          },
+          effectiveTenantId
+        );
+      }
 
       setProgress(100);
       const successText =
