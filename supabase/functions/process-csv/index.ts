@@ -107,10 +107,11 @@ Deno.serve(async (req) => {
       // função a ele — Edge Functions derrubam a conexão em 150s de espera,
       // e processar uma base grande (vários hotéis) pode levar mais que isso.
       const processInBackground = async () => {
-        const { error: procError } = await supabase.rpc('process_reservations', {
-          p_tenant_id: tenant_id,
-          p_batch_id: batch_id,
-        });
+             const { error: procError } = await supabase.rpc('process_reservations', {
+        p_tenant_id: tenant_id,
+        p_batch_id: batch_id,
+        p_property_name: body.property_name ?? null,
+      });
         if (procError) {
           console.error('[process-csv] process_reservations failed:', procError);
           await supabase.from('upload_batches').update({
