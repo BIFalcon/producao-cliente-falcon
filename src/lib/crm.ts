@@ -124,3 +124,30 @@ export const formatDateBR = (iso: string | null | undefined): string => {
   if (!iso) return '—';
   return parseDateOnly(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
+
+/** 'HH:MM:SS' -> 'HH:MM' */
+export const formatTimeBR = (time: string | null | undefined): string => {
+  if (!time) return '';
+  return time.slice(0, 5);
+};
+
+export const formatDateTimeBR = (iso: string | null | undefined, time?: string | null): string => {
+  if (!iso) return '—';
+  const d = formatDateBR(iso);
+  const t = formatTimeBR(time);
+  return t ? `${d} ${t}` : d;
+};
+
+/** Nome exibido de uma conta comercial */
+export const accountLabel = (a: { account_type?: string | null; company_name?: string | null; travel_agent_name?: string | null } | null | undefined): string => {
+  if (!a) return '—';
+  const name = a.account_type === 'agencia' ? a.travel_agent_name : a.company_name;
+  return name || a.company_name || a.travel_agent_name || '—';
+};
+
+export const formatMoneyBR = (value: number | string | null | undefined): string => {
+  if (value === null || value === undefined || value === '') return '—';
+  const n = Number(value);
+  if (!isFinite(n)) return '—';
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 });
+};
