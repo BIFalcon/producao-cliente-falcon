@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
+import CrmAttachmentField from '@/components/crm/CrmAttachmentField';
 import {
   ACCOUNT_TYPE_LABELS,
   ACCOUNT_STATUS_LABELS,
@@ -30,6 +31,8 @@ interface AccountFormDialogProps {
   account?: any | null;
 }
 
+const DRAFT_KEY = 'crm-new-account-draft';
+
 const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChange, account }) => {
   const { tenantId, user } = useAuth();
   const qc = useQueryClient();
@@ -49,6 +52,14 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   const [contactPhone, setContactPhone] = useState('');
   const [responsibleUserId, setResponsibleUserId] = useState<string | null>(null);
   const [agreedRate, setAgreedRate] = useState('');
+  const [agreedRoomnights, setAgreedRoomnights] = useState('');
+  const [agreementStart, setAgreementStart] = useState('');
+  const [agreementEnd, setAgreementEnd] = useState('');
+  const [projectedRevenue, setProjectedRevenue] = useState('');
+  const [attachment, setAttachment] = useState<{ path: string | null; name: string | null }>({ path: null, name: null });
+  const [draftRestored, setDraftRestored] = useState(false);
+
+
 
 
   const { data: allProperties } = useQuery({
