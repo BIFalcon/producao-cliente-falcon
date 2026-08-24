@@ -103,25 +103,32 @@ Deno.serve(async (req) => {
         .eq('id', batch_id)
         .eq('tenant_id', tenant_id);
 
-      const { error: procError } = await supabase.rpc('process_reservations', {
-        p_tenant_id: tenant_id,
-        p_batch_id: batch_id,
-      });
-      if (procError) {
-        console.error('[process-csv] process_reservations failed:', procError);
+           // Roda o processamento em segundo plano, sem prender a resposta da
+      // função a ele — Edge Functions derrubam a conexão em 150s de espera,
+      // e processar uma base grande (vários hotéis) pode levar mais que isso.
+      const processInBackground = async () => {
+        const { error: procError } = await supabase.rpc('process_reservations', {
+          p_tenant_id: tenant_id,
+          p_batch_id: batch_id,
+        });
+        if (procError) {
+          console.error('[process-csv] process_reservations failed:', procError);
+          await supabase.from('upload_batches').update({
+            status: 'error',
+            error_message: procError.message,
+          }).eq('id', batch_id).eq('tenant_id', tenant_id);
+          return;
+        }
         await supabase.from('upload_batches').update({
-          status: 'error',
-          error_message: procError.message,
+          status: 'completed',
+          completed_at: new Date().toISOString(),
         }).eq('id', batch_id).eq('tenant_id', tenant_id);
-        return errorResponse('process_reservations', procError.message, 500, { tenant_id, batch_id });
-      }
+      };
 
-      await supabase.from('upload_batches').update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-      }).eq('id', batch_id).eq('tenant_id', tenant_id);
+      // @ts-ignore — EdgeRuntime é global no ambiente da Supabase, não no TypeScript padrão
+      EdgeRuntime.waitUntil(processInBackground());
 
-      return new Response(JSON.stringify({ success: true, action: 'process', tenant_id, batch_id }), {
+      return new Response(JSON.stringify({ success: true, action: 'process', status: 'processing', tenant_id, batch_id }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
