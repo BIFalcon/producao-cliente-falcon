@@ -95,6 +95,11 @@ export type Database = {
             | null
           account_type: Database["public"]["Enums"]["crm_account_type"]
           agreed_rate: number | null
+          agreed_roomnights: number | null
+          agreement_end: string | null
+          agreement_start: string | null
+          attachment_name: string | null
+          attachment_path: string | null
           city: string | null
           closed_at: string | null
           company_name: string | null
@@ -104,6 +109,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          projected_revenue: number | null
           properties: string[]
           responsible_user_id: string | null
           segment: string | null
@@ -119,6 +125,11 @@ export type Database = {
             | null
           account_type: Database["public"]["Enums"]["crm_account_type"]
           agreed_rate?: number | null
+          agreed_roomnights?: number | null
+          agreement_end?: string | null
+          agreement_start?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
           city?: string | null
           closed_at?: string | null
           company_name?: string | null
@@ -128,6 +139,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          projected_revenue?: number | null
           properties?: string[]
           responsible_user_id?: string | null
           segment?: string | null
@@ -143,6 +155,11 @@ export type Database = {
             | null
           account_type?: Database["public"]["Enums"]["crm_account_type"]
           agreed_rate?: number | null
+          agreed_roomnights?: number | null
+          agreement_end?: string | null
+          agreement_start?: string | null
+          attachment_name?: string | null
+          attachment_path?: string | null
           city?: string | null
           closed_at?: string | null
           company_name?: string | null
@@ -152,6 +169,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          projected_revenue?: number | null
           properties?: string[]
           responsible_user_id?: string | null
           segment?: string | null
@@ -174,8 +192,15 @@ export type Database = {
       crm_visits: {
         Row: {
           account_id: string
+          attachment_name: string | null
+          attachment_path: string | null
           created_at: string
           created_by: string | null
+          follow_up_completed_at: string | null
+          follow_up_done: boolean
+          follow_up_notes: string | null
+          follow_up_time: string | null
+          follow_up_type: Database["public"]["Enums"]["crm_visit_type"] | null
           id: string
           next_follow_up_date: string | null
           summary: string
@@ -185,8 +210,15 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          attachment_name?: string | null
+          attachment_path?: string | null
           created_at?: string
           created_by?: string | null
+          follow_up_completed_at?: string | null
+          follow_up_done?: boolean
+          follow_up_notes?: string | null
+          follow_up_time?: string | null
+          follow_up_type?: Database["public"]["Enums"]["crm_visit_type"] | null
           id?: string
           next_follow_up_date?: string | null
           summary: string
@@ -196,8 +228,15 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          attachment_name?: string | null
+          attachment_path?: string | null
           created_at?: string
           created_by?: string | null
+          follow_up_completed_at?: string | null
+          follow_up_done?: boolean
+          follow_up_notes?: string | null
+          follow_up_time?: string | null
+          follow_up_type?: Database["public"]["Enums"]["crm_visit_type"] | null
           id?: string
           next_follow_up_date?: string | null
           summary?: string
