@@ -89,6 +89,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
   };
 
   useEffect(() => {
+    if (!open) return;
     if (account) {
       setAccountType(account.account_type);
       setCompanyName(account.company_name || '');
@@ -105,26 +106,61 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setContactPhone(account.contact_phone || '');
       setResponsibleUserId(account.responsible_user_id ?? null);
       setAgreedRate(account.agreed_rate != null ? String(account.agreed_rate) : '');
-
+      setAgreedRoomnights(account.agreed_roomnights != null ? String(account.agreed_roomnights) : '');
+      setAgreementStart(account.agreement_start || '');
+      setAgreementEnd(account.agreement_end || '');
+      setProjectedRevenue(account.projected_revenue != null ? String(account.projected_revenue) : '');
+      setAttachment({ path: account.attachment_path ?? null, name: account.attachment_name ?? null });
+      setDraftRestored(false);
     } else {
-      setAccountType('empresa');
-      setCompanyName('');
-      setTravelAgentName('');
-      setCity('');
-      setSegment('');
-      setSubSegment(null);
-      setStage('prospeccao');
+      // Rascunho: recupera o que foi digitado antes de fechar o formulário sem salvar
+      let draft: any = null;
+      try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (raw) draft = JSON.parse(raw);
+      } catch { /* rascunho inválido */ }
+      setAccountType(draft?.accountType ?? 'empresa');
+      setCompanyName(draft?.companyName ?? '');
+      setTravelAgentName(draft?.travelAgentName ?? '');
+      setCity(draft?.city ?? '');
+      setSegment(draft?.segment ?? '');
+      setSubSegment(draft?.subSegment ?? null);
+      setStage(draft?.stage ?? 'prospeccao');
       setAccountStatus(null);
-      setNotes('');
-      setProperties([]);
-      setContactName('');
-      setContactEmail('');
-      setContactPhone('');
-      setResponsibleUserId(user?.id ?? null);
-      setAgreedRate('');
-
+      setNotes(draft?.notes ?? '');
+      setProperties(draft?.properties ?? []);
+      setContactName(draft?.contactName ?? '');
+      setContactEmail(draft?.contactEmail ?? '');
+      setContactPhone(draft?.contactPhone ?? '');
+      setResponsibleUserId(draft?.responsibleUserId ?? user?.id ?? null);
+      setAgreedRate(draft?.agreedRate ?? '');
+      setAgreedRoomnights(draft?.agreedRoomnights ?? '');
+      setAgreementStart(draft?.agreementStart ?? '');
+      setAgreementEnd(draft?.agreementEnd ?? '');
+      setProjectedRevenue(draft?.projectedRevenue ?? '');
+      setAttachment(draft?.attachment ?? { path: null, name: null });
+      setDraftRestored(!!draft);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account, open]);
+
+  // Salva rascunho enquanto a conta é nova (não perde o que já foi digitado)
+  useEffect(() => {
+    if (!open || account?.id) return;
+    const draft = {
+      accountType, companyName, travelAgentName, city, segment, subSegment, stage, notes,
+      properties, contactName, contactEmail, contactPhone, responsibleUserId, agreedRate,
+      agreedRoomnights, agreementStart, agreementEnd, projectedRevenue, attachment,
+    };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* storage cheio */ }
+  }, [open, account, accountType, companyName, travelAgentName, city, segment, subSegment, stage,
+      notes, properties, contactName, contactEmail, contactPhone, responsibleUserId, agreedRate,
+      agreedRoomnights, agreementStart, agreementEnd, projectedRevenue, attachment]);
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
+    setDraftRestored(false);
+  };
 
   // O Status da Conta só existe a partir do estágio "Fechamento" e nasce como Ativo.
   useEffect(() => {
@@ -134,6 +170,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       setAccountStatus(null);
     }
   }, [stage]);
+
+  const num = (v: string) => (v.trim() ? Number(v.replace(/\./g, '').replace(',', '.')) : null);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -153,7 +191,13 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         contact_name: contactName.trim() || null,
         contact_email: contactEmail.trim() || null,
         contact_phone: contactPhone.trim() || null,
-        agreed_rate: agreedRate.trim() ? Number(agreedRate.replace(',', '.')) : null,
+        agreed_rate: num(agreedRate),
+        agreed_roomnights: num(agreedRoomnights),
+        agreement_start: agreementStart || null,
+        agreement_end: agreementEnd || null,
+        projected_revenue: num(projectedRevenue),
+        attachment_path: attachment.path,
+        attachment_name: attachment.name,
       };
       payload.responsible_user_id = responsibleUserId ?? (account?.id ? null : user?.id ?? null);
       if (accountType === 'empresa' && !payload.company_name) throw new Error('Nome da empresa é obrigatório');
@@ -169,11 +213,13 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
     },
     onSuccess: () => {
       toast.success(account?.id ? 'Conta atualizada' : 'Conta criada');
+      if (!account?.id) clearDraft();
       qc.invalidateQueries({ predicate: (q) => (q.queryKey[0] as string)?.startsWith('crm-') });
       onOpenChange(false);
     },
     onError: (err: any) => toast.error(err.message || 'Erro ao salvar'),
   });
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
