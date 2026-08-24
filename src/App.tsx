@@ -14,6 +14,7 @@ import CrmDashboardPage from "./pages/CrmDashboardPage";
 import CrmAccountsPage from "./pages/CrmAccountsPage";
 import CrmAccountDetailPage from "./pages/CrmAccountDetailPage";
 import CrmInteractionsPage from "./pages/CrmInteractionsPage";
+import CrmTasksPage from "./pages/CrmTasksPage";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
