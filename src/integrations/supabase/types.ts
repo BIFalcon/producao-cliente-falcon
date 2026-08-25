@@ -631,6 +631,10 @@ export type Database = {
         Args: { _tenant_id: string; _user_id: string }
         Returns: boolean
       }
+      debug_process_reservations: {
+        Args: { p_property: string; p_tenant: string }
+        Returns: string
+      }
       get_agent_breakdown: {
         Args: { p_property?: string[]; p_tenant_id: string; p_year?: number }
         Returns: {
@@ -980,7 +984,11 @@ export type Database = {
       insert_raw_reservations_batch: { Args: { p_rows: Json }; Returns: number }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       process_reservations: {
-        Args: { p_batch_id?: string; p_tenant_id: string }
+        Args: {
+          p_batch_id?: string
+          p_property_name?: string
+          p_tenant_id: string
+        }
         Returns: undefined
       }
       reclassify_tenant_channels: {
