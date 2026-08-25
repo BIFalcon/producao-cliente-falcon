@@ -1,17 +1,24 @@
 import React, { useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AppHeader from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Pencil, Plus, CalendarClock, TrendingUp, MapPin, Phone, Mail, MessageCircle, Building2, Eye, CheckCircle2, CircleDashed } from 'lucide-react';
+import { ArrowLeft, Pencil, Plus, CalendarClock, TrendingUp, MapPin, Phone, Mail, MessageCircle, Building2, Eye, CheckCircle2, CircleDashed, Trash2, FileSignature } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import AccountFormDialog from '@/components/crm/AccountFormDialog';
 import VisitFormDialog from '@/components/crm/VisitFormDialog';
 import AccountFollowers, { useAccountFollowers } from '@/components/crm/AccountFollowers';
+import { AttachmentLink } from '@/components/crm/CrmAttachmentField';
 import { useCrmProduction } from '@/hooks/useCrmProduction';
 import { SUB_SEGMENT_LABELS, CrmAccountSubSegment } from '@/lib/crm';
+
 import {
   ACCOUNT_TYPE_LABELS,
   ACCOUNT_STATUS_LABELS,
@@ -41,10 +48,27 @@ const visitIcon = (type: CrmVisitType) => {
 
 const CrmAccountDetailPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { tenantId, user, role, isSuperAdmin } = useAuth();
   const [editOpen, setEditOpen] = useState(false);
   const [visitOpen, setVisitOpen] = useState(false);
   const [editVisit, setEditVisit] = useState<any | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const deleteAccount = useMutation({
+    mutationFn: async () => {
+      const { error } = await (supabase.from('crm_accounts') as any).delete().eq('id', id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['crm-accounts'] });
+      toast.success('Conta excluída');
+      navigate('/comercial/contas');
+    },
+    onError: (e: any) => toast.error(e.message || 'Erro ao excluir conta'),
+  });
+
 
   const { data: account } = useQuery({
     queryKey: ['crm-account', id, tenantId],
@@ -205,16 +229,71 @@ const CrmAccountDetailPage = () => {
               )}
             </div>
             {canEdit ? (
-              <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                <Pencil className="mr-1 h-3 w-3" /> Editar
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                  <Pencil className="mr-1 h-3 w-3" /> Editar
+                </Button>
+                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteOpen(true)}>
+                  <Trash2 className="mr-1 h-3 w-3" /> Excluir
+                </Button>
+              </div>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs text-muted-foreground">
                 <Eye className="h-3 w-3" /> Você segue esta conta (somente leitura)
               </span>
             )}
           </div>
+
+          {(account.agreed_rate != null || account.agreed_roomnights != null || account.projected_revenue != null ||
+            account.agreement_start || account.agreement_end || account.attachment_path) && (
+            <div className="mt-5 border-t border-border/50 pt-4">
+              <div className="mb-3 flex items-center gap-2">
+                <FileSignature className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Dados do Acordo</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+                <div>
+                  <div className="text-xs text-muted-foreground">Tarifa acordo</div>
+                  <div className="font-mono text-sm font-semibold">
+                    {account.agreed_rate != null
+                      ? `R$ ${Number(account.agreed_rate).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                      : '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Roomnights acordo</div>
+                  <div className="font-mono text-sm font-semibold">
+                    {account.agreed_roomnights != null ? Number(account.agreed_roomnights).toLocaleString('pt-BR') : '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Receita projetada</div>
+                  <div className="font-mono text-sm font-semibold text-primary">
+                    {account.projected_revenue != null ? formatRevenue(Number(account.projected_revenue)) : '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Vigência</div>
+                  <div className="font-mono text-sm">
+                    {account.agreement_start || account.agreement_end
+                      ? `${account.agreement_start ? formatDateBR(account.agreement_start) : '—'} → ${account.agreement_end ? formatDateBR(account.agreement_end) : '—'}`
+                      : '—'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Anexo</div>
+                  <div className="text-sm">
+                    {account.attachment_path
+                      ? <AttachmentLink path={account.attachment_path} name={account.attachment_name} />
+                      : <span className="text-muted-foreground">—</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <div className="surface-card px-4 py-3">
@@ -314,9 +393,18 @@ const CrmAccountDetailPage = () => {
                       {v.next_follow_up_date && (
                         <div className="mt-2 flex items-center gap-1 text-xs text-primary">
                           <CalendarClock className="h-3 w-3" /> Follow-up: {formatDateBR(v.next_follow_up_date)}
+                          {v.follow_up_time && <span className="font-mono">às {String(v.follow_up_time).slice(0, 5)}</span>}
+                          {v.follow_up_type && <span>· {VISIT_TYPE_LABELS[v.follow_up_type as CrmVisitType]}</span>}
+                          {v.follow_up_done && <span className="text-accent">· concluído</span>}
+                        </div>
+                      )}
+                      {v.attachment_path && (
+                        <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                          <AttachmentLink path={v.attachment_path} name={v.attachment_name} />
                         </div>
                       )}
                     </div>
+
                   </div>
                 ))}
               </div>
@@ -372,6 +460,23 @@ const CrmAccountDetailPage = () => {
 
       <AccountFormDialog open={editOpen} onOpenChange={setEditOpen} account={account} />
       {id && <VisitFormDialog open={visitOpen} onOpenChange={setVisitOpen} accountId={id} visit={editVisit} />}
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir esta conta comercial?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A conta "{name}" e todas as suas interações, seguidores e anexos vinculados serão removidos
+              permanentemente. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteAccount.mutate()}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 };
