@@ -132,7 +132,12 @@ const VisitFormDialog: React.FC<VisitFormDialogProps> = ({ open, onOpenChange, a
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex max-h-[88vh] max-w-lg flex-col gap-3 overflow-hidden">
+        <DialogContent
+          className="flex max-h-[88vh] max-w-lg flex-col gap-3 overflow-hidden"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onFocusOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>{visit?.id ? 'Editar Atividade' : 'Nova Atividade / Interação'}</DialogTitle>
           </DialogHeader>
