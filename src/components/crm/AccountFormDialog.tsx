@@ -223,7 +223,12 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-md flex-col gap-3 overflow-hidden">
+      <DialogContent
+        className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-md flex-col gap-3 overflow-hidden"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{account?.id ? 'Editar Conta' : 'Nova Conta Comercial'}</DialogTitle>
         </DialogHeader>
