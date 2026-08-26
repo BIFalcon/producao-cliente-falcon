@@ -11,7 +11,7 @@ export type CrmAccountStatus = 'ativo' | 'inativo';
 
 export type CrmAccountType = 'empresa' | 'agencia';
 
-export type CrmAccountSubSegment = 'evento' | 'mensalista' | 'grupo' | 'rfp';
+export type CrmAccountSubSegment = 'evento' | 'mensalista' | 'grupo' | 'rfp' | 'corporativo';
 
 export type CrmVisitType =
   | 'visita_presencial'
@@ -96,6 +96,7 @@ export const SUB_SEGMENT_LABELS: Record<CrmAccountSubSegment, string> = {
   mensalista: 'Mensalista',
   grupo: 'Grupo',
   rfp: 'RFP',
+  corporativo: 'Corporativo',
 };
 
 /** Data de hoje no fuso local (evita deslocamento de 1 dia do UTC) */

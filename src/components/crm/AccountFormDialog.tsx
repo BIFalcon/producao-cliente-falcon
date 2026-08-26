@@ -202,6 +202,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       payload.responsible_user_id = responsibleUserId ?? (account?.id ? null : user?.id ?? null);
       if (accountType === 'empresa' && !payload.company_name) throw new Error('Nome da empresa é obrigatório');
       if (accountType === 'agencia' && !payload.travel_agent_name) throw new Error('Nome da agência é obrigatório');
+      if (!properties.length) throw new Error('Selecione ao menos um hotel');
+      if (!payload.responsible_user_id) throw new Error('Selecione o executivo responsável');
 
       if (account?.id) {
         const { error } = await (supabase.from('crm_accounts') as any).update(payload).eq('id', account.id);
@@ -223,7 +225,12 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-md flex-col gap-3 overflow-hidden">
+      <DialogContent
+        className="flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-md flex-col gap-3 overflow-hidden"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{account?.id ? 'Editar Conta' : 'Nova Conta Comercial'}</DialogTitle>
         </DialogHeader>
@@ -389,11 +396,10 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
 
 
           <div>
-            <Label className="text-xs">Executivo responsável</Label>
+            <Label className="text-xs">Executivo responsável *</Label>
             <Select value={responsibleUserId ?? 'none'} onValueChange={(v) => setResponsibleUserId(v === 'none' ? null : v)}>
               <SelectTrigger><SelectValue placeholder="Selecionar executivo" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">— não vinculado</SelectItem>
                 {(tenantUsers || []).map((u) => (
                   <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
                 ))}
@@ -408,7 +414,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
 
 
           <div>
-            <Label className="text-xs">Hotéis atendidos</Label>
+            <Label className="text-xs">Hotéis atendidos *</Label>
             {allProperties && allProperties.length > 0 ? (
               <div className="mt-1 max-h-40 space-y-2 overflow-y-auto rounded-md border border-border/60 p-3">
                 {allProperties.map((prop) => (
