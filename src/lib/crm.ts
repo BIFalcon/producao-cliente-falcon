@@ -96,6 +96,7 @@ export const SUB_SEGMENT_LABELS: Record<CrmAccountSubSegment, string> = {
   mensalista: 'Mensalista',
   grupo: 'Grupo',
   rfp: 'RFP',
+  corporativo: 'Corporativo',
 };
 
 /** Data de hoje no fuso local (evita deslocamento de 1 dia do UTC) */
