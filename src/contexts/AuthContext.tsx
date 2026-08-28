@@ -76,8 +76,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+  // Só atualiza o estado se a sessão realmente mudou (evita re-render
+  // desnecessário quando o Supabase só reconfirma o token ao focar a aba).
+  if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+    setSession((prev) => (prev?.access_token === session?.access_token ? prev : session));
+    setUser((prev) => (prev?.id === session?.user?.id ? prev : (session?.user ?? null)));
+  } else {
+    setSession(session);
+    setUser(session?.user ?? null);
+  }
       if (session?.user) {
         // Use setTimeout to avoid Supabase deadlock on auth state change
         setTimeout(() => fetchRoleAndTenant(session.user.id), 0);
