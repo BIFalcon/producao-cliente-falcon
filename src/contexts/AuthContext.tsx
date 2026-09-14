@@ -49,8 +49,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const fetchRoleAndTenant = async (userId: string) => {
-    setRoleLoading(true);
+  // Usuário cujo papel/tenant já foi carregado — evita recarregar (e piscar a tela)
+  // quando o navegador só reconfirma a sessão ao voltar para a aba.
+  const loadedForUserRef = React.useRef<string | null>(null);
+
+  const fetchRoleAndTenant = async (userId: string, silent = false) => {
+    if (!silent) setRoleLoading(true);
     try {
       const [{ data: roleData }, { data: profileData }, { data: superCheck }] = await Promise.all([
         supabase.from('user_roles').select('role').eq('user_id', userId).order('role', { ascending: true }).limit(1).maybeSingle(),
