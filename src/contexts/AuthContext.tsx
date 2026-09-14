@@ -49,8 +49,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const fetchRoleAndTenant = async (userId: string) => {
-    setRoleLoading(true);
+  // Usuário cujo papel/tenant já foi carregado — evita recarregar (e piscar a tela)
+  // quando o navegador só reconfirma a sessão ao voltar para a aba.
+  const loadedForUserRef = React.useRef<string | null>(null);
+
+  const fetchRoleAndTenant = async (userId: string, silent = false) => {
+    if (!silent) setRoleLoading(true);
     try {
       const [{ data: roleData }, { data: profileData }, { data: superCheck }] = await Promise.all([
         supabase.from('user_roles').select('role').eq('user_id', userId).order('role', { ascending: true }).limit(1).maybeSingle(),
@@ -69,8 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveTenantId(tenantFromProfile);
       }
       // For super_admin: keep localStorage value — already initialized in useState
+      loadedForUserRef.current = userId;
     } finally {
-      setRoleLoading(false);
+      if (!silent) setRoleLoading(false);
     }
   };
 
@@ -86,9 +91,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(session?.user ?? null);
   }
       if (session?.user) {
+        // Se já carregamos os dados deste usuário, revalida em silêncio (sem tela de carregando)
+        const silent = loadedForUserRef.current === session.user.id;
         // Use setTimeout to avoid Supabase deadlock on auth state change
-        setTimeout(() => fetchRoleAndTenant(session.user.id), 0);
+        setTimeout(() => fetchRoleAndTenant(session.user.id, silent), 0);
       } else {
+        loadedForUserRef.current = null;
         setRole(null);
         setProfileTenantId(null);
         setActiveTenantId(null);
