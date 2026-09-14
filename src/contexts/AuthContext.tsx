@@ -91,9 +91,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(session?.user ?? null);
   }
       if (session?.user) {
+        // Se já carregamos os dados deste usuário, revalida em silêncio (sem tela de carregando)
+        const silent = loadedForUserRef.current === session.user.id;
         // Use setTimeout to avoid Supabase deadlock on auth state change
-        setTimeout(() => fetchRoleAndTenant(session.user.id), 0);
+        setTimeout(() => fetchRoleAndTenant(session.user.id, silent), 0);
       } else {
+        loadedForUserRef.current = null;
         setRole(null);
         setProfileTenantId(null);
         setActiveTenantId(null);
