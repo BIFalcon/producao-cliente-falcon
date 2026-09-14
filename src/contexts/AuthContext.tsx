@@ -73,8 +73,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveTenantId(tenantFromProfile);
       }
       // For super_admin: keep localStorage value — already initialized in useState
+      loadedForUserRef.current = userId;
     } finally {
-      setRoleLoading(false);
+      if (!silent) setRoleLoading(false);
     }
   };
 
