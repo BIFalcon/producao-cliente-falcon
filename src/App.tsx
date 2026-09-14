@@ -39,7 +39,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const CrmRoute = ({ children }: { children: React.ReactNode }) => {
   const { role, roleLoading } = useAuth();
-  if (roleLoading) return (
+  // Só mostra carregando na primeira vez (quando ainda não sabemos o perfil),
+  // para não desmontar as telas do Comercial ao voltar para a aba.
+  if (roleLoading && !role) return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
