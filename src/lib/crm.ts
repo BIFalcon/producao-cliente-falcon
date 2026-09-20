@@ -87,12 +87,17 @@ export const VISIT_TYPE_LABELS: Record<CrmVisitType, string> = {
   reuniao_comercial_interna: 'Reunião comercial interna',
   treinamento: 'Treinamento',
   eventos_feiras: 'Eventos e Feiras',
+  business_review: 'Business Review (manutenção)',
+  site_inspection: 'Site Inspection',
+  evento: 'Evento',
+  famtur: 'Famtur',
   outro: 'Outro',
 };
 
 export const ACCOUNT_TYPE_LABELS: Record<CrmAccountType, string> = {
   empresa: 'Empresa',
   agencia: 'Agência',
+  operadora: 'Operadora',
 };
 
 export const SUB_SEGMENT_LABELS: Record<CrmAccountSubSegment, string> = {
