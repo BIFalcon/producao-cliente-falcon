@@ -9,7 +9,7 @@ export type CrmAccountStage =
 
 export type CrmAccountStatus = 'ativo' | 'inativo';
 
-export type CrmAccountType = 'empresa' | 'agencia';
+export type CrmAccountType = 'empresa' | 'agencia' | 'operadora';
 
 export type CrmAccountSubSegment = 'evento' | 'mensalista' | 'grupo' | 'rfp' | 'corporativo';
 
@@ -21,6 +21,10 @@ export type CrmVisitType =
   | 'reuniao_comercial_interna'
   | 'treinamento'
   | 'eventos_feiras'
+  | 'business_review'
+  | 'site_inspection'
+  | 'evento'
+  | 'famtur'
   | 'outro';
 
 export const STAGE_LABELS: Record<CrmAccountStage, string> = {
@@ -83,12 +87,17 @@ export const VISIT_TYPE_LABELS: Record<CrmVisitType, string> = {
   reuniao_comercial_interna: 'Reunião comercial interna',
   treinamento: 'Treinamento',
   eventos_feiras: 'Eventos e Feiras',
+  business_review: 'Business Review (manutenção)',
+  site_inspection: 'Site Inspection',
+  evento: 'Evento',
+  famtur: 'Famtur',
   outro: 'Outro',
 };
 
 export const ACCOUNT_TYPE_LABELS: Record<CrmAccountType, string> = {
   empresa: 'Empresa',
   agencia: 'Agência',
+  operadora: 'Operadora',
 };
 
 export const SUB_SEGMENT_LABELS: Record<CrmAccountSubSegment, string> = {

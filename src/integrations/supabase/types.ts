@@ -1012,7 +1012,7 @@ export type Database = {
         | "negociacao"
         | "fechamento"
       crm_account_status: "ativo" | "inativo"
-      crm_account_type: "empresa" | "agencia"
+      crm_account_type: "empresa" | "agencia" | "operadora"
       crm_visit_type:
         | "visita_presencial"
         | "ligacao"
@@ -1022,6 +1022,10 @@ export type Database = {
         | "reuniao_comercial_interna"
         | "treinamento"
         | "eventos_feiras"
+        | "business_review"
+        | "site_inspection"
+        | "evento"
+        | "famtur"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1166,7 +1170,7 @@ export const Constants = {
         "fechamento",
       ],
       crm_account_status: ["ativo", "inativo"],
-      crm_account_type: ["empresa", "agencia"],
+      crm_account_type: ["empresa", "agencia", "operadora"],
       crm_visit_type: [
         "visita_presencial",
         "ligacao",
@@ -1176,6 +1180,10 @@ export const Constants = {
         "reuniao_comercial_interna",
         "treinamento",
         "eventos_feiras",
+        "business_review",
+        "site_inspection",
+        "evento",
+        "famtur",
       ],
     },
   },
