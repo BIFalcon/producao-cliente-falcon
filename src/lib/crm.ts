@@ -151,7 +151,7 @@ export const formatDateTimeBR = (iso: string | null | undefined, time?: string |
 /** Nome exibido de uma conta comercial */
 export const accountLabel = (a: { account_type?: string | null; company_name?: string | null; travel_agent_name?: string | null } | null | undefined): string => {
   if (!a) return '—';
-  const name = a.account_type === 'agencia' ? a.travel_agent_name : a.company_name;
+  const name = a.account_type === 'empresa' ? a.company_name : a.travel_agent_name;
   return name || a.company_name || a.travel_agent_name || '—';
 };
 

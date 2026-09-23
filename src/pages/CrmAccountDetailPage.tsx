@@ -174,7 +174,7 @@ const CrmAccountDetailPage = () => {
     );
   }
 
-  const name = account.account_type === 'agencia' ? account.travel_agent_name : account.company_name;
+  const name = accountLabel(account);
   const lastVisitDays = daysBetween(visits?.[0]?.visit_date);
 
   return (
