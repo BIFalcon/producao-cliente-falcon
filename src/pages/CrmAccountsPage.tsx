@@ -38,6 +38,7 @@ import {
   formatTimeBR,
   formatMoneyBR,
   todayLocalISO,
+  accountLabel,
 } from '@/lib/crm';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 

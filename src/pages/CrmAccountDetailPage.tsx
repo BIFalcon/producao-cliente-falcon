@@ -32,6 +32,7 @@ import {
   CrmVisitType,
   formatDateBR,
   daysBetween,
+  accountLabel,
 } from '@/lib/crm';
 import { formatRevenue, MONTH_NAMES } from '@/lib/formatters';
 

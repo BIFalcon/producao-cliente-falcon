@@ -9,6 +9,7 @@ import CrmNav from '@/components/crm/CrmNav';
 import {
   STAGE_COLORS, STAGE_LABELS, STAGE_DESCRIPTIONS, STAGE_ORDER, SUB_SEGMENT_LABELS,
   CrmAccountStage, CrmAccountSubSegment, formatDateBR, daysBetween, formatMoneyBR, todayLocalISO,
+  accountLabel,
 } from '@/lib/crm';
 import { accountMatchesHotels } from '@/hooks/useCrmUsers';
 import { useCrmUsers } from '@/hooks/useCrmUsers';
