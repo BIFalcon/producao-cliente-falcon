@@ -202,6 +202,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
       payload.responsible_user_id = responsibleUserId ?? (account?.id ? null : user?.id ?? null);
       if (accountType === 'empresa' && !payload.company_name) throw new Error('Nome da empresa é obrigatório');
       if (accountType === 'agencia' && !payload.travel_agent_name) throw new Error('Nome da agência é obrigatório');
+      if (accountType === 'operadora' && !payload.travel_agent_name) throw new Error('Nome da operadora é obrigatório');
       if (!properties.length) throw new Error('Selecione ao menos um hotel');
       if (!payload.responsible_user_id) throw new Error('Selecione o executivo responsável');
 
@@ -322,8 +323,8 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
             </div>
           ) : (
             <div>
-              <Label className="text-xs">Nome da Agência *</Label>
-              <Input value={travelAgentName} onChange={(e) => setTravelAgentName(e.target.value)} placeholder="Ex: CVC Corp" />
+              <Label className="text-xs">{accountType === 'operadora' ? 'Nome da Operadora *' : 'Nome da Agência *'}</Label>
+              <Input value={travelAgentName} onChange={(e) => setTravelAgentName(e.target.value)} placeholder={accountType === 'operadora' ? 'Ex: Azul Viagens' : 'Ex: CVC Corp'} />
             </div>
           )}
 

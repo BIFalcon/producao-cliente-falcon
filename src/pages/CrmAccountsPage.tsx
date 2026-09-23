@@ -38,6 +38,7 @@ import {
   formatTimeBR,
   formatMoneyBR,
   todayLocalISO,
+  accountLabel,
 } from '@/lib/crm';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -114,7 +115,7 @@ const CrmAccountsPage = () => {
   }, [data, search, filters.property, execFilter, executive]);
 
   const { sorted, sortKey, sortDir, toggleSort } = useTableSort(filtered, {
-    name: (a: any) => (a.account_type === 'agencia' ? a.travel_agent_name : a.company_name),
+    name: (a: any) => accountLabel(a),
     type: (a: any) => ACCOUNT_TYPE_LABELS[a.account_type as 'empresa' | 'agencia'],
     city: (a: any) => a.city,
     segment: (a: any) => a.segment,
@@ -253,7 +254,7 @@ const CrmAccountsPage = () => {
                   <tr><td colSpan={15} className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma conta encontrada</td></tr>
                 )}
                 {sorted.map((a: any) => {
-                  const name = a.account_type === 'agencia' ? a.travel_agent_name : a.company_name;
+                  const name = accountLabel(a);
                   const stage = a.stage as CrmAccountStage;
                   const status = a.account_status as CrmAccountStatus | null;
                   const lastVisit = (a.crm_visits || []).map((v: any) => v.visit_date).sort().pop();
@@ -345,7 +346,7 @@ const CrmAccountsPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir esta conta comercial?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget && (deleteTarget.account_type === 'agencia' ? deleteTarget.travel_agent_name : deleteTarget.company_name)} —
+              {deleteTarget && accountLabel(deleteTarget)} —
               todas as interações e seguidores vinculados também serão removidos. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

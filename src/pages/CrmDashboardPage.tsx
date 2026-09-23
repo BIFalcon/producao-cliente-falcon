@@ -9,6 +9,7 @@ import CrmNav from '@/components/crm/CrmNav';
 import {
   STAGE_COLORS, STAGE_LABELS, STAGE_DESCRIPTIONS, STAGE_ORDER, SUB_SEGMENT_LABELS,
   CrmAccountStage, CrmAccountSubSegment, formatDateBR, daysBetween, formatMoneyBR, todayLocalISO,
+  accountLabel,
 } from '@/lib/crm';
 import { accountMatchesHotels } from '@/hooks/useCrmUsers';
 import { useCrmUsers } from '@/hooks/useCrmUsers';
@@ -292,9 +293,7 @@ const CrmDashboardPage = () => {
             {pending && pending.length > 0 ? (
               <div className="max-h-[280px] space-y-2 overflow-y-auto">
                 {pending.map((f: any) => {
-                  const name = f.crm_accounts?.account_type === 'agencia'
-                    ? f.crm_accounts?.travel_agent_name
-                    : f.crm_accounts?.company_name;
+                  const name = accountLabel(f.crm_accounts);
                   const overdue = daysBetween(f.next_follow_up_date) || 0;
                   return (
                     <Link to={`/comercial/contas/${f.account_id}`} key={f.id}

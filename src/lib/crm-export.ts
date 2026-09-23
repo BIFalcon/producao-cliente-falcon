@@ -11,6 +11,7 @@ import {
   CrmAccountType,
   CrmVisitType,
   formatDateBR,
+  accountLabel,
 } from '@/lib/crm';
 
 const download = (rows: Record<string, any>[], sheetName: string, fileName: string) => {
@@ -31,7 +32,7 @@ export const exportAccountsToExcel = (
 ) => {
   const rows = accounts.map((a) => ({
     'Tipo': ACCOUNT_TYPE_LABELS[a.account_type as CrmAccountType] ?? a.account_type,
-    'Nome': (a.account_type === 'agencia' ? a.travel_agent_name : a.company_name) || '',
+    'Nome': accountLabel(a) === '—' ? '' : accountLabel(a),
     'Cidade': a.city || '',
     'Segmento': a.segment || '',
     'Subsegmentação': subSegmentLabel(a.sub_segment),
@@ -67,7 +68,7 @@ export const exportVisitsToExcel = (
     return {
       'Data': formatDateBR(v.visit_date),
       'Tipo de Interação': VISIT_TYPE_LABELS[v.visit_type as CrmVisitType] ?? v.visit_type,
-      'Conta': (acc.account_type === 'agencia' ? acc.travel_agent_name : acc.company_name) || '',
+      'Conta': accountLabel(acc) === '—' ? '' : accountLabel(acc),
       'Cidade': acc.city || '',
       'Subsegmentação': subSegmentLabel(acc.sub_segment),
       'Hotéis atendidos': (acc.properties || []).join(', '),

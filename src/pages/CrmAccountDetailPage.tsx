@@ -32,6 +32,7 @@ import {
   CrmVisitType,
   formatDateBR,
   daysBetween,
+  accountLabel,
 } from '@/lib/crm';
 import { formatRevenue, MONTH_NAMES } from '@/lib/formatters';
 
@@ -174,7 +175,7 @@ const CrmAccountDetailPage = () => {
     );
   }
 
-  const name = account.account_type === 'agencia' ? account.travel_agent_name : account.company_name;
+  const name = accountLabel(account);
   const lastVisitDays = daysBetween(visits?.[0]?.visit_date);
 
   return (
