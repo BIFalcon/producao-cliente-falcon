@@ -1,4 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { FilePreviewSummary, buildFilePreview, type FilePreview } from '@/components/upload/FilePreviewSummary';
+import { CoveragePanel } from '@/components/upload/CoveragePanel';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
@@ -259,12 +261,14 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Modo</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Registros</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground" title="Linhas sem número de confirmação, ignoradas no envio">Sem confirmação</th>
+                <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground" title="Linhas idênticas unificadas pela regra de duplicidade, e a receita delas">Idênticas unificadas</th>
+                <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground" title="Linhas de versões antigas removidas da base bruta">Versões antigas limpas</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Status</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={6} className="px-3 py-6 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></td></tr>
+                <tr><td colSpan={8} className="px-3 py-6 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></td></tr>
               ) : batches && batches.length > 0 ? (
                 batches.map((b: any) => (
                   <tr key={b.id} className="border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
@@ -273,11 +277,13 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                     <td className="px-3 py-2 text-xs text-foreground/80">{b.mode === 'replace' ? 'Substituir' : b.mode === 'append' ? 'Adicionar' : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-foreground/80">{(b.total_rows || 0).toLocaleString('pt-BR')}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-muted-foreground">{b.metadata?.skipped_no_confirmation != null ? Number(b.metadata.skipped_no_confirmation).toLocaleString('pt-BR') : '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs text-muted-foreground whitespace-nowrap">{b.metadata?.collapsed_rows != null ? `${Number(b.metadata.collapsed_rows).toLocaleString('pt-BR')} · ${Number(b.metadata.collapsed_revenue || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '—'}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs text-muted-foreground">{b.metadata?.raw_rows_cleaned != null ? Number(b.metadata.raw_rows_cleaned).toLocaleString('pt-BR') : '—'}</td>
                     <td className="px-3 py-2">{renderStatus(b.status)}</td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhum upload registrado</td></tr>
+                <tr><td colSpan={8} className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhum upload registrado</td></tr>
               )}
             </tbody>
           </table>
@@ -373,6 +379,9 @@ const UploadPage = () => {
   const [progress, setProgress] = useState(0);
   const [progressText, setProgressText] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewAck, setPreviewAck] = useState(false);
 
   // Excel sheet selection
   const [sheets, setSheets] = useState<SheetInfo[]>([]);
@@ -669,6 +678,30 @@ const UploadPage = () => {
     }
   };
 
+  // Bloco 6: conferência do arquivo no navegador antes do envio
+  useEffect(() => {
+    setFilePreview(null);
+    setPreviewAck(false);
+    if (!file || loadingSheets) return;
+    const excel = isExcelFile(file);
+    const sheet = selectedSheet || (sheets.length === 1 ? sheets[0].name : '');
+    if (excel && !sheet) return;
+    let cancelled = false;
+    setPreviewLoading(true);
+    (async () => {
+      try {
+        const rows = excel ? await parseExcelLocally(file, sheet) : await parseCSV(file);
+        if (!cancelled) setFilePreview(buildFilePreview(rows));
+      } catch (e) {
+        console.warn('[preview] falha ao ler arquivo:', e);
+      } finally {
+        if (!cancelled) setPreviewLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file, selectedSheet, sheets, loadingSheets]);
+
   const handleUpload = async () => {
     if (!file || !user) return;
 
@@ -840,7 +873,8 @@ const UploadPage = () => {
 
   const fileIsExcel = file && isExcelFile(file);
   const needsSheetSelection = fileIsExcel && sheets.length > 1;
-  const canUpload = file && !uploading && !loadingSheets && (!needsSheetSelection || selectedSheet);
+  const needsAck = !!filePreview && filePreview.partialWarnings.length > 0 && !previewAck;
+  const canUpload = file && !uploading && !loadingSheets && !previewLoading && !needsAck && (!needsSheetSelection || selectedSheet);
 
   return (
     <div className="min-h-screen bg-background pl-14">
@@ -1065,6 +1099,15 @@ const UploadPage = () => {
             </div>
           )}
 
+          {previewLoading && !uploading && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Conferindo o arquivo...
+            </div>
+          )}
+          {filePreview && !uploading && (
+            <FilePreviewSummary preview={filePreview} acknowledged={previewAck} onAcknowledge={setPreviewAck} />
+          )}
+
           {/* Progress */}
           {uploading && (
             <div className="space-y-2">
@@ -1102,6 +1145,9 @@ const UploadPage = () => {
 
           {/* ===== SECTION: Upload History ===== */}
           {tenantId && <UploadHistory tenantId={tenantId} />}
+
+          {/* ===== SECTION: Coverage ===== */}
+          {tenantId && <CoveragePanel tenantId={tenantId} />}
 
 
         </TenantLoadingGuard>
