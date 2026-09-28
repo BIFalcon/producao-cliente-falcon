@@ -964,6 +964,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_upload_coverage: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          dias_sem_saida_mes_anterior: number[]
+          dias_sem_saida_mes_atual: number[]
+          primeira_saida: string
+          property_name: string
+          reservas_mes_anterior: number
+          reservas_mes_atual: number
+          ultima_saida: string
+        }[]
+      }
       has_any_users: { Args: never; Returns: boolean }
       has_any_users_in_tenant: {
         Args: { _tenant_id: string }
@@ -990,6 +1002,15 @@ export type Database = {
       }
       insert_raw_reservations_batch: { Args: { p_rows: Json }; Returns: number }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      preview_raw_cleanup: {
+        Args: { p_batch_id?: string; p_tenant_id: string }
+        Returns: {
+          linhas_a_apagar: number
+          property_name: string
+          receita_linhas: number
+          reservas_afetadas: number
+        }[]
+      }
       process_reservations: {
         Args: {
           p_batch_id?: string
