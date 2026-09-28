@@ -511,6 +511,7 @@ export type Database = {
           error_message: string | null
           file_name: string | null
           id: string
+          metadata: Json
           mode: string | null
           processed_rows: number | null
           status: string | null
@@ -524,6 +525,7 @@ export type Database = {
           error_message?: string | null
           file_name?: string | null
           id?: string
+          metadata?: Json
           mode?: string | null
           processed_rows?: number | null
           status?: string | null
@@ -537,6 +539,7 @@ export type Database = {
           error_message?: string | null
           file_name?: string | null
           id?: string
+          metadata?: Json
           mode?: string | null
           processed_rows?: number | null
           status?: string | null
@@ -980,6 +983,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_batch_metadata: {
+        Args: { p_batch_id: string; p_delta: number; p_key: string }
+        Returns: undefined
       }
       insert_raw_reservations_batch: { Args: { p_rows: Json }; Returns: number }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
