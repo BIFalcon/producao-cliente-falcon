@@ -152,7 +152,7 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('upload_batches')
-        .select('id, created_at, file_name, mode, total_rows, status')
+        .select('id, created_at, file_name, mode, total_rows, status, metadata')
         .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -258,12 +258,13 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Arquivo</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Modo</th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Registros</th>
+                <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground" title="Linhas sem número de confirmação, ignoradas no envio">Sem confirmação</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Status</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={5} className="px-3 py-6 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></td></tr>
+                <tr><td colSpan={6} className="px-3 py-6 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></td></tr>
               ) : batches && batches.length > 0 ? (
                 batches.map((b: any) => (
                   <tr key={b.id} className="border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
@@ -271,11 +272,12 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                     <td className="px-3 py-2 text-foreground text-xs break-all whitespace-normal min-w-[220px]" title={b.file_name || undefined}>{b.file_name || '—'}</td>
                     <td className="px-3 py-2 text-xs text-foreground/80">{b.mode === 'replace' ? 'Substituir' : b.mode === 'append' ? 'Adicionar' : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-foreground/80">{(b.total_rows || 0).toLocaleString('pt-BR')}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs text-muted-foreground">{b.metadata?.skipped_no_confirmation != null ? Number(b.metadata.skipped_no_confirmation).toLocaleString('pt-BR') : '—'}</td>
                     <td className="px-3 py-2">{renderStatus(b.status)}</td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={5} className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhum upload registrado</td></tr>
+                <tr><td colSpan={6} className="px-3 py-6 text-center text-xs text-muted-foreground">Nenhum upload registrado</td></tr>
               )}
             </tbody>
           </table>

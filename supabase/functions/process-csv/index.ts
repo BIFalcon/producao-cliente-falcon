@@ -173,8 +173,20 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Bloco 1: linhas sem confirmation_number (hóspedes acompanhantes) não entram em raw_reservations
+    const withConf = rows.filter((row: any) => String(row?.confirmation_number ?? "").trim() !== "");
+    const skippedNoConf = rows.length - withConf.length;
+    if (skippedNoConf > 0) {
+      const { error: metaErr } = await supabase.rpc("increment_batch_metadata", {
+        p_batch_id: batch_id,
+        p_key: "skipped_no_confirmation",
+        p_delta: skippedNoConf,
+      });
+      if (metaErr) console.error("[process-csv] metadata update failed:", metaErr);
+    }
+
     // Normalize rows with tenant_id on every row
-    const processedRows = rows.map((row: any) => {
+    const processedRows = withConf.map((row: any) => {
       const roomRev = normalizeRevenue(row.room_revenue);
       const fbRev = normalizeRevenue(row.fb_revenue);
       let totalRev = normalizeRevenue(row.total_revenue);
