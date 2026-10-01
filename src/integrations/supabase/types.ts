@@ -745,6 +745,14 @@ export type Database = {
           travel_agent_name: string
         }[]
       }
+      get_all_tenant_properties: {
+        Args: never
+        Returns: {
+          property_name: string
+          tenant_id: string
+          tenant_name: string
+        }[]
+      }
       get_all_tenants: {
         Args: never
         Returns: {
@@ -948,6 +956,13 @@ export type Database = {
           top5_share: number
         }[]
       }
+      get_consultor_tenants: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       get_crm_production: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -1074,6 +1089,13 @@ export type Database = {
           ultima_saida: string
         }[]
       }
+      get_user_all_hotel_permissions: {
+        Args: { p_user_id: string }
+        Returns: {
+          property_name: string
+          tenant_id: string
+        }[]
+      }
       has_any_users: { Args: never; Returns: boolean }
       has_any_users_in_tenant: {
         Args: { _tenant_id: string }
@@ -1099,6 +1121,7 @@ export type Database = {
         Returns: undefined
       }
       insert_raw_reservations_batch: { Args: { p_rows: Json }; Returns: number }
+      is_consultor: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       preview_raw_cleanup: {
         Args: { p_batch_id?: string; p_tenant_id: string }
@@ -1125,6 +1148,10 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: number
       }
+      set_consultor_tenant: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
@@ -1133,6 +1160,7 @@ export type Database = {
         | "viewer"
         | "super_admin"
         | "gerente_geral"
+        | "consultor"
       crm_account_stage:
         | "prospeccao"
         | "lead_identificado"
@@ -1289,6 +1317,7 @@ export const Constants = {
         "viewer",
         "super_admin",
         "gerente_geral",
+        "consultor",
       ],
       crm_account_stage: [
         "prospeccao",

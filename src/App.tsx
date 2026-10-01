@@ -46,7 +46,13 @@ const CrmRoute = ({ children }: { children: React.ReactNode }) => {
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
-  if (role === 'gerente_geral') return <Navigate to="/" replace />;
+  if (role === 'gerente_geral' || role === 'consultor') return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
+const NoConsultorRoute = ({ children }: { children: React.ReactNode }) => {
+  const { role } = useAuth();
+  if (role === 'consultor') return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
@@ -54,7 +60,7 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/auth" element={<AuthPage />} />
     <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-    <Route path="/upload" element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
+    <Route path="/upload" element={<ProtectedRoute><NoConsultorRoute><UploadPage /></NoConsultorRoute></ProtectedRoute>} />
     <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
     <Route path="/tenants" element={<ProtectedRoute><TenantsPage /></ProtectedRoute>} />
     <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />

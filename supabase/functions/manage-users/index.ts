@@ -81,6 +81,41 @@ Deno.serve(async (req) => {
       }
     }
 
+    const json = (b: unknown, status = 200) => new Response(JSON.stringify(b), {
+      status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+    // Consultor: permissões de hotel em vários tenants [{tenant_id, property_name}]
+    const saveConsultorHotels = async (targetId: string, list: any): Promise<string | null> => {
+      const rows = (Array.isArray(list) ? list : [])
+        .filter((h: any) => h && typeof h.tenant_id === 'string' && typeof h.property_name === 'string')
+        .map((h: any) => ({ user_id: targetId, tenant_id: h.tenant_id, property_name: h.property_name }));
+      const { error: delErr } = await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', targetId);
+      if (delErr) return delErr.message;
+      if (rows.length) {
+        const { error: insErr } = await supabaseAdmin.from('user_hotel_permissions').insert(rows);
+        if (insErr) return insErr.message;
+        // Grupo ativo inicial: mantém o atual se ainda tiver hotel nele, senão o primeiro
+        const { data: prof } = await supabaseAdmin.from('profiles').select('tenant_id').eq('user_id', targetId).maybeSingle();
+        if (!prof?.tenant_id || !rows.some((r) => r.tenant_id === prof.tenant_id)) {
+          await supabaseAdmin.from('profiles').update({ tenant_id: rows[0].tenant_id }).eq('user_id', targetId);
+        }
+      }
+      return null;
+    };
+    const setConsultorRole = async (targetId: string): Promise<string | null> => {
+      const { error: d } = await supabaseAdmin.from('user_roles').delete().eq('user_id', targetId).neq('role', 'super_admin');
+      if (d) return d.message;
+      const { error: i } = await supabaseAdmin.from('user_roles').insert({ user_id: targetId, role: 'consultor', tenant_id: null });
+      return i ? i.message : null;
+    };
+    const isTargetConsultorInTenant = async (targetId: string) => {
+      const { data: c } = await supabaseAdmin.from('user_roles').select('role').eq('user_id', targetId).eq('role', 'consultor').maybeSingle();
+      if (!c) return false;
+      const { data: h } = await supabaseAdmin.from('user_hotel_permissions').select('id').eq('user_id', targetId).eq('tenant_id', tenantId).limit(1);
+      return (h?.length || 0) > 0;
+    };
+
     if (action === 'create') {
       const { email, password, full_name, role, hotel_permissions } = body;
       if (!email || !password || !role) {
@@ -94,7 +129,7 @@ Deno.serve(async (req) => {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      const allowedRoles = ['master_admin', 'editor', 'viewer', 'gerente_geral', 'super_admin'];
+      const allowedRoles = ['master_admin', 'editor', 'viewer', 'gerente_geral', 'super_admin', 'consultor'];
       if (!allowedRoles.includes(role)) {
         return new Response(JSON.stringify({ error: 'Role inválida' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -163,7 +198,16 @@ Deno.serve(async (req) => {
           { onConflict: 'user_id' }
         );
 
+      if (role === 'consultor') {
+        const e1 = await setConsultorRole(userId!);
+        if (e1) return json({ error: e1 }, 500);
+        const e2 = await saveConsultorHotels(userId!, body.consultor_hotels);
+        if (e2) return json({ error: e2 }, 500);
+        return json({ success: true, user_id: userId });
+      }
+
       await supabaseAdmin.from('user_roles').delete().eq('user_id', userId).eq('tenant_id', tenantId);
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', userId).eq('role', 'consultor');
       await supabaseAdmin
         .from('user_roles')
         .upsert({ user_id: userId, role, tenant_id: tenantId }, { onConflict: 'user_id,role' });
@@ -198,7 +242,7 @@ Deno.serve(async (req) => {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      const allowedRolesUpdate = ['master_admin', 'editor', 'viewer', 'gerente_geral', 'super_admin'];
+      const allowedRolesUpdate = ['master_admin', 'editor', 'viewer', 'gerente_geral', 'super_admin', 'consultor'];
       if (!allowedRolesUpdate.includes(role)) {
         return new Response(JSON.stringify({ error: 'Role inválida' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -218,8 +262,25 @@ Deno.serve(async (req) => {
         }
       }
 
+      if (role === 'consultor') {
+        const e1 = await setConsultorRole(target_user_id);
+        if (e1) return json({ error: e1 }, 500);
+        if (body.consultor_hotels !== undefined) {
+          const e2 = await saveConsultorHotels(target_user_id, body.consultor_hotels);
+          if (e2) return json({ error: e2 }, 500);
+        }
+        return json({ success: true });
+      }
+
+      const wasConsultor = await isTargetConsultorInTenant(target_user_id);
       await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id).eq('tenant_id', tenantId);
+      await supabaseAdmin.from('user_roles').delete().eq('user_id', target_user_id).eq('role', 'consultor');
       await supabaseAdmin.from('user_roles').insert({ user_id: target_user_id, role, tenant_id: tenantId });
+      if (wasConsultor) {
+        // Volta a ser usuário de um tenant só: fixa o grupo atual e remove hotéis de outros grupos
+        await supabaseAdmin.from('profiles').update({ tenant_id: tenantId }).eq('user_id', target_user_id);
+        await supabaseAdmin.from('user_hotel_permissions').delete().eq('user_id', target_user_id).neq('tenant_id', tenantId);
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -252,6 +313,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === 'update_consultor_hotels') {
+      const { target_user_id } = body;
+      if (!target_user_id) return json({ error: 'Missing fields' }, 400);
+      const { data: c } = await supabaseAdmin.from('user_roles').select('role').eq('user_id', target_user_id).eq('role', 'consultor').maybeSingle();
+      if (!c) return json({ error: 'Usuário não é consultor' }, 400);
+      const e = await saveConsultorHotels(target_user_id, body.consultor_hotels);
+      if (e) return json({ error: e }, 500);
+      return json({ success: true });
+    }
+
     if (action === 'toggle_active') {
       const { target_user_id, is_active } = body;
       if (!target_user_id) {
@@ -270,7 +341,9 @@ Deno.serve(async (req) => {
         .from('profiles')
         .update({ is_active })
         .eq('user_id', target_user_id)
-        .eq('tenant_id', tenantId);
+        .eq('tenant_id', (await isTargetConsultorInTenant(target_user_id))
+          ? ((await supabaseAdmin.from('profiles').select('tenant_id').eq('user_id', target_user_id).maybeSingle()).data?.tenant_id ?? tenantId)
+          : tenantId);
 
       if (!is_active) {
         await supabaseAdmin.auth.admin.updateUserById(target_user_id, { ban_duration: '876000h' });
@@ -304,7 +377,7 @@ Deno.serve(async (req) => {
         .eq('user_id', target_user_id)
         .maybeSingle();
 
-      if (!targetProfile || targetProfile.tenant_id !== tenantId) {
+      if (!targetProfile || (targetProfile.tenant_id !== tenantId && !(await isTargetConsultorInTenant(target_user_id)))) {
         return new Response(JSON.stringify({ error: 'Usuário não pertence a este tenant' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
