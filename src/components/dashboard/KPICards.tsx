@@ -14,16 +14,27 @@ const KPICards = () => {
     queryKey: ['kpis', tenantId, filters],
     enabled: !!tenantId,
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('get_dashboard_kpis', {
+      const args = {
         p_tenant_id: tenantId,
         p_property: filters.property,
         p_year: filters.year,
         p_channel: filters.channel,
         p_month: filters.month,
-      });
-      console.log('[KPICards] tenantId:', tenantId, 'result:', data, 'error:', error);
-      if (error) throw error;
-      return data?.[0] || { total_revenue: 0, total_reservations: 0, avg_lead_time: 0, total_roomnights: 0 };
+      };
+      // Receita e Roomnights por competência (pernoite); antecedência segue da reserva
+      const [base, comp] = await Promise.all([
+        (supabase.rpc as any)('get_dashboard_kpis', args),
+        (supabase.rpc as any)('get_dashboard_kpis_competencia', args),
+      ]);
+      if (base.error) throw base.error;
+      if (comp.error) throw comp.error;
+      const b = base.data?.[0] || {};
+      const c = comp.data?.[0] || {};
+      return {
+        total_revenue: c.total_revenue || 0,
+        total_roomnights: c.total_roomnights || 0,
+        avg_lead_time: b.avg_lead_time || 0,
+      };
     },
   });
 
@@ -59,7 +70,7 @@ const KPICards = () => {
         <div className="text-5xl md:text-6xl font-bold leading-none tracking-tighter font-mono text-primary">
           {formatRevenue(data?.total_revenue || 0)}
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">Métrica principal do período filtrado</p>
+        <p className="mt-3 text-xs text-muted-foreground">Métrica principal do período filtrado · Critério: <span className="font-semibold text-foreground">Competência (pernoite)</span></p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
