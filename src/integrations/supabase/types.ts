@@ -1133,6 +1133,7 @@ export type Database = {
         | "viewer"
         | "super_admin"
         | "gerente_geral"
+        | "consultor"
       crm_account_stage:
         | "prospeccao"
         | "lead_identificado"
@@ -1289,6 +1290,7 @@ export const Constants = {
         "viewer",
         "super_admin",
         "gerente_geral",
+        "consultor",
       ],
       crm_account_stage: [
         "prospeccao",
