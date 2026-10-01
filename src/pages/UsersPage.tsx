@@ -34,6 +34,7 @@ const ROLE_LABELS: Record<string, string> = {
   editor: 'Editor',
   viewer: 'Comercial',
   gerente_geral: 'Gerente Geral',
+  consultor: 'Consultor',
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -41,6 +42,7 @@ const ROLE_COLORS: Record<string, string> = {
   editor: 'bg-accent/20 text-accent-foreground border-accent/30',
   viewer: 'bg-muted text-muted-foreground border-border',
   gerente_geral: 'bg-secondary text-secondary-foreground border-border',
+  consultor: 'bg-primary/10 text-primary border-primary/20',
 };
 
 const UsersPage = () => {
@@ -58,6 +60,8 @@ const UsersPage = () => {
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState('viewer');
   const [formHotels, setFormHotels] = useState<string[]>([]);
+  // Consultor: chaves "tenantId|hotel" de qualquer grupo
+  const [formConsultorHotels, setFormConsultorHotels] = useState<string[]>([]);
 
   // Available properties from database
   const { data: allProperties } = useQuery({
@@ -68,6 +72,61 @@ const UsersPage = () => {
     },
     enabled: (role === 'master_admin' || isSuperAdmin) && !!tenantId,
   });
+
+  // Hotéis de todos os grupos (para marcar no consultor)
+  const { data: allTenantProps } = useQuery({
+    queryKey: ['all-tenant-properties'],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)('get_all_tenant_properties');
+      if (error) throw error;
+      return (data || []) as { tenant_id: string; tenant_name: string; property_name: string }[];
+    },
+    enabled: role === 'master_admin' || isSuperAdmin,
+  });
+
+  const tenantGroups = React.useMemo(() => {
+    const m = new Map<string, { name: string; hotels: string[] }>();
+    for (const r of allTenantProps || []) {
+      if (!m.has(r.tenant_id)) m.set(r.tenant_id, { name: r.tenant_name, hotels: [] });
+      m.get(r.tenant_id)!.hotels.push(r.property_name);
+    }
+    return Array.from(m.entries());
+  }, [allTenantProps]);
+
+  const toConsultorPayload = (keys: string[]) => keys.map((k) => {
+    const i = k.indexOf('|');
+    return { tenant_id: k.slice(0, i), property_name: k.slice(i + 1) };
+  });
+  const toggleConsultorHotel = (key: string) => {
+    setFormConsultorHotels((prev) => prev.includes(key) ? prev.filter((h) => h !== key) : [...prev, key]);
+  };
+  const openConsultorHotels = async (u: UserRow) => {
+    setHotelEditUser(u);
+    setFormConsultorHotels([]);
+    const { data, error } = await (supabase.rpc as any)('get_user_all_hotel_permissions', { p_user_id: u.user_id });
+    if (error) { toast.error(error.message); return; }
+    setFormConsultorHotels((data || []).map((r: any) => `${r.tenant_id}|${r.property_name}`));
+  };
+
+  const ConsultorHotelPicker = () => (
+    <div className="space-y-3 max-h-60 overflow-y-auto border rounded-md p-3 border-border">
+      {tenantGroups.length === 0 && <p className="text-xs text-muted-foreground">Nenhum hotel disponível.</p>}
+      {tenantGroups.map(([tid, g]) => (
+        <div key={tid} className="space-y-1.5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{g.name}</p>
+          {g.hotels.map((h) => {
+            const key = `${tid}|${h}`;
+            return (
+              <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+                <Checkbox checked={formConsultorHotels.includes(key)} onCheckedChange={() => toggleConsultorHotel(key)} />
+                <span className="text-foreground">{h}</span>
+              </label>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['all-users', tenantId],
@@ -85,6 +144,7 @@ const UsersPage = () => {
     setFormPassword('');
     setFormRole('viewer');
     setFormHotels([]);
+    setFormConsultorHotels([]);
   };
 
   const callManageUsers = async (body: any) => {
@@ -113,7 +173,7 @@ const UsersPage = () => {
   };
 
   const createMutation = useMutation({
-    mutationFn: (params: { email: string; password: string; full_name: string; role: string; hotel_permissions: string[] }) =>
+    mutationFn: (params: { email: string; password: string; full_name: string; role: string; hotel_permissions: string[]; consultor_hotels?: { tenant_id: string; property_name: string }[] }) =>
       callManageUsers({ action: 'create', ...params }),
     onSuccess: () => {
       toast.success('Usuário criado com sucesso');
@@ -125,7 +185,7 @@ const UsersPage = () => {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: (params: { target_user_id: string; role: string }) =>
+    mutationFn: (params: { target_user_id: string; role: string; consultor_hotels?: { tenant_id: string; property_name: string }[] }) =>
       callManageUsers({ action: 'update_role', ...params }),
     onSuccess: () => {
       toast.success('Função atualizada');
@@ -144,6 +204,17 @@ const UsersPage = () => {
       setHotelEditUser(null);
     },
     onError: (err: any) => toast.error(err.message || 'Erro ao atualizar permissões'),
+  });
+
+  const updateConsultorHotelsMutation = useMutation({
+    mutationFn: (params: { target_user_id: string; consultor_hotels: { tenant_id: string; property_name: string }[] }) =>
+      callManageUsers({ action: 'update_consultor_hotels', ...params }),
+    onSuccess: () => {
+      toast.success('Hotéis do consultor atualizados');
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+      setHotelEditUser(null);
+    },
+    onError: (err: any) => toast.error(err.message || 'Erro ao atualizar hotéis'),
   });
 
   const toggleActiveMutation = useMutation({
@@ -224,7 +295,7 @@ const UsersPage = () => {
                   className="space-y-4"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    createMutation.mutate({ email: formEmail, password: formPassword, full_name: formName, role: formRole, hotel_permissions: formHotels });
+                    createMutation.mutate({ email: formEmail, password: formPassword, full_name: formName, role: formRole, hotel_permissions: formRole === 'consultor' ? [] : formHotels, consultor_hotels: formRole === 'consultor' ? toConsultorPayload(formConsultorHotels) : undefined });
                   }}
                 >
                   <div className="space-y-2">
@@ -248,10 +319,18 @@ const UsersPage = () => {
                         <SelectItem value="editor">Editor</SelectItem>
                         <SelectItem value="viewer">Comercial</SelectItem>
                         <SelectItem value="gerente_geral">Gerente Geral</SelectItem>
+                        <SelectItem value="consultor">Consultor</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  {formRole !== 'master_admin' && allProperties && allProperties.length > 0 && (
+                  {formRole === 'consultor' && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2"><Hotel className="h-4 w-4" />Hotéis Permitidos (todos os grupos)</Label>
+                      <p className="text-xs text-muted-foreground">Consultor: só leitura, sem Comercial e sem upload. Marque hotéis de qualquer grupo.</p>
+                      <ConsultorHotelPicker />
+                    </div>
+                  )}
+                  {formRole !== 'master_admin' && formRole !== 'consultor' && allProperties && allProperties.length > 0 && (
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2">
                         <Hotel className="h-4 w-4" />
@@ -296,6 +375,7 @@ const UsersPage = () => {
                       <SelectItem value="editor">Editor</SelectItem>
                       <SelectItem value="viewer">Comercial</SelectItem>
                       <SelectItem value="gerente_geral">Gerente Geral</SelectItem>
+                      <SelectItem value="consultor">Consultor</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -304,7 +384,14 @@ const UsersPage = () => {
                   disabled={updateRoleMutation.isPending}
                   onClick={() => {
                     if (editUser) {
-                      updateRoleMutation.mutate({ target_user_id: editUser.user_id, role: formRole });
+                      updateRoleMutation.mutate({
+                        target_user_id: editUser.user_id,
+                        role: formRole,
+                        // Ao virar consultor, mantém os hotéis que ele já tinha neste grupo
+                        consultor_hotels: formRole === 'consultor' && editUser.role !== 'consultor' && tenantId
+                          ? (editUser.hotel_permissions || []).map((h) => ({ tenant_id: tenantId, property_name: h }))
+                          : undefined,
+                      });
                     }
                   }}
                 >
@@ -322,8 +409,12 @@ const UsersPage = () => {
                 <DialogTitle>Permissões de Hotel — {hotelEditUser?.full_name || hotelEditUser?.email}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <p className="text-xs text-muted-foreground">Selecione os hotéis que o usuário poderá visualizar.</p>
-                {allProperties && allProperties.length > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {hotelEditUser?.role === 'consultor' ? 'Consultor: marque hotéis de qualquer grupo.' : 'Selecione os hotéis que o usuário poderá visualizar.'}
+                </p>
+                {hotelEditUser?.role === 'consultor' ? (
+                  <ConsultorHotelPicker />
+                ) : allProperties && allProperties.length > 0 ? (
                   <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                     {allProperties.map((prop: string) => (
                       <label key={prop} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -340,9 +431,12 @@ const UsersPage = () => {
                 )}
                 <Button
                   className="w-full"
-                  disabled={updateHotelsMutation.isPending}
+                  disabled={updateHotelsMutation.isPending || updateConsultorHotelsMutation.isPending}
                   onClick={() => {
-                    if (hotelEditUser) {
+                    if (!hotelEditUser) return;
+                    if (hotelEditUser.role === 'consultor') {
+                      updateConsultorHotelsMutation.mutate({ target_user_id: hotelEditUser.user_id, consultor_hotels: toConsultorPayload(formConsultorHotels) });
+                    } else {
                       updateHotelsMutation.mutate({ target_user_id: hotelEditUser.user_id, hotel_permissions: formHotels });
                     }
                   }}
@@ -439,7 +533,10 @@ const UsersPage = () => {
                                 size="sm"
                                 className="h-7 w-7 p-0"
                                 title="Permissões de hotel"
-                                onClick={() => { setHotelEditUser(u); setFormHotels(u.hotel_permissions || []); }}
+                                onClick={() => {
+                                  if (u.role === 'consultor') { openConsultorHotels(u); return; }
+                                  setHotelEditUser(u); setFormHotels(u.hotel_permissions || []);
+                                }}
                               >
                                 <Hotel className="h-3 w-3" />
                               </Button>
