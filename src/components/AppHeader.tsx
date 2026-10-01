@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import MultiSelectFilter from '@/components/MultiSelectFilter';
 import AppSidebar from '@/components/AppSidebar';
 import { Building2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { MONTH_NAMES_FULL } from '@/lib/formatters';
 
 const AppHeader = () => {
-  const { isSuperAdmin, tenantId, setActiveTenantId } = useAuth();
+  const { isSuperAdmin, isConsultor, switchConsultorTenant, tenantId, setActiveTenantId } = useAuth();
   const { filters, options, setFilter, toggleMulti } = useFilters();
 
   const { data: tenants } = useQuery({
@@ -20,6 +21,16 @@ const AppHeader = () => {
       return (data || []) as { id: string; name: string; is_active: boolean }[];
     },
     enabled: isSuperAdmin,
+  });
+
+  const { data: consultorTenants } = useQuery({
+    queryKey: ['consultor-tenants'],
+    queryFn: async () => {
+      const { data, error } = await (supabase.rpc as any)('get_consultor_tenants');
+      if (error) throw error;
+      return (data || []) as { id: string; name: string }[];
+    },
+    enabled: isConsultor,
   });
 
   return (
@@ -39,6 +50,27 @@ const AppHeader = () => {
               </SelectTrigger>
               <SelectContent>
                 {(tenants || []).map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {isConsultor && (consultorTenants?.length || 0) > 0 && (
+            <Select
+              value={tenantId || ''}
+              onValueChange={(v) => {
+                if (!v || v === tenantId) return;
+                setFilter('property', []);
+                switchConsultorTenant(v).catch((e) => toast.error(e?.message || 'Erro ao trocar de grupo'));
+              }}
+            >
+              <SelectTrigger className="h-9 w-[220px] border-primary/30 bg-primary/10 text-xs" aria-label="Grupo">
+                <Building2 className="mr-1 h-3.5 w-3.5 text-primary" />
+                <SelectValue placeholder="Selecionar Grupo" />
+              </SelectTrigger>
+              <SelectContent>
+                {(consultorTenants || []).map((t) => (
                   <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                 ))}
               </SelectContent>

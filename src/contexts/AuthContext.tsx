@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-type AppRole = 'super_admin' | 'master_admin' | 'editor' | 'viewer' | 'gerente_geral';
+type AppRole = 'super_admin' | 'master_admin' | 'editor' | 'viewer' | 'gerente_geral' | 'consultor';
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +13,9 @@ interface AuthContextType {
   /** Effective tenant the app is operating on (super_admin can switch via setActiveTenantId) */
   tenantId: string | null;
   isSuperAdmin: boolean;
+  isConsultor: boolean;
+  /** Consultor: troca o grupo ativo (só entre grupos onde tem hotel) */
+  switchConsultorTenant: (tenantId: string) => Promise<void>;
   setActiveTenantId: (tenantId: string | null) => void;
   loading: boolean;
   /** True while role/tenant are being fetched after login - distinct from auth loading */
@@ -62,7 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         supabase.from('user_roles').select('role').eq('user_id', userId).eq('role', 'super_admin').maybeSingle(),
       ]);
 
-      const effectiveRole = (superCheck?.role || roleData?.role || null) as AppRole | null;
+      const { data: consultorCheck } = await supabase.from('user_roles').select('role').eq('user_id', userId).eq('role', 'consultor' as any).maybeSingle();
+      const effectiveRole = (superCheck?.role || consultorCheck?.role || roleData?.role || null) as AppRole | null;
       const tenantFromProfile = profileData?.tenant_id || null;
 
       setRole(effectiveRole);
@@ -144,11 +148,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isSuperAdmin = role === 'super_admin';
+  const isConsultor = role === 'consultor';
+
+  const switchConsultorTenant = async (newTenantId: string) => {
+    const { error } = await (supabase.rpc as any)('set_consultor_tenant', { p_tenant_id: newTenantId });
+    if (error) throw error;
+    setProfileTenantId(newTenantId);
+    setActiveTenantId(newTenantId);
+  };
   const tenantId = isSuperAdmin ? activeTenantId : profileTenantId;
 
   return (
     <AuthContext.Provider value={{
-      user, session, role, profileTenantId, tenantId, isSuperAdmin,
+      user, session, role, profileTenantId, tenantId, isSuperAdmin, isConsultor, switchConsultorTenant,
       setActiveTenantId, loading, roleLoading, signIn, signUp, signOut,
     }}>
       {children}
