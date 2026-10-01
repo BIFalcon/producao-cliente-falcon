@@ -91,7 +91,23 @@ const UsersPage = () => {
     const { data, error } = await supabase.functions.invoke('manage-users', {
       body: isSuperAdmin ? { ...body, target_tenant_id: tenantId } : body,
     });
-    if (error) throw error;
+    if (error) {
+      // Lê o corpo real da resposta da function (campo "error") em vez da mensagem genérica
+      let message = error.message;
+      const ctx: any = (error as any).context;
+      try {
+        if (ctx && typeof ctx.json === 'function') {
+          const body = await ctx.clone().json();
+          if (body?.error) message = typeof body.error === 'string' ? body.error : JSON.stringify(body.error);
+        } else if (ctx && typeof ctx.text === 'function') {
+          const text = await ctx.text();
+          if (text) message = text;
+        }
+      } catch {
+        // corpo não é JSON — mantém a mensagem original
+      }
+      throw new Error(message);
+    }
     if (data?.error) throw new Error(data.error);
     return data;
   };
