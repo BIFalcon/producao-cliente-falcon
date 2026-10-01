@@ -8,17 +8,21 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 
 const NON_DRILLDOWN_CHANNELS = ['Particular'];
 
+type Basis = 'saida' | 'competencia';
+
 const ChannelComparison = () => {
   const { filters, currentYear, previousYear } = useFilters();
   const { tenantId } = useAuth();
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
+  const [basis, setBasis] = useState<Basis>('saida');
+  const suffix = basis === 'competencia' ? '_competencia' : '';
 
   // Multi-year data
   const { data: multiyearData, isLoading } = useQuery({
-    queryKey: ['channel-multiyear', tenantId, filters.property, filters.month],
+    queryKey: ['channel-multiyear', basis, tenantId, filters.property, filters.month],
     enabled: !!tenantId,
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)('get_channel_multiyear', {
+      const { data, error } = await (supabase.rpc as any)(`get_channel_multiyear${suffix}`, {
         p_tenant_id: tenantId,
         p_property: filters.property,
         p_month: filters.month,
@@ -36,11 +40,11 @@ const ChannelComparison = () => {
 
   // Multi-year drilldown data
   const { data: drilldownData, isLoading: drilldownLoading } = useQuery({
-    queryKey: ['channel-drilldown-multiyear', tenantId, expandedChannel, filters.property, filters.month],
+    queryKey: ['channel-drilldown-multiyear', basis, tenantId, expandedChannel, filters.property, filters.month],
     enabled: !!tenantId && !!expandedChannel,
     queryFn: async () => {
       if (!expandedChannel) return [];
-      const { data, error } = await (supabase.rpc as any)('get_channel_drilldown_multiyear', {
+      const { data, error } = await (supabase.rpc as any)(`get_channel_drilldown_multiyear${suffix}`, {
         p_tenant_id: tenantId,
         p_channel: expandedChannel,
         p_property: filters.property,
@@ -106,9 +110,25 @@ const ChannelComparison = () => {
 
   return (
     <div className="surface-card overflow-hidden">
-      <div className="p-4 pb-2">
-        <h3 className="text-sm font-semibold text-foreground">Comparação por Canal de Vendas</h3>
-        <p className="text-xs text-muted-foreground mt-1">Receita por canal · Ordenado pelo ano mais recente</p>
+      <div className="p-4 pb-2 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Comparação por Canal de Vendas</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Receita por canal · Critério: <span className="font-semibold text-foreground">{basis === 'saida' ? 'Data de saída' : 'Competência (pernoite)'}</span> · Ordenado pelo ano mais recente
+          </p>
+        </div>
+        <div className="inline-flex rounded-md border border-border p-0.5 text-xs">
+          {([['saida', 'Data de saída'], ['competencia', 'Competência (pernoite)']] as const).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => { setBasis(k); setExpandedChannel(null); }}
+              className={`px-3 py-1 rounded ${basis === k ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-compact">

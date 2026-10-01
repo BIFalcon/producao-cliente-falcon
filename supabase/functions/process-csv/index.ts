@@ -129,6 +129,12 @@ Deno.serve(async (req) => {
             .eq("tenant_id", tenant_id);
           return;
         }
+        // Competência (pernoite): recalcula a tabela paralela para o mesmo escopo
+        const { error: nightsError } = await supabase.rpc("rebuild_nights_by_month", {
+          p_tenant_id: tenant_id,
+          p_property_name: body.property_name ?? null,
+        });
+        if (nightsError) console.error("[process-csv] rebuild_nights_by_month failed:", nightsError);
         await supabase
           .from("upload_batches")
           .update({
