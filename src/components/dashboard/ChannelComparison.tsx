@@ -14,7 +14,7 @@ const ChannelComparison = () => {
   const { filters, currentYear, previousYear } = useFilters();
   const { tenantId } = useAuth();
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
-  const [basis, setBasis] = useState<Basis>('saida');
+  const [basis, setBasis] = useState<Basis>('competencia');
   const suffix = basis === 'competencia' ? '_competencia' : '';
 
   // Multi-year data
