@@ -1,0 +1,1 @@
+- Competência (pernoite) lives in reservation_nights_by_month, rebuilt per hotel by rebuild_nights_by_month called from process-csv after process_reservations; why: keeps checkout-date data untouched while offering a parallel per-night view.

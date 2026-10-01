@@ -480,6 +480,65 @@ export type Database = {
           },
         ]
       }
+      reservation_nights_by_month: {
+        Row: {
+          company_name: string | null
+          confirmation_number: string
+          created_at: string
+          id: number
+          nights_in_month: number
+          property_name: string
+          ref_month: number
+          ref_year: number
+          room_revenue_alloc: number
+          sales_channel: string | null
+          source_batch_id: string | null
+          tenant_id: string
+          total_revenue_alloc: number
+          travel_agent_name: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          confirmation_number: string
+          created_at?: string
+          id?: number
+          nights_in_month?: number
+          property_name: string
+          ref_month: number
+          ref_year: number
+          room_revenue_alloc?: number
+          sales_channel?: string | null
+          source_batch_id?: string | null
+          tenant_id: string
+          total_revenue_alloc?: number
+          travel_agent_name?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          confirmation_number?: string
+          created_at?: string
+          id?: number
+          nights_in_month?: number
+          property_name?: string
+          ref_month?: number
+          ref_year?: number
+          room_revenue_alloc?: number
+          sales_channel?: string | null
+          source_batch_id?: string | null
+          tenant_id?: string
+          total_revenue_alloc?: number
+          travel_agent_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservation_nights_by_month_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -772,7 +831,32 @@ export type Database = {
           roomnights: number
         }[]
       }
+      get_channel_drilldown_multiyear_competencia: {
+        Args: {
+          p_channel: string
+          p_month?: number[]
+          p_property?: string[]
+          p_tenant_id: string
+        }
+        Returns: {
+          departure_year: number
+          item_name: string
+          revenue: number
+          room_revenue: number
+          roomnights: number
+        }[]
+      }
       get_channel_multiyear: {
+        Args: { p_month?: number[]; p_property?: string[]; p_tenant_id: string }
+        Returns: {
+          departure_year: number
+          revenue: number
+          room_revenue: number
+          roomnights: number
+          sales_channel: string
+        }[]
+      }
+      get_channel_multiyear_competencia: {
         Args: { p_month?: number[]; p_property?: string[]; p_tenant_id: string }
         Returns: {
           departure_year: number
@@ -1018,6 +1102,10 @@ export type Database = {
           p_tenant_id: string
         }
         Returns: undefined
+      }
+      rebuild_nights_by_month: {
+        Args: { p_property_name?: string; p_tenant_id: string }
+        Returns: number
       }
       reclassify_tenant_channels: {
         Args: { p_tenant_id: string }
