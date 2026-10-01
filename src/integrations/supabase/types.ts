@@ -977,6 +977,20 @@ export type Database = {
           total_roomnights: number
         }[]
       }
+      get_dashboard_kpis_competencia: {
+        Args: {
+          p_channel?: string
+          p_month?: number[]
+          p_property?: string[]
+          p_tenant_id: string
+          p_year?: number
+        }
+        Returns: {
+          room_revenue: number
+          total_revenue: number
+          total_roomnights: number
+        }[]
+      }
       get_filter_options: {
         Args: { p_tenant_id: string }
         Returns: {
