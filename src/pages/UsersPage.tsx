@@ -108,7 +108,7 @@ const UsersPage = () => {
     setFormConsultorHotels((data || []).map((r: any) => `${r.tenant_id}|${r.property_name}`));
   };
 
-  const ConsultorHotelPicker = () => (
+  const renderConsultorHotelPicker = () => (
     <div className="space-y-3 max-h-60 overflow-y-auto border rounded-md p-3 border-border">
       {tenantGroups.length === 0 && <p className="text-xs text-muted-foreground">Nenhum hotel disponível.</p>}
       {tenantGroups.map(([tid, g]) => (
@@ -327,7 +327,7 @@ const UsersPage = () => {
                     <div className="space-y-2">
                       <Label className="flex items-center gap-2"><Hotel className="h-4 w-4" />Hotéis Permitidos (todos os grupos)</Label>
                       <p className="text-xs text-muted-foreground">Consultor: só leitura, sem Comercial e sem upload. Marque hotéis de qualquer grupo.</p>
-                      <ConsultorHotelPicker />
+                      {renderConsultorHotelPicker()}
                     </div>
                   )}
                   {formRole !== 'master_admin' && formRole !== 'consultor' && allProperties && allProperties.length > 0 && (
@@ -413,7 +413,7 @@ const UsersPage = () => {
                   {hotelEditUser?.role === 'consultor' ? 'Consultor: marque hotéis de qualquer grupo.' : 'Selecione os hotéis que o usuário poderá visualizar.'}
                 </p>
                 {hotelEditUser?.role === 'consultor' ? (
-                  <ConsultorHotelPicker />
+                  renderConsultorHotelPicker()
                 ) : allProperties && allProperties.length > 0 ? (
                   <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                     {allProperties.map((prop: string) => (
