@@ -413,7 +413,7 @@ const UsersPage = () => {
                   {hotelEditUser?.role === 'consultor' ? 'Consultor: marque hotéis de qualquer grupo.' : 'Selecione os hotéis que o usuário poderá visualizar.'}
                 </p>
                 {hotelEditUser?.role === 'consultor' ? (
-                  {renderConsultorHotelPicker()}
+                  renderConsultorHotelPicker()
                 ) : allProperties && allProperties.length > 0 ? (
                   <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                     {allProperties.map((prop: string) => (
