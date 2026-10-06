@@ -147,6 +147,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
   };
 
+  // Sessão expira 24h após o login (limite fixo, não por inatividade)
+  useEffect(() => {
+    const lastSignIn = user?.last_sign_in_at;
+    if (!lastSignIn) return;
+    const MAX_SESSION_MS = 24 * 60 * 60 * 1000;
+    const check = () => {
+      if (Date.now() - new Date(lastSignIn).getTime() >= MAX_SESSION_MS) {
+        supabase.auth.signOut();
+      }
+    };
+    check();
+    const id = window.setInterval(check, 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [user?.last_sign_in_at]);
+
   const isSuperAdmin = role === 'super_admin';
   const isConsultor = role === 'consultor';
 
