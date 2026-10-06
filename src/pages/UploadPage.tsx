@@ -934,11 +934,18 @@ const UploadPage = () => {
                   type="file"
                   accept=".csv,.xlsx,.xls"
                   className="hidden"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const f = e.target.files?.[0];
+                    e.target.value = '';
                     if (f && isValidFile(f)) {
-                      setMappingFile(f);
-                      setMappingCount(null);
+                      try {
+                        // Copia o conteúdo na hora: se o arquivo mudar no disco depois (Excel/OneDrive), a importação não quebra
+                        const buf = await f.arrayBuffer();
+                        setMappingFile(new File([buf], f.name, { type: f.type }));
+                        setMappingCount(null);
+                      } catch {
+                        toast.error('Não foi possível ler o arquivo. Feche-o no Excel (ou baixe do OneDrive) e selecione de novo.');
+                      }
                     } else if (f) {
                       toast.error('Formato não suportado. Envie .csv, .xlsx ou .xls');
                     }
