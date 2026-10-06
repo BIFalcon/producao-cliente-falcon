@@ -940,7 +940,13 @@ const UploadPage = () => {
                     if (f && isValidFile(f)) {
                       try {
                         // Copia o conteúdo na hora: se o arquivo mudar no disco depois (Excel/OneDrive), a importação não quebra
-                        const buf = await f.arrayBuffer();
+                        // Arquivos do OneDrive às vezes falham na 1ª leitura enquanto baixam — tenta de novo
+                        let buf: ArrayBuffer | null = null;
+                        for (let i = 0; i < 4 && !buf; i++) {
+                          try { buf = await f.arrayBuffer(); }
+                          catch (err) { if (i === 3) throw err; await new Promise((r) => setTimeout(r, 1500)); }
+                        }
+                        if (!buf) throw new Error('read');
                         setMappingFile(new File([buf], f.name, { type: f.type }));
                         setMappingCount(null);
                       } catch {
