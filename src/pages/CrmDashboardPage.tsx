@@ -79,19 +79,17 @@ const CrmDashboardPage = () => {
     enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.from('crm_accounts') as any)
-        .select('id, stage, account_status, account_type, company_name, travel_agent_name, properties, sub_segment, responsible_user_id, projected_revenue, agreed_roomnights, closed_at')
+        .select('id, stage, account_status, account_type, company_name, travel_agent_name, properties, sub_segment, responsible_user_id, projected_revenue, agreed_roomnights, closed_at, created_at')
         .eq('tenant_id', tenantId!);
       if (error) throw error;
       return data as any[];
     },
   });
 
-  const accounts = useMemo(
+  const hotelAccounts = useMemo(
     () => (accountsRaw ?? []).filter((a) => accountMatchesHotels(a, filters.property)),
     [accountsRaw, filters.property],
   );
-  const accountIds = useMemo(() => new Set(accounts.map((a) => a.id)), [accounts]);
-
   const today = todayLocalISO();
   const { data: pendingRaw } = useQuery({
     queryKey: ['crm-follow-ups-dash', tenantId, today],
@@ -140,7 +138,7 @@ const CrmDashboardPage = () => {
     enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await (supabase.from('crm_visits') as any)
-        .select('id, account_id')
+        .select('id, account_id, visit_date')
         .eq('tenant_id', tenantId!)
         .limit(5000);
       if (error) throw error;
@@ -148,17 +146,57 @@ const CrmDashboardPage = () => {
     },
   });
 
+  // Filtro de período = atividade no período (criada, com interação ou fechada)
+  const periodActive = !!filters.year || filters.month.length > 0;
+  const toYM = (d: string | null | undefined): [number, number] | null => {
+    if (!d) return null;
+    if (d.length > 10) {
+      const dt = new Date(d);
+      return [dt.getFullYear(), dt.getMonth() + 1];
+    }
+    return [Number(d.slice(0, 4)), Number(d.slice(5, 7))];
+  };
+  const inPeriod = (d: string | null | undefined) => {
+    if (!periodActive) return true;
+    const ym = toYM(d);
+    if (!ym) return false;
+    if (filters.year && ym[0] !== filters.year) return false;
+    if (filters.month.length > 0 && !filters.month.includes(ym[1])) return false;
+    return true;
+  };
+
+  const periodVisits = useMemo(
+    () => (visits ?? []).filter((v) => inPeriod(v.visit_date)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visits, filters.year, filters.month],
+  );
+
   const visitsByAccount = useMemo(() => {
     const map = new Map<string, number>();
-    (visits ?? []).forEach((v) => map.set(v.account_id, (map.get(v.account_id) || 0) + 1));
+    periodVisits.forEach((v) => map.set(v.account_id, (map.get(v.account_id) || 0) + 1));
     return map;
-  }, [visits]);
+  }, [periodVisits]);
+
+  const accounts = useMemo(
+    () => periodActive
+      ? hotelAccounts.filter((a) => inPeriod(a.created_at) || inPeriod(a.closed_at) || visitsByAccount.has(a.id))
+      : hotelAccounts,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hotelAccounts, visitsByAccount, periodActive, filters.year, filters.month],
+  );
+  const accountIds = useMemo(() => new Set(accounts.map((a) => a.id)), [accounts]);
+  const isClosed = (a: any) => (periodActive ? inPeriod(a.closed_at) : a.stage === 'fechamento');
 
   const totalVisits = useMemo(() => {
-    if (!visits) return 0;
-    if (filters.property.length === 0) return visits.length;
-    return visits.filter((v) => accountIds.has(v.account_id)).length;
-  }, [visits, filters.property, accountIds]);
+    if (!periodActive && filters.property.length === 0) return periodVisits.length;
+    return periodVisits.filter((v) => accountIds.has(v.account_id)).length;
+  }, [periodVisits, filters.property, accountIds, periodActive]);
+
+  const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const periodLabel = [
+    filters.month.length ? [...filters.month].sort((a, b) => a - b).map((m) => MONTHS[m - 1]).join(', ') : null,
+    filters.year ? String(filters.year) : null,
+  ].filter(Boolean).join('/');
 
   const byStage = accounts.reduce<Record<string, number>>((acc, a) => {
     acc[a.stage] = (acc[a.stage] ?? 0) + 1;
@@ -174,7 +212,7 @@ const CrmDashboardPage = () => {
       keyOf(a).forEach((key) => {
         const row = map.get(key) || { key, accounts: 0, closed: 0, interactions: 0, projected: 0, roomnights: 0 };
         row.accounts += 1;
-        if (a.stage === 'fechamento') row.closed += 1;
+        if (isClosed(a)) row.closed += 1;
         row.interactions += visitsByAccount.get(a.id) || 0;
         row.projected += Number(a.projected_revenue || 0);
         row.roomnights += Number(a.agreed_roomnights || 0);
@@ -226,6 +264,11 @@ const CrmDashboardPage = () => {
           <div>
             <h1 className="text-xl font-semibold text-foreground">Dashboard Comercial</h1>
             <p className="text-xs text-muted-foreground">Visão geral do funil, follow-ups e desempenho por hotel, executivo e subsegmentação</p>
+            {periodActive && (
+              <p className="mt-1 text-xs text-primary">
+                Mostrando contas com atividade em {periodLabel}: criadas, com interação ou fechadas no período. Etapa exibida é a atual de cada conta.
+              </p>
+            )}
           </div>
           <CrmNav />
         </div>
