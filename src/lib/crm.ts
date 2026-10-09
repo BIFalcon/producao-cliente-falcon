@@ -25,6 +25,11 @@ export type CrmVisitType =
   | 'site_inspection'
   | 'evento'
   | 'famtur'
+  | 'visita_externa_prospeccao'
+  | 'visita_externa_relacionamento'
+  | 'reuniao_comercial_cliente'
+  | 'negociacao_acordo_tarifa'
+  | 'follow_up_oportunidade'
   | 'outro';
 
 export const STAGE_LABELS: Record<CrmAccountStage, string> = {
@@ -91,6 +96,11 @@ export const VISIT_TYPE_LABELS: Record<CrmVisitType, string> = {
   site_inspection: 'Site Inspection',
   evento: 'Evento',
   famtur: 'Famtur',
+  visita_externa_prospeccao: 'Visita externa – Prospecção',
+  visita_externa_relacionamento: 'Visita externa – Relacionamento',
+  reuniao_comercial_cliente: 'Reunião comercial cliente',
+  negociacao_acordo_tarifa: 'Negociação de novo acordo/tarifa',
+  follow_up_oportunidade: 'Follow-up comercial de oportunidade',
   outro: 'Outro',
 };
 
