@@ -1184,6 +1184,11 @@ export type Database = {
         | "site_inspection"
         | "evento"
         | "famtur"
+        | "visita_externa_prospeccao"
+        | "visita_externa_relacionamento"
+        | "reuniao_comercial_cliente"
+        | "negociacao_acordo_tarifa"
+        | "follow_up_oportunidade"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1343,6 +1348,11 @@ export const Constants = {
         "site_inspection",
         "evento",
         "famtur",
+        "visita_externa_prospeccao",
+        "visita_externa_relacionamento",
+        "reuniao_comercial_cliente",
+        "negociacao_acordo_tarifa",
+        "follow_up_oportunidade",
       ],
     },
   },
