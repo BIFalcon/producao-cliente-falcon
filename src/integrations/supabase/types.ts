@@ -1189,6 +1189,7 @@ export type Database = {
         | "reuniao_comercial_cliente"
         | "negociacao_acordo_tarifa"
         | "follow_up_oportunidade"
+        | "visita_tecnica"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1353,6 +1354,7 @@ export const Constants = {
         "reuniao_comercial_cliente",
         "negociacao_acordo_tarifa",
         "follow_up_oportunidade",
+        "visita_tecnica",
       ],
     },
   },
