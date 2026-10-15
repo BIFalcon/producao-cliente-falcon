@@ -30,6 +30,7 @@ export type CrmVisitType =
   | 'reuniao_comercial_cliente'
   | 'negociacao_acordo_tarifa'
   | 'follow_up_oportunidade'
+  | 'visita_tecnica'
   | 'outro';
 
 export const STAGE_LABELS: Record<CrmAccountStage, string> = {
@@ -101,6 +102,7 @@ export const VISIT_TYPE_LABELS: Record<CrmVisitType, string> = {
   reuniao_comercial_cliente: 'Reunião comercial cliente',
   negociacao_acordo_tarifa: 'Negociação de novo acordo/tarifa',
   follow_up_oportunidade: 'Follow-up comercial de oportunidade',
+  visita_tecnica: 'Visita técnica',
   outro: 'Outro',
 };
 

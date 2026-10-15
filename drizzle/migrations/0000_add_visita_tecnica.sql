@@ -1,0 +1,1 @@
+ALTER TYPE public.crm_visit_type ADD VALUE IF NOT EXISTS 'visita_tecnica';
