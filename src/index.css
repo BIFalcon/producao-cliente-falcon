@@ -164,3 +164,9 @@
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--input)) transparent;
 }
+
+/* Rolagem sempre visível: tabelas longas rolam dentro da própria área, com a barra lateral à vista */
+.overflow-x-auto:has(> table), .overflow-auto:has(> table) {
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+}
