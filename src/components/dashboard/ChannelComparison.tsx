@@ -133,7 +133,7 @@ const ChannelComparison = () => {
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-compact">
           <thead>
-            <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground w-8"></th>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Canal</th>
               {years.map(y => (
@@ -150,7 +150,7 @@ const ChannelComparison = () => {
                   <React.Fragment key={row.channel}>
                     <tr
                       className={`border-b transition-colors ${isExpandable ? 'cursor-pointer hover:bg-secondary/30' : ''} ${isExpanded ? 'bg-secondary/20' : ''}`}
-                      style={{ borderColor: 'rgba(255,255,255,0.04)' }}
+                      style={{ borderColor: 'hsl(var(--border) / 0.7)' }}
                       onClick={() => toggleChannel(row.channel)}
                     >
                       <td className="px-4 py-2 text-muted-foreground">
@@ -168,7 +168,7 @@ const ChannelComparison = () => {
                         <tr><td colSpan={2 + years.length} className="px-8 py-4 text-center text-xs text-muted-foreground">Carregando...</td></tr>
                       ) : (
                         drilldownRows.map((sub, j) => (
-                          <tr key={j} className="border-b bg-secondary/10" style={{ borderColor: 'rgba(255,255,255,0.02)' }}>
+                          <tr key={j} className="border-b bg-secondary/10" style={{ borderColor: 'hsl(var(--border) / 0.7)' }}>
                             <td className="px-4 py-1.5"></td>
                             <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80">{toTitleCase(sub.name)}</td>
                             {years.map((y, i) => (

@@ -337,7 +337,7 @@ const UsersPage = () => {
                         Hotéis Permitidos
                       </Label>
                       <p className="text-xs text-muted-foreground">Selecione os hotéis que o usuário poderá acessar. Sem seleção = nenhum acesso.</p>
-                      <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                      <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'hsl(var(--border))' }}>
                         {allProperties.map((prop: string) => (
                           <label key={prop} className="flex items-center gap-2 cursor-pointer text-sm">
                             <Checkbox
@@ -415,7 +415,7 @@ const UsersPage = () => {
                 {hotelEditUser?.role === 'consultor' ? (
                   renderConsultorHotelPicker()
                 ) : allProperties && allProperties.length > 0 ? (
-                  <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                  <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md p-3" style={{ borderColor: 'hsl(var(--border))' }}>
                     {allProperties.map((prop: string) => (
                       <label key={prop} className="flex items-center gap-2 cursor-pointer text-sm">
                         <Checkbox
@@ -480,7 +480,7 @@ const UsersPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                  <tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Nome</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">E-mail</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Função</th>
@@ -494,7 +494,7 @@ const UsersPage = () => {
                     <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mx-auto" /></td></tr>
                   ) : users && users.length > 0 ? (
                     users.map((u) => (
-                      <tr key={u.user_id} className="border-b transition-colors hover:bg-secondary/20" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                      <tr key={u.user_id} className="border-b transition-colors hover:bg-secondary/20" style={{ borderColor: 'hsl(var(--border) / 0.7)' }}>
                         <td className="px-4 py-3 text-foreground font-medium">{u.full_name || '—'}</td>
                         <td className="px-4 py-3 text-foreground/80">{u.email}</td>
                         <td className="px-4 py-3">

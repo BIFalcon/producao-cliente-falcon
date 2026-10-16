@@ -423,12 +423,12 @@ const CrmAccountDetailPage = () => {
               <>
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={monthlyChart}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="label" tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} />
                     <YAxis tickFormatter={(v) => formatRevenue(v)} tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} />
                     <Tooltip
                       formatter={(value: number) => [formatRevenue(value), 'Receita']}
-                      contentStyle={{ background: 'hsl(230, 18%, 14%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
+                      contentStyle={{ background: 'hsl(var(--popover))', color: 'hsl(var(--popover-foreground))', boxShadow: '0 8px 24px -8px hsl(var(--foreground) / 0.15)', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
                       labelStyle={{ color: 'hsl(220, 15%, 85%)' }}
                     />
                     <Bar dataKey="revenue" fill="hsl(200, 80%, 55%)" radius={[4, 4, 0, 0]} />

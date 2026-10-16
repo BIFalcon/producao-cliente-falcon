@@ -74,7 +74,7 @@ const CompanyCityAnalysis = () => {
       <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
         <table className="w-full text-sm table-compact">
           <thead className="sticky top-0 bg-surface">
-            <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground w-8"></th>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Cidade</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">UF</th>
@@ -90,7 +90,7 @@ const CompanyCityAnalysis = () => {
                   <React.Fragment key={i}>
                     <tr
                       className={`border-b cursor-pointer transition-colors hover:bg-secondary/30 ${isExpanded ? 'bg-secondary/20' : ''}`}
-                      style={{ borderColor: 'rgba(255,255,255,0.04)' }}
+                      style={{ borderColor: 'hsl(var(--border) / 0.7)' }}
                       onClick={() => toggleCity(row.city, row.state)}
                     >
                       <td className="px-4 py-2 text-muted-foreground">
@@ -106,7 +106,7 @@ const CompanyCityAnalysis = () => {
                         <tr><td colSpan={5} className="px-8 py-4 text-center text-xs text-muted-foreground">Carregando...</td></tr>
                       ) : (
                         drilldownData?.map((sub, j) => (
-                          <tr key={j} className="border-b bg-secondary/10" style={{ borderColor: 'rgba(255,255,255,0.02)' }}>
+                          <tr key={j} className="border-b bg-secondary/10" style={{ borderColor: 'hsl(var(--border) / 0.7)' }}>
                             <td className="px-4 py-1.5"></td>
                             <td className="px-4 py-1.5 pl-8 text-xs text-foreground/80" colSpan={2}>{toTitleCase(sub.company_name)}</td>
                             <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{formatNumber(sub.reservations)}</td>

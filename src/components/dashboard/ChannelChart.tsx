@@ -43,12 +43,12 @@ const ChannelChart = () => {
       {data && data.length > 0 ? (
         <ResponsiveContainer width="100%" height={240}>
           <BarChart data={data} layout="vertical" margin={{ left: 80 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis type="number" tickFormatter={(v) => formatRevenue(v)} tick={{ fill: 'hsl(220, 10%, 50%)', fontSize: 11 }} />
             <YAxis type="category" dataKey="sales_channel" tick={{ fill: 'hsl(220, 15%, 75%)', fontSize: 12 }} width={80} />
             <Tooltip
               formatter={(value: number) => [formatRevenue(value), 'Receita']}
-              contentStyle={{ background: 'hsl(230, 18%, 14%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8 }}
+              contentStyle={{ background: 'hsl(var(--popover))', color: 'hsl(var(--popover-foreground))', boxShadow: '0 8px 24px -8px hsl(var(--foreground) / 0.15)', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
               labelStyle={{ color: 'hsl(220, 15%, 85%)' }}
             />
             <Bar dataKey="revenue" radius={[0, 4, 4, 0]} fill="hsl(200, 80%, 55%)" />
