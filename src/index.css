@@ -6,56 +6,56 @@
 
 @layer base {
   :root {
-    --background: 230 20% 10%;
-    --foreground: 220 15% 85%;
+    --background: 216 33% 97%;
+    --foreground: 220 39% 14%;
 
-    --card: 230 18% 14%;
-    --card-foreground: 220 15% 85%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 39% 14%;
 
-    --popover: 230 18% 14%;
-    --popover-foreground: 220 15% 85%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 39% 14%;
 
-    --primary: 200 80% 55%;
-    --primary-foreground: 230 20% 10%;
+    --primary: 205 85% 40%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 230 15% 20%;
-    --secondary-foreground: 220 15% 75%;
+    --secondary: 214 32% 93%;
+    --secondary-foreground: 220 30% 22%;
 
-    --muted: 230 12% 18%;
-    --muted-foreground: 220 12% 62%;
+    --muted: 214 30% 95%;
+    --muted-foreground: 218 16% 38%;
 
-    --accent: 270 60% 50%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 262 52% 50%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 10 70% 50%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 68% 46%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 150 60% 45%;
-    --success-foreground: 0 0% 98%;
+    --success: 152 62% 32%;
+    --success-foreground: 0 0% 100%;
 
-    --border: 230 15% 18%;
-    --input: 230 15% 20%;
-    --ring: 200 80% 55%;
+    --border: 216 24% 87%;
+    --input: 216 22% 82%;
+    --ring: 205 85% 40%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 230 20% 8%;
-    --sidebar-foreground: 220 15% 75%;
-    --sidebar-primary: 200 80% 55%;
-    --sidebar-primary-foreground: 230 20% 10%;
-    --sidebar-accent: 230 15% 15%;
-    --sidebar-accent-foreground: 220 15% 80%;
-    --sidebar-border: 230 15% 16%;
-    --sidebar-ring: 200 80% 55%;
+    --sidebar-background: 220 45% 16%;
+    --sidebar-foreground: 214 30% 86%;
+    --sidebar-primary: 200 85% 60%;
+    --sidebar-primary-foreground: 220 45% 12%;
+    --sidebar-accent: 220 38% 23%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 35% 22%;
+    --sidebar-ring: 200 85% 60%;
 
-    --surface: 230 18% 14%;
-    --surface-foreground: 220 15% 85%;
+    --surface: 0 0% 100%;
+    --surface-foreground: 220 39% 14%;
 
-    --chart-cyan: 200 80% 55%;
-    --chart-violet: 270 60% 50%;
-    --chart-emerald: 150 60% 45%;
-    --chart-amber: 40 90% 55%;
-    --chart-rose: 350 70% 55%;
+    --chart-cyan: 205 85% 45%;
+    --chart-violet: 262 52% 55%;
+    --chart-emerald: 152 55% 38%;
+    --chart-amber: 36 92% 48%;
+    --chart-rose: 350 70% 52%;
   }
 }
 
@@ -77,14 +77,14 @@
 
   /* Scrollbar styling */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 10px;
   }
   ::-webkit-scrollbar-track {
     background: hsl(var(--background));
   }
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
+    background: hsl(var(--input));
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -133,4 +133,34 @@
 }
 .var-negative {
   color: hsl(var(--destructive));
+}
+
+/* Tabelas: cabeçalho legível, células sem quebra e indicador de rolagem lateral */
+.overflow-x-auto > table, .overflow-auto > table, .relative.w-full.overflow-auto > table {
+  min-width: max-content;
+}
+.overflow-x-auto > table th, .overflow-auto > table th {
+  white-space: nowrap;
+  background: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.overflow-x-auto > table td, .overflow-auto > table td {
+  white-space: nowrap;
+}
+.overflow-x-auto > table tbody tr:hover, .overflow-auto > table tbody tr:hover {
+  background: hsl(var(--primary) / 0.04);
+}
+/* Sombra nas bordas indicando que há mais conteúdo para rolar */
+.overflow-x-auto, .overflow-auto {
+  background:
+    linear-gradient(to right, hsl(var(--card)), hsl(var(--card))) left / 24px 100% no-repeat local,
+    linear-gradient(to left, hsl(var(--card)), hsl(var(--card))) right / 24px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, hsl(var(--foreground) / 0.14), transparent) left / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, hsl(var(--foreground) / 0.14), transparent) right / 12px 100% no-repeat scroll;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--input)) transparent;
 }
