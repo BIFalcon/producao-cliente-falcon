@@ -25,7 +25,7 @@ export const findTotvsHeaderRow = (matrix: unknown[][]): number => {
 export const mapTotvsStatus = (s: unknown): string => {
   const n = norm(s).replace(/[-_]/g, ' ');
   if (n === 'checkout' || n === 'check out') return 'checked out';
-  if (n === 'checkin' || n === 'check in') return 'checked in';
+  if (n === 'checkin' || n === 'check in') return 'in house'; // não entra nos números (só Check-out e No-Show)
   if (n === 'no show' || n === 'noshow') return 'no show';
   if (n.startsWith('cancel')) return 'cancelled';
   return 'reserved';
