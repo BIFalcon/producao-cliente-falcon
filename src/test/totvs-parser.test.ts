@@ -43,3 +43,12 @@ describe('TOTVS parser', () => {
     expect(rows.length).toBeLessThan(m.length - 1);
   });
 });
+
+describe('TOTVS operadora segment', () => {
+  it('Operadora segment marks the client as operadora', () => {
+    const m = [H, row({ Hotel: 'H', 'Status Reserva': 'Checkout', Cliente: 'CVC', Segmento: '03 - Operadora', 'Número Reserva': 9, 'Total Receita': 1, 'Qtde Pernoites': 1 })];
+    const r = parseTotvsMatrix(m, 0)[0];
+    expect(r.source_name).toBe('totvs operadora');
+    expect(r.travel_agent_name).toBe('CVC');
+  });
+});
