@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parseCSV, chunkArray, type ParsedRow } from '@/lib/csv-parser';
+import { findTotvsHeaderRow, parseTotvsMatrix } from '@/lib/totvs-parser';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -550,6 +551,15 @@ const UploadPage = () => {
 
     const matrix: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, blankrows: false });
     if (matrix.length === 0) throw new Error('Planilha vazia');
+
+    // Layout TOTVS (Relatório produção final) é reconhecido automaticamente
+    const totvsIdx = findTotvsHeaderRow(matrix);
+    if (totvsIdx !== -1) {
+      const totvsRows = parseTotvsMatrix(matrix, totvsIdx);
+      if (totvsRows.length === 0) throw new Error('Nenhuma linha de dados encontrada na planilha');
+      (totvsRows as any).__totvs = true;
+      return totvsRows;
+    }
 
     const headerIdx = detectHeaderRow(matrix);
     if (headerIdx === -1) {
