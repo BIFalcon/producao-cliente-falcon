@@ -41,6 +41,29 @@ import {
   accountLabel,
 } from '@/lib/crm';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Columns3 } from 'lucide-react';
+
+const COLUMNS = [
+  { key: 'type', label: 'Tipo' },
+  { key: 'city', label: 'Cidade' },
+  { key: 'segment', label: 'Segmento' },
+  { key: 'sub', label: 'Subsegmentação' },
+  { key: 'hotels', label: 'Hotéis' },
+  { key: 'exec', label: 'Executivo' },
+  { key: 'stage', label: 'Estágio do Funil' },
+  { key: 'status', label: 'Status da Conta' },
+  { key: 'rn', label: 'RN Acordo' },
+  { key: 'projected', label: 'Receita Projetada' },
+  { key: 'lastVisit', label: 'Última Interação' },
+  { key: 'followUp', label: 'Próximo Follow-up' },
+  { key: 'production', label: 'Produção pós-fechamento' },
+];
+const DEFAULT_COLS = ['type', 'hotels', 'exec', 'stage', 'status', 'projected', 'lastVisit', 'followUp', 'production'];
+const COLS_STORAGE = 'crm-accounts-visible-columns';
 
 /** Próximo follow-up pendente da conta */
 const nextFollowUp = (a: any) => {
@@ -58,6 +81,22 @@ const CrmAccountsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: users } = useCrmUsers();
   const { data: productionMap } = useCrmProduction();
+  const [visibleCols, setVisibleCols] = useState<Set<string>>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(COLS_STORAGE) || 'null');
+      if (Array.isArray(saved)) return new Set(saved);
+    } catch { /* ignore */ }
+    return new Set(DEFAULT_COLS);
+  });
+  useEffect(() => {
+    localStorage.setItem(COLS_STORAGE, JSON.stringify([...visibleCols]));
+  }, [visibleCols]);
+  const show = (k: string) => visibleCols.has(k);
+  const toggleCol = (k: string) => setVisibleCols((prev) => {
+    const next = new Set(prev);
+    if (next.has(k)) next.delete(k); else next.add(k);
+    return next;
+  });
 
   const [stageFilter, setStageFilter] = useState<string>(searchParams.get('stage') || 'all');
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || 'all');
@@ -224,34 +263,58 @@ const CrmAccountsPage = () => {
           </Select>
         </div>
 
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{sorted.length} conta(s)</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5">
+                <Columns3 className="h-3.5 w-3.5" /> Colunas ({visibleCols.size}/{COLUMNS.length})
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Mostrar colunas</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {COLUMNS.map((c) => (
+                <DropdownMenuCheckboxItem key={c.key} checked={visibleCols.has(c.key)}
+                  onSelect={(e) => e.preventDefault()}
+                  onCheckedChange={() => toggleCol(c.key)}>
+                  {c.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setVisibleCols(new Set(DEFAULT_COLS))}>Restaurar padrão</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <div className="surface-card overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="max-h-[calc(100vh-280px)] overflow-auto">
             <table className="w-full text-sm">
-              <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
+              <thead className="text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <SortableTh label="Nome" sortKey="name" {...th} />
-                  <SortableTh label="Tipo" sortKey="type" {...th} />
-                  <SortableTh label="Cidade" sortKey="city" {...th} />
-                  <SortableTh label="Segmento" sortKey="segment" {...th} />
-                  <SortableTh label="Subsegmentação" sortKey="sub" {...th} />
-                  <SortableTh label="Hotéis" sortKey="hotels" {...th} />
-                  <SortableTh label="Executivo" sortKey="exec" {...th} />
-                  <SortableTh label="Estágio do Funil" sortKey="stage" {...th} />
-                  <SortableTh label="Status da Conta" sortKey="status" {...th} />
-                  <SortableTh label="RN Acordo" sortKey="rn" {...th} />
-                  <SortableTh label="Receita Projetada" sortKey="projected" {...th} />
-                  <SortableTh label="Última Interação" sortKey="lastVisit" {...th} />
-                  <SortableTh label="Próximo Follow-up" sortKey="followUp" {...th} />
-                  <SortableTh label="Produção pós-fechamento" sortKey="production" {...th} />
-                  <th className="px-4 py-3 text-left">Ações</th>
+                  <SortableTh label="Nome" sortKey="name" {...th} className="left-0 !z-[3] min-w-[220px] max-w-[280px] shadow-[1px_0_0_hsl(var(--border))]" />
+                  {show('type') && <SortableTh label="Tipo" sortKey="type" {...th} />}
+                  {show('city') && <SortableTh label="Cidade" sortKey="city" {...th} />}
+                  {show('segment') && <SortableTh label="Segmento" sortKey="segment" {...th} />}
+                  {show('sub') && <SortableTh label="Subsegmentação" sortKey="sub" {...th} />}
+                  {show('hotels') && <SortableTh label="Hotéis" sortKey="hotels" {...th} />}
+                  {show('exec') && <SortableTh label="Executivo" sortKey="exec" {...th} />}
+                  {show('stage') && <SortableTh label="Estágio do Funil" sortKey="stage" {...th} />}
+                  {show('status') && <SortableTh label="Status da Conta" sortKey="status" {...th} />}
+                  {show('rn') && <SortableTh label="RN Acordo" sortKey="rn" {...th} />}
+                  {show('projected') && <SortableTh label="Receita Projetada" sortKey="projected" {...th} />}
+                  {show('lastVisit') && <SortableTh label="Última Interação" sortKey="lastVisit" {...th} />}
+                  {show('followUp') && <SortableTh label="Próximo Follow-up" sortKey="followUp" {...th} />}
+                  {show('production') && <SortableTh label="Produção pós-fechamento" sortKey="production" {...th} />}
+                  <th className="px-3 py-2 text-left">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading && (
-                  <tr><td colSpan={15} className="px-4 py-8 text-center text-xs text-muted-foreground">Carregando...</td></tr>
+                  <tr><td colSpan={16} className="px-4 py-8 text-center text-xs text-muted-foreground">Carregando...</td></tr>
                 )}
                 {!isLoading && sorted.length === 0 && (
-                  <tr><td colSpan={15} className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma conta encontrada</td></tr>
+                  <tr><td colSpan={16} className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma conta encontrada</td></tr>
                 )}
                 {sorted.map((a: any) => {
                   const name = accountLabel(a);
@@ -260,70 +323,87 @@ const CrmAccountsPage = () => {
                   const lastVisit = (a.crm_visits || []).map((v: any) => v.visit_date).sort().pop();
                   const follow = nextFollowUp(a);
                   const late = follow && follow.next_follow_up_date < today;
+                  const cell = 'px-3 py-2';
                   return (
                     <tr key={a.id}
                         onClick={() => navigate(`/comercial/contas/${a.id}`)}
-                        className="cursor-pointer border-t border-border/40 transition hover:bg-secondary/40">
-                      <td className="px-4 py-3 font-medium text-foreground">{name || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{ACCOUNT_TYPE_LABELS[a.account_type as 'empresa' | 'agencia']}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{a.city || '—'}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{a.segment || '—'}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {a.sub_segment ? (SUB_SEGMENT_LABELS[a.sub_segment as CrmAccountSubSegment] || a.sub_segment) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {a.properties && a.properties.length > 0 ? a.properties.join(', ') : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{userName(a.responsible_user_id) || '—'}</td>
-                      <td className="px-4 py-3">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
-                                  style={{ background: STAGE_COLORS[stage] + '22', color: STAGE_COLORS[stage] }}>
-                              {STAGE_LABELS[stage]}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>{STAGE_DESCRIPTIONS[stage]}</TooltipContent>
-                        </Tooltip>
-                      </td>
-                      <td className="px-4 py-3">
-                        {status ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
-                                style={{ background: ACCOUNT_STATUS_COLORS[status] + '22', color: ACCOUNT_STATUS_COLORS[status] }}>
-                            {ACCOUNT_STATUS_LABELS[status]}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                        {a.agreed_roomnights != null ? Number(a.agreed_roomnights).toLocaleString('pt-BR') : '—'}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{formatMoneyBR(a.projected_revenue)}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{lastVisit ? formatDateBR(lastVisit) : '—'}</td>
-                      <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">
-                        {follow ? (
-                          <span className={late ? 'text-destructive' : 'text-muted-foreground'}>
-                            {formatDateBR(follow.next_follow_up_date)} {formatTimeBR(follow.follow_up_time)}
-                          </span>
-                        ) : <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="px-4 py-3 text-xs">
-                        {(() => {
-                          const prod = productionMap?.get(a.id);
-                          if (!prod?.closed_at) return <span className="text-muted-foreground">—</span>;
-                          if (prod.reservations > 0) {
-                            return (
-                              <span className="inline-flex items-center gap-1.5 text-accent">
-                                <Check className="h-3.5 w-3.5" />
-                                <span className="font-mono">{formatRevenue(prod.revenue)}</span>
+                        className="group cursor-pointer border-t border-border/40 transition">
+                      <td className={`${cell} sticky left-0 z-[1] max-w-[280px] truncate bg-card font-medium text-foreground shadow-[1px_0_0_hsl(var(--border))] group-hover:bg-secondary`}
+                          title={name || ''}>{name || '—'}</td>
+                      {show('type') && <td className={`${cell} text-muted-foreground`}>{ACCOUNT_TYPE_LABELS[a.account_type as 'empresa' | 'agencia']}</td>}
+                      {show('city') && <td className={`${cell} text-muted-foreground`}>{a.city || '—'}</td>}
+                      {show('segment') && <td className={`${cell} text-muted-foreground`}>{a.segment || '—'}</td>}
+                      {show('sub') && (
+                        <td className={`${cell} text-xs text-muted-foreground`}>
+                          {a.sub_segment ? (SUB_SEGMENT_LABELS[a.sub_segment as CrmAccountSubSegment] || a.sub_segment) : '—'}
+                        </td>
+                      )}
+                      {show('hotels') && (
+                        <td className={`${cell} max-w-[240px] truncate text-xs text-muted-foreground`}
+                            title={(a.properties || []).join(', ')}>
+                          {a.properties && a.properties.length > 0 ? a.properties.join(', ') : '—'}
+                        </td>
+                      )}
+                      {show('exec') && <td className={`${cell} text-xs text-muted-foreground`}>{userName(a.responsible_user_id) || '—'}</td>}
+                      {show('stage') && (
+                        <td className={cell}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
+                                    style={{ background: STAGE_COLORS[stage] + '22', color: STAGE_COLORS[stage] }}>
+                                {STAGE_LABELS[stage]}
                               </span>
-                            );
-                          }
-                          return <span className="text-muted-foreground">Sem produção</span>;
-                        })()}
-                      </td>
-                      <td className="px-4 py-3">
+                            </TooltipTrigger>
+                            <TooltipContent>{STAGE_DESCRIPTIONS[stage]}</TooltipContent>
+                          </Tooltip>
+                        </td>
+                      )}
+                      {show('status') && (
+                        <td className={cell}>
+                          {status ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs"
+                                  style={{ background: ACCOUNT_STATUS_COLORS[status] + '22', color: ACCOUNT_STATUS_COLORS[status] }}>
+                              {ACCOUNT_STATUS_LABELS[status]}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                      )}
+                      {show('rn') && (
+                        <td className={`${cell} font-mono text-xs text-muted-foreground`}>
+                          {a.agreed_roomnights != null ? Number(a.agreed_roomnights).toLocaleString('pt-BR') : '—'}
+                        </td>
+                      )}
+                      {show('projected') && <td className={`${cell} font-mono text-xs text-muted-foreground`}>{formatMoneyBR(a.projected_revenue)}</td>}
+                      {show('lastVisit') && <td className={`${cell} font-mono text-xs text-muted-foreground`}>{lastVisit ? formatDateBR(lastVisit) : '—'}</td>}
+                      {show('followUp') && (
+                        <td className={`${cell} font-mono text-xs`}>
+                          {follow ? (
+                            <span className={late ? 'text-destructive' : 'text-muted-foreground'}>
+                              {formatDateBR(follow.next_follow_up_date)} {formatTimeBR(follow.follow_up_time)}
+                            </span>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </td>
+                      )}
+                      {show('production') && (
+                        <td className={`${cell} text-xs`}>
+                          {(() => {
+                            const prod = productionMap?.get(a.id);
+                            if (!prod?.closed_at) return <span className="text-muted-foreground">—</span>;
+                            if (prod.reservations > 0) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 text-accent">
+                                  <Check className="h-3.5 w-3.5" />
+                                  <span className="font-mono">{formatRevenue(prod.revenue)}</span>
+                                </span>
+                              );
+                            }
+                            return <span className="text-muted-foreground">Sem produção</span>;
+                          })()}
+                        </td>
+                      )}
+                      <td className={cell}>
                         <Button variant="ghost" size="sm" className="h-7 px-2 text-destructive hover:text-destructive"
                                 onClick={(e) => { e.stopPropagation(); setDeleteTarget(a); }}>
                           <Trash2 className="h-3.5 w-3.5" />
