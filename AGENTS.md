@@ -1,2 +1,3 @@
 - Competência (pernoite) lives in reservation_nights_by_month, rebuilt per hotel by rebuild_nights_by_month called from process-csv after process_reservations; why: keeps checkout-date data untouched while offering a parallel per-night view.
 - Consultor role has no tenant in user_roles; its active tenant lives in profiles.tenant_id and is switched only via set_consultor_tenant (validated against user_hotel_permissions); why: lets every tenant-scoped RPC/RLS work unchanged, one tenant at a time.
+- TOTVS 'Relatório produção final' is auto-detected in UploadPage via src/lib/totvs-parser.ts and converted to the Opera row shape client-side; why: reuses process-csv/process_reservations unchanged.
