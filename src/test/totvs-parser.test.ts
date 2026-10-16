@@ -11,6 +11,7 @@ describe('TOTVS parser', () => {
     expect(mapTotvsStatus('Checkout')).toBe('checked out');
     expect(mapTotvsStatus('No-Show')).toBe('no show');
     expect(mapTotvsStatus('Cancelada')).toBe('cancelled');
+    expect(mapTotvsStatus('Checkin')).toBe('in house');
   });
 
   it('revenue is lodging only and duplicate pair keeps the row with city', () => {
