@@ -155,7 +155,7 @@
   background: hsl(var(--primary) / 0.04);
 }
 /* Sombra nas bordas indicando que há mais conteúdo para rolar */
-.overflow-x-auto, .overflow-auto {
+.overflow-x-auto:has(> table), .overflow-auto:has(> table) {
   background:
     linear-gradient(to right, hsl(var(--card)), hsl(var(--card))) left / 24px 100% no-repeat local,
     linear-gradient(to left, hsl(var(--card)), hsl(var(--card))) right / 24px 100% no-repeat local,
