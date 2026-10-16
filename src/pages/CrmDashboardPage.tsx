@@ -14,6 +14,7 @@ import {
 import { accountMatchesHotels } from '@/hooks/useCrmUsers';
 import { useCrmUsers } from '@/hooks/useCrmUsers';
 import { Users, CalendarClock, TrendingUp, AlertTriangle, MessageSquare, ChevronRight, ListTodo } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface GroupRow {
   key: string;
@@ -358,14 +359,28 @@ const CrmDashboardPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-          <GroupPanel title="Desempenho por Hotel" subtitle="Contas, interações e acordos por hotel atendido"
-                      firstLabel="Hotel" rows={byHotel} />
-          <GroupPanel title="Desempenho por Executivo" subtitle="Carteira de cada executivo comercial"
-                      firstLabel="Executivo" rows={byExecutive} />
-          <GroupPanel title="Desempenho por Subsegmentação" subtitle="Evento, mensalista, grupo e RFP"
-                      firstLabel="Subsegmentação" rows={bySubSegment} />
-        </div>
+        <Tabs defaultValue="hotel" className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-foreground">Desempenho</h2>
+            <TabsList>
+              <TabsTrigger value="hotel">Por Hotel ({byHotel.length})</TabsTrigger>
+              <TabsTrigger value="exec">Por Executivo ({byExecutive.length})</TabsTrigger>
+              <TabsTrigger value="sub">Por Subsegmentação ({bySubSegment.length})</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="hotel" className="mt-0">
+            <GroupPanel title="Desempenho por Hotel" subtitle="Contas, interações e acordos por hotel atendido"
+                        firstLabel="Hotel" rows={byHotel} />
+          </TabsContent>
+          <TabsContent value="exec" className="mt-0">
+            <GroupPanel title="Desempenho por Executivo" subtitle="Carteira de cada executivo comercial"
+                        firstLabel="Executivo" rows={byExecutive} />
+          </TabsContent>
+          <TabsContent value="sub" className="mt-0">
+            <GroupPanel title="Desempenho por Subsegmentação" subtitle="Evento, mensalista, grupo e RFP"
+                        firstLabel="Subsegmentação" rows={bySubSegment} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
