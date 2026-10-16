@@ -383,6 +383,7 @@ const UploadPage = () => {
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewAck, setPreviewAck] = useState(false);
+  const [isTotvs, setIsTotvs] = useState(false);
 
   // Excel sheet selection
   const [sheets, setSheets] = useState<SheetInfo[]>([]);
@@ -701,7 +702,7 @@ const UploadPage = () => {
     (async () => {
       try {
         const rows = excel ? await parseExcelLocally(file, sheet) : await parseCSV(file);
-        if (!cancelled) setFilePreview(buildFilePreview(rows));
+        if (!cancelled) { setIsTotvs(!!(rows as any).__totvs); setFilePreview(buildFilePreview(rows)); }
       } catch (e) {
         console.warn('[preview] falha ao ler arquivo:', e);
       } finally {
@@ -1125,6 +1126,12 @@ const UploadPage = () => {
           {previewLoading && !uploading && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" /> Conferindo o arquivo...
+            </div>
+          )}
+          {filePreview && !uploading && isTotvs && (
+            <div className="rounded-md border border-primary/40 bg-primary/10 p-3 text-xs text-foreground">
+              <strong>Relatório TOTVS reconhecido.</strong> Para este hotel a receita é <strong>somente de hospedagem</strong> (sem A&amp;B, não há receita total).
+              A cidade/estado é a <strong>origem do hóspede</strong>, não da empresa. Linhas duplicadas sem cidade foram unificadas.
             </div>
           )}
           {filePreview && !uploading && (
