@@ -93,7 +93,7 @@ export const parseTotvsMatrix = (matrix: unknown[][], headerIdx: number): Parsed
       fb_revenue: 0,
       total_revenue: receita,
       room_type: str(get(row, c.uh)),
-      source_name: '',
+      source_name: segmento.includes('operadora') ? 'totvs operadora' : '',
       individual_first_name: str(get(row, c.hospede)),
       rate_code: str(get(row, c.catTarifa)),
       rate_code_description: str(get(row, c.tarifa)),
