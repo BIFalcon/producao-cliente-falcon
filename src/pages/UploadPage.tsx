@@ -256,7 +256,7 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
         <div className="overflow-auto" style={{ maxHeight: 300 }}>
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-background z-10">
-              <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Data/hora</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Arquivo</th>
                 <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Modo</th>
@@ -272,7 +272,7 @@ const UploadHistory: React.FC<{ tenantId: string }> = ({ tenantId }) => {
                 <tr><td colSpan={8} className="px-3 py-6 text-center"><Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" /></td></tr>
               ) : batches && batches.length > 0 ? (
                 batches.map((b: any) => (
-                  <tr key={b.id} className="border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                  <tr key={b.id} className="border-b" style={{ borderColor: 'hsl(var(--border) / 0.7)' }}>
                     <td className="px-3 py-2 text-foreground/80 text-xs whitespace-nowrap">{formatDateTime(b.created_at)}</td>
                     <td className="px-3 py-2 text-foreground text-xs break-all whitespace-normal min-w-[220px]" title={b.file_name || undefined}>{b.file_name || '—'}</td>
                     <td className="px-3 py-2 text-xs text-foreground/80">{b.mode === 'replace' ? 'Substituir' : b.mode === 'append' ? 'Adicionar' : '—'}</td>
@@ -889,7 +889,7 @@ const UploadPage = () => {
 
   return (
     <div className="min-h-screen bg-background pl-14">
-      <div className="border-b px-4 py-3" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <div className="border-b px-4 py-3" style={{ borderColor: 'hsl(var(--border))' }}>
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-1 h-4 w-4" />Voltar

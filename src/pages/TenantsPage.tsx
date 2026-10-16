@@ -32,7 +32,7 @@ const TenantsPage = () => {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                <tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Nome</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Slug</th>
                   <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Status</th>
@@ -40,7 +40,7 @@ const TenantsPage = () => {
               </thead>
               <tbody>
                 {(tenants || []).map((t) => (
-                  <tr key={t.id} className="border-b" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                  <tr key={t.id} className="border-b" style={{ borderColor: 'hsl(var(--border) / 0.7)' }}>
                     <td className="px-3 py-2 text-foreground">{t.name}</td>
                     <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{t.slug}</td>
                     <td className="px-3 py-2 text-muted-foreground">{t.is_active ? 'Ativo' : 'Inativo'}</td>

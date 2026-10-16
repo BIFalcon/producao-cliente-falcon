@@ -38,7 +38,7 @@ const CityAnalytics = () => {
       <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
         <table className="w-full text-sm table-compact">
           <thead className="sticky top-0 bg-surface">
-            <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Cidade</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">UF</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Empresas</th>
@@ -51,7 +51,7 @@ const CityAnalytics = () => {
               data.slice(0, 50).map((row, i) => (
                 <Tooltip key={i}>
                   <TooltipTrigger asChild>
-                    <tr className="border-b cursor-default transition-colors hover:bg-secondary/30" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                    <tr className="border-b cursor-default transition-colors hover:bg-secondary/30" style={{ borderColor: 'hsl(var(--border) / 0.7)' }}>
                       <td className="px-4 py-2 text-foreground font-medium">{row.city || '—'}</td>
                       <td className="px-4 py-2 text-muted-foreground">{row.state || '—'}</td>
                       <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(row.company_count)}</td>

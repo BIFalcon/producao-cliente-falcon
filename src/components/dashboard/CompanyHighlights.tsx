@@ -56,7 +56,7 @@ const CompanyHighlights = () => {
       <h3 className="mb-3 text-sm font-semibold text-foreground">Destaques de Performance</h3>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {cards.map((card, i) => (
-          <div key={i} className="rounded-md border p-3" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div key={i} className="rounded-md border p-3" style={{ borderColor: 'hsl(var(--border))' }}>
             <div className="flex items-center gap-1 mb-1">
               {card.positive ? (
                 <TrendingUp className="h-3 w-3 text-success" />

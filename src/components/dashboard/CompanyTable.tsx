@@ -108,7 +108,7 @@ const CompanyTable = () => {
       <div className="overflow-x-auto">
         <table className="w-full text-sm table-compact">
           <thead>
-            <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Empresa</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('roomnights_current')}>
                 Roomnights {currentLabel}<SortIcon column="roomnights_current" />
@@ -129,7 +129,7 @@ const CompanyTable = () => {
           <tbody>
             {filtered.length > 0 ? (
               filtered.map((row, i) => (
-                <tr key={i} className="border-b transition-colors hover:bg-secondary/30" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                <tr key={i} className="border-b transition-colors hover:bg-secondary/30" style={{ borderColor: 'hsl(var(--border) / 0.7)' }}>
                   <td className="px-4 py-2 text-foreground font-medium truncate max-w-[200px]">{row.company_name}</td>
                   <td className="px-4 py-2 text-right font-mono text-foreground">{formatNumber(Math.round(row.roomnights_current || 0))}</td>
                   <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(Math.round(row.roomnights_previous || 0))}</td>

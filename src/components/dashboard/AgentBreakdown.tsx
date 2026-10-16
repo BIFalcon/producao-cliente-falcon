@@ -37,7 +37,7 @@ const AgentBreakdown = () => {
       <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
         <table className="w-full text-sm table-compact">
           <thead className="sticky top-0 bg-surface">
-            <tr className="border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+            <tr className="border-b" style={{ borderColor: 'hsl(var(--border))' }}>
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">Agência</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Receita (R$)</th>
               <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground">Reservas</th>
@@ -47,7 +47,7 @@ const AgentBreakdown = () => {
           <tbody>
             {data && data.length > 0 ? (
               data.slice(0, 30).map((row, i) => (
-                <tr key={i} className="border-b transition-colors hover:bg-secondary/30" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
+                <tr key={i} className="border-b transition-colors hover:bg-secondary/30" style={{ borderColor: 'hsl(var(--border) / 0.7)' }}>
                   <td className="px-4 py-2 text-foreground font-medium truncate max-w-[200px]">{row.travel_agent_name}</td>
                   <td className="px-4 py-2 text-right font-mono text-foreground">{formatRevenueTable(row.revenue)}</td>
                   <td className="px-4 py-2 text-right font-mono text-muted-foreground">{formatNumber(row.reservations)}</td>
