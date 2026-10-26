@@ -1,6 +1,8 @@
 // Hotéis que mudaram de nome. Chave = nome antigo normalizado (lowercase, sem acento).
 const HOTEL_RENAMES: Record<string, string> = {
   'ibis styles tres rios': '3 Rios Plaza',
+  'hotel tres rios plaza': '3 Rios Plaza',
+  'tres rios plaza': '3 Rios Plaza',
 };
 
 const normalize = (value: string): string =>
