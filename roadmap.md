@@ -1,3 +1,3 @@
 - [x] Padronizar variantes TOTVS de 3 Rios Plaza e adicionar testes.
-- [ ] Unificar os registros da carga existente no tenant correto sem alterar receitas ou classificação.
-- [ ] Atualizar competência do 3 Rios e verificar maio a setembro de 2026.
+- [x] Unificar os registros da carga existente no tenant correto sem alterar receitas ou classificação.
+- [x] Atualizar competência do 3 Rios e verificar maio a setembro de 2026.
