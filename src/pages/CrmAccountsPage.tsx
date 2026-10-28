@@ -144,10 +144,13 @@ const CrmAccountsPage = () => {
   // Drill-down vindo do Dashboard Comercial
   const hotelParam = searchParams.get('hotel');
   const execParam = searchParams.get('exec');
-  const yearParam = searchParams.get('year') ? Number(searchParams.get('year')) : null;
-  const monthsParam = (searchParams.get('months') || '').split(',').filter(Boolean).map(Number);
+  const urlYear = searchParams.get('year') ? Number(searchParams.get('year')) : null;
+  const urlMonths = (searchParams.get('months') || '').split(',').filter(Boolean).map(Number);
+  // Período: vem do clique no Dashboard ou, se não houver, do filtro Ano/Mês do topo
+  const yearParam = urlYear ?? filters.year ?? null;
+  const monthsParam = urlMonths.length ? urlMonths : (filters.month || []);
   const metricParam = searchParams.get('metric'); // closed | interactions | activity
-  const drillActive = !!(hotelParam || execParam || yearParam || monthsParam.length || metricParam);
+  const drillActive = !!(hotelParam || execParam || urlYear || urlMonths.length || metricParam);
   const periodOn = !!yearParam || monthsParam.length > 0;
   const inP = (d: string | null | undefined) => {
     if (!d) return false;
@@ -175,7 +178,7 @@ const CrmAccountsPage = () => {
       }
       if (execParam && (execParam === '__none__' ? !!a.responsible_user_id : a.responsible_user_id !== execParam)) return false;
       const visitsIn = () => (a.crm_visits || []).some((v: any) => inP(v.visit_date));
-      if (metricParam === 'closed') {
+      if (metricParam === 'closed' || (periodOn && stageFilter === 'fechamento')) {
         if (periodOn ? !inP(a.closed_at) : a.stage !== 'fechamento') return false;
       } else if (metricParam === 'interactions') {
         if (periodOn ? !visitsIn() : !(a.crm_visits || []).length) return false;
