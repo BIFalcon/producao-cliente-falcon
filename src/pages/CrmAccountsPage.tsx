@@ -191,7 +191,7 @@ const CrmAccountsPage = () => {
       return name.toLowerCase().includes(s);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, search, filters.property, execFilter, executive, searchParams]);
+  }, [data, search, filters.property, filters.year, filters.month, stageFilter, execFilter, executive, searchParams]);
 
   const { sorted, sortKey, sortDir, toggleSort } = useTableSort(filtered, {
     name: (a: any) => accountLabel(a),
