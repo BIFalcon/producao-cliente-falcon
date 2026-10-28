@@ -5,7 +5,8 @@ export type CrmAccountStage =
   | 'oportunidade'
   | 'proposta_enviada'
   | 'negociacao'
-  | 'fechamento';
+  | 'fechamento'
+  | 'cliente_ativo';
 
 export type CrmAccountStatus = 'ativo' | 'inativo';
 
@@ -41,6 +42,7 @@ export const STAGE_LABELS: Record<CrmAccountStage, string> = {
   proposta_enviada: 'Proposta Enviada',
   negociacao: 'Negociação',
   fechamento: 'Fechamento',
+  cliente_ativo: 'Cliente Ativo',
 };
 
 export const STAGE_DESCRIPTIONS: Record<CrmAccountStage, string> = {
@@ -51,6 +53,7 @@ export const STAGE_DESCRIPTIONS: Record<CrmAccountStage, string> = {
   proposta_enviada: 'Enviou tarifa, acordo ou condição',
   negociacao: 'Cliente avaliando/em negociação',
   fechamento: 'Negócio/acordo fechado',
+  cliente_ativo: 'Cliente antigo da carteira (histórico, não conta como novo fechamento)',
 };
 
 export const STAGE_ORDER: CrmAccountStage[] = [
@@ -61,6 +64,7 @@ export const STAGE_ORDER: CrmAccountStage[] = [
   'proposta_enviada',
   'negociacao',
   'fechamento',
+  'cliente_ativo',
 ];
 
 export const STAGE_COLORS: Record<CrmAccountStage, string> = {
@@ -71,6 +75,7 @@ export const STAGE_COLORS: Record<CrmAccountStage, string> = {
   proposta_enviada: 'hsl(40, 90%, 55%)',
   negociacao: 'hsl(25, 85%, 55%)',
   fechamento: 'hsl(150, 60%, 45%)',
+  cliente_ativo: 'hsl(205, 85%, 40%)',
 };
 
 export const FINAL_STAGE: CrmAccountStage = 'fechamento';
