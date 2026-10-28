@@ -15,6 +15,13 @@
       "when": 1792158420706,
       "tag": "0001_totvs_operadora_segment",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793211156179,
+      "tag": "0002_crm_stage_cliente_ativo",
+      "breakpoints": true
     }
   ]
 }
