@@ -243,7 +243,7 @@ const CrmDashboardPage = () => {
         if (a.stage === 'proposta_enviada') row.proposta += 1;
         if (a.stage === 'oportunidade') row.oportunidade += 1;
         if (a.stage === 'contato_realizado') row.contato += 1;
-        row.interactions += periodActive ? (visitsByAccount.get(a.id) || 0) : (visitsByAccount.get(a.id) || 0);
+        row.interactions += visitsByAccount.get(a.id) || 0;
         row.projected += Number(a.projected_revenue || 0);
         row.roomnights += Number(a.agreed_roomnights || 0);
         map.set(key, row);
