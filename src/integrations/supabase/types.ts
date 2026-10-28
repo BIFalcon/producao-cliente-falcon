@@ -1169,6 +1169,7 @@ export type Database = {
         | "proposta_enviada"
         | "negociacao"
         | "fechamento"
+        | "cliente_ativo"
       crm_account_status: "ativo" | "inativo"
       crm_account_type: "empresa" | "agencia" | "operadora"
       crm_visit_type:
@@ -1333,6 +1334,7 @@ export const Constants = {
         "proposta_enviada",
         "negociacao",
         "fechamento",
+        "cliente_ativo",
       ],
       crm_account_status: ["ativo", "inativo"],
       crm_account_type: ["empresa", "agencia", "operadora"],

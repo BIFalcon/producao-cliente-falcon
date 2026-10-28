@@ -125,7 +125,7 @@ const CrmAccountsPage = () => {
     enabled: !!tenantId,
     queryFn: async () => {
       let q = (supabase.from('crm_accounts') as any)
-        .select('id, account_type, company_name, travel_agent_name, city, segment, sub_segment, stage, account_status, properties, notes, contact_name, contact_email, contact_phone, responsible_user_id, agreed_rate, agreed_roomnights, agreement_start, agreement_end, projected_revenue, attachment_path, attachment_name, closed_at, updated_at, crm_visits(visit_date, next_follow_up_date, follow_up_time, follow_up_done)')
+        .select('id, account_type, company_name, travel_agent_name, city, segment, sub_segment, stage, account_status, properties, created_at, notes, contact_name, contact_email, contact_phone, responsible_user_id, agreed_rate, agreed_roomnights, agreement_start, agreement_end, projected_revenue, attachment_path, attachment_name, closed_at, updated_at, crm_visits(visit_date, next_follow_up_date, follow_up_time, follow_up_done)')
         .eq('tenant_id', tenantId!)
         .order('updated_at', { ascending: false });
       if (stageFilter !== 'all') q = q.eq('stage', stageFilter);
@@ -141,17 +141,54 @@ const CrmAccountsPage = () => {
   const userName = (userId: string | null) =>
     (userId && users?.find((u) => u.user_id === userId)?.full_name) || '';
 
+  // Drill-down vindo do Dashboard Comercial
+  const hotelParam = searchParams.get('hotel');
+  const execParam = searchParams.get('exec');
+  const yearParam = searchParams.get('year') ? Number(searchParams.get('year')) : null;
+  const monthsParam = (searchParams.get('months') || '').split(',').filter(Boolean).map(Number);
+  const metricParam = searchParams.get('metric'); // closed | interactions | activity
+  const drillActive = !!(hotelParam || execParam || yearParam || monthsParam.length || metricParam);
+  const periodOn = !!yearParam || monthsParam.length > 0;
+  const inP = (d: string | null | undefined) => {
+    if (!d) return false;
+    let y: number, m: number;
+    if (d.length > 10) { const dt = new Date(d); y = dt.getFullYear(); m = dt.getMonth() + 1; }
+    else { y = Number(d.slice(0, 4)); m = Number(d.slice(5, 7)); }
+    if (yearParam && y !== yearParam) return false;
+    if (monthsParam.length && !monthsParam.includes(m)) return false;
+    return true;
+  };
+  const clearDrill = () => {
+    const next = new URLSearchParams(searchParams);
+    ['hotel', 'exec', 'year', 'months', 'metric'].forEach((k) => next.delete(k));
+    setSearchParams(next, { replace: true });
+  };
+
   const filtered = useMemo(() => {
     if (!data) return [];
     const s = search.trim().toLowerCase();
     return data.filter((a) => {
       if (!accountMatchesHotels(a, filters.property)) return false;
+      if (hotelParam) {
+        const props: string[] = a.properties || [];
+        if (hotelParam === '__none__' ? props.length > 0 : !props.includes(hotelParam)) return false;
+      }
+      if (execParam && (execParam === '__none__' ? !!a.responsible_user_id : a.responsible_user_id !== execParam)) return false;
+      const visitsIn = () => (a.crm_visits || []).some((v: any) => inP(v.visit_date));
+      if (metricParam === 'closed') {
+        if (periodOn ? !inP(a.closed_at) : a.stage !== 'fechamento') return false;
+      } else if (metricParam === 'interactions') {
+        if (periodOn ? !visitsIn() : !(a.crm_visits || []).length) return false;
+      } else if (periodOn) {
+        if (!(inP(a.created_at) || inP(a.closed_at) || visitsIn())) return false;
+      }
       if (execFilter !== 'all' && !accountMatchesExecutive(a, executive)) return false;
       if (!s) return true;
       const name = (a.company_name || '') + ' ' + (a.travel_agent_name || '') + ' ' + (a.city || '');
       return name.toLowerCase().includes(s);
     });
-  }, [data, search, filters.property, execFilter, executive]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, search, filters.property, execFilter, executive, searchParams]);
 
   const { sorted, sortKey, sortDir, toggleSort } = useTableSort(filtered, {
     name: (a: any) => accountLabel(a),
@@ -194,6 +231,17 @@ const CrmAccountsPage = () => {
           <div>
             <h1 className="text-xl font-semibold text-foreground">Contas Comerciais</h1>
             <p className="text-xs text-muted-foreground">Empresas e agências em relacionamento comercial</p>
+            {drillActive && (
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-primary">
+                Filtro do Dashboard:
+                {hotelParam && <span>hotel {hotelParam === '__none__' ? 'sem hotel' : hotelParam}</span>}
+                {execParam && <span>· executivo {execParam === '__none__' ? 'não vinculado' : userName(execParam)}</span>}
+                {metricParam === 'closed' && <span>· fechadas{periodOn ? ' no período' : ''}</span>}
+                {metricParam === 'interactions' && <span>· com interação{periodOn ? ' no período' : ''}</span>}
+                {periodOn && <span>· período {monthsParam.length ? monthsParam.join(',') + '/' : ''}{yearParam ?? ''}</span>}
+                <button type="button" onClick={clearDrill} className="underline">limpar</button>
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <CrmNav />

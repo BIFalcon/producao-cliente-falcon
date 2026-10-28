@@ -18,56 +18,81 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface GroupRow {
   key: string;
+  param: Record<string, string>;
   accounts: number;
   closed: number;
+  negociacao: number;
+  proposta: number;
+  oportunidade: number;
+  contato: number;
   interactions: number;
   projected: number;
   roomnights: number;
 }
 
-const GroupPanel: React.FC<{ title: string; subtitle: string; rows: GroupRow[]; firstLabel: string }> = ({
-  title, subtitle, rows, firstLabel,
-}) => (
-  <div className="surface-card overflow-hidden">
-    <div className="p-4">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      <p className="text-xs text-muted-foreground">{subtitle}</p>
-    </div>
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
-          <tr>
-            <th className="px-4 py-2 text-left">{firstLabel}</th>
-            <th className="px-4 py-2 text-right">Contas</th>
-            <th className="px-4 py-2 text-right">Fechadas</th>
-            <th className="px-4 py-2 text-right">Interações</th>
-            <th className="px-4 py-2 text-right">RN Acordo</th>
-            <th className="px-4 py-2 text-right">Receita Projetada</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 && (
-            <tr><td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">Sem dados</td></tr>
-          )}
-          {rows.map((r) => (
-            <tr key={r.key} className="border-t border-border/40">
-              <td className="px-4 py-2 text-foreground">{r.key}</td>
-              <td className="px-4 py-2 text-right font-mono text-xs">{r.accounts}</td>
-              <td className="px-4 py-2 text-right font-mono text-xs">{r.closed}</td>
-              <td className="px-4 py-2 text-right font-mono text-xs">{r.interactions}</td>
-              <td className="px-4 py-2 text-right font-mono text-xs">
-                {r.roomnights ? r.roomnights.toLocaleString('pt-BR') : '—'}
-              </td>
-              <td className="px-4 py-2 text-right font-mono text-xs">
-                {r.projected ? formatMoneyBR(r.projected) : '—'}
-              </td>
+type DrillFn = (param: Record<string, string>, extra: Record<string, string>) => void;
+
+const GroupPanel: React.FC<{ title: string; subtitle: string; rows: GroupRow[]; firstLabel: string; onDrill: DrillFn }> = ({
+  title, subtitle, rows, firstLabel, onDrill,
+}) => {
+  const Cell = ({ r, v, extra }: { r: GroupRow; v: number; extra: Record<string, string> }) => (
+    <td className="px-4 py-2 text-right font-mono text-xs">
+      {v > 0 ? (
+        <button type="button" onClick={() => onDrill(r.param, extra)}
+                className="text-primary hover:underline" title="Ver as contas deste indicador">{v}</button>
+      ) : <span className="text-muted-foreground">0</span>}
+    </td>
+  );
+  return (
+    <div className="surface-card overflow-hidden">
+      <div className="p-4">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <p className="text-xs text-muted-foreground">{subtitle} — clique nos números para ver as contas</p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-secondary/50 text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+              <th className="px-4 py-2 text-left">{firstLabel}</th>
+              <th className="px-4 py-2 text-right">Contas</th>
+              <th className="px-4 py-2 text-right">Contatos realizados</th>
+              <th className="px-4 py-2 text-right">Oportunidades</th>
+              <th className="px-4 py-2 text-right">Propostas</th>
+              <th className="px-4 py-2 text-right">Negociações</th>
+              <th className="px-4 py-2 text-right">Fechadas</th>
+              <th className="px-4 py-2 text-right">Interações</th>
+              <th className="px-4 py-2 text-right">RN Acordo</th>
+              <th className="px-4 py-2 text-right">Receita Projetada</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr><td colSpan={10} className="px-4 py-6 text-center text-xs text-muted-foreground">Sem dados</td></tr>
+            )}
+            {rows.map((r) => (
+              <tr key={r.key} className="border-t border-border/40">
+                <td className="px-4 py-2 text-foreground">{r.key}</td>
+                <Cell r={r} v={r.accounts} extra={{}} />
+                <Cell r={r} v={r.contato} extra={{ stage: 'contato_realizado' }} />
+                <Cell r={r} v={r.oportunidade} extra={{ stage: 'oportunidade' }} />
+                <Cell r={r} v={r.proposta} extra={{ stage: 'proposta_enviada' }} />
+                <Cell r={r} v={r.negociacao} extra={{ stage: 'negociacao' }} />
+                <Cell r={r} v={r.closed} extra={{ metric: 'closed' }} />
+                <Cell r={r} v={r.interactions} extra={{ metric: 'interactions' }} />
+                <td className="px-4 py-2 text-right font-mono text-xs">
+                  {r.roomnights ? r.roomnights.toLocaleString('pt-BR') : '—'}
+                </td>
+                <td className="px-4 py-2 text-right font-mono text-xs">
+                  {r.projected ? formatMoneyBR(r.projected) : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const CrmDashboardPage = () => {
   const { tenantId } = useAuth();
@@ -207,13 +232,17 @@ const CrmDashboardPage = () => {
   const ativos = accounts.filter((a) => a.account_status === 'ativo').length;
   const negociando = byStage['negociacao'] || 0;
 
-  const buildGroups = (keyOf: (a: any) => string[]): GroupRow[] => {
+  const buildGroups = (keyOf: (a: any) => [string, Record<string, string>][]): GroupRow[] => {
     const map = new Map<string, GroupRow>();
     accounts.forEach((a) => {
-      keyOf(a).forEach((key) => {
-        const row = map.get(key) || { key, accounts: 0, closed: 0, interactions: 0, projected: 0, roomnights: 0 };
+      keyOf(a).forEach(([key, param]) => {
+        const row = map.get(key) || { key, param, accounts: 0, closed: 0, negociacao: 0, proposta: 0, oportunidade: 0, contato: 0, interactions: 0, projected: 0, roomnights: 0 };
         row.accounts += 1;
         if (isClosed(a)) row.closed += 1;
+        if (a.stage === 'negociacao') row.negociacao += 1;
+        if (a.stage === 'proposta_enviada') row.proposta += 1;
+        if (a.stage === 'oportunidade') row.oportunidade += 1;
+        if (a.stage === 'contato_realizado') row.contato += 1;
         row.interactions += visitsByAccount.get(a.id) || 0;
         row.projected += Number(a.projected_revenue || 0);
         row.roomnights += Number(a.agreed_roomnights || 0);
@@ -224,37 +253,51 @@ const CrmDashboardPage = () => {
   };
 
   const byHotel = useMemo(
-    () => buildGroups((a) => (a.properties?.length ? a.properties : ['— sem hotel'])),
+    () => buildGroups((a) => (a.properties?.length
+      ? a.properties.map((p: string) => [p, { hotel: p }] as [string, Record<string, string>])
+      : [['— sem hotel', { hotel: '__none__' }]])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [accounts, visitsByAccount],
   );
 
   const byExecutive = useMemo(
-    () => buildGroups((a) => [
+    () => buildGroups((a) => [[
       users?.find((u) => u.user_id === a.responsible_user_id)?.full_name || '— não vinculado',
-    ]),
+      { exec: a.responsible_user_id || '__none__' },
+    ]]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [accounts, visitsByAccount, users],
   );
 
   const bySubSegment = useMemo(
-    () => buildGroups((a) => [
+    () => buildGroups((a) => [[
       a.sub_segment ? (SUB_SEGMENT_LABELS[a.sub_segment as CrmAccountSubSegment] || a.sub_segment) : '— não informado',
-    ]),
+      a.sub_segment ? { sub: a.sub_segment } : {},
+    ]]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [accounts, visitsByAccount],
   );
 
+  const drillUrl = (extra: Record<string, string> = {}) => {
+    const p = new URLSearchParams();
+    if (filters.year) p.set('year', String(filters.year));
+    if (filters.month.length) p.set('months', [...filters.month].sort((x, y) => x - y).join(','));
+    Object.entries(extra).forEach(([k, v]) => p.set(k, v));
+    const qs = p.toString();
+    return `/comercial/contas${qs ? `?${qs}` : ''}`;
+  };
+  const onDrill: DrillFn = (param, extra) => navigate(drillUrl({ ...param, ...extra }));
+
   const totalProjected = accounts.reduce((s, a) => s + Number(a.projected_revenue || 0), 0);
 
   const cards = [
-    { label: 'Total de Contas', value: String(total), icon: Users, color: 'text-primary', to: '/comercial/contas', hint: 'Ver todas as contas' },
-    { label: 'Clientes Ativos', value: String(ativos), icon: TrendingUp, color: 'text-accent', to: '/comercial/contas?status=ativo', hint: 'Status da Conta = Ativo' },
-    { label: 'Em Negociação', value: String(negociando), icon: CalendarClock, color: 'text-primary', to: '/comercial/contas?stage=negociacao', hint: 'Ver contas em negociação' },
+    { label: 'Total de Contas', value: String(total), icon: Users, color: 'text-primary', to: drillUrl(), hint: 'Ver todas as contas' },
+    { label: 'Clientes Ativos', value: String(ativos), icon: TrendingUp, color: 'text-accent', to: drillUrl({ status: 'ativo' }), hint: 'Status da Conta = Ativo' },
+    { label: 'Em Negociação', value: String(negociando), icon: CalendarClock, color: 'text-primary', to: drillUrl({ stage: 'negociacao' }), hint: 'Ver contas em negociação' },
     { label: 'Total de Interações', value: String(totalVisits), icon: MessageSquare, color: 'text-accent', to: '/comercial/interacoes', hint: 'Ver todas as interações' },
     { label: 'Tarefas Futuras', value: String(futureTasks), icon: ListTodo, color: 'text-primary', to: '/comercial/tarefas', hint: 'Follow-ups agendados à frente' },
     { label: 'Follow-ups Atrasados', value: String(pending?.length || 0), icon: AlertTriangle, color: 'text-destructive', to: '/comercial/tarefas', hint: 'Vencidos ou para hoje' },
-    { label: 'Receita Projetada', value: formatMoneyBR(totalProjected), icon: TrendingUp, color: 'text-accent', to: '/comercial/contas', hint: 'Soma dos acordos das contas' },
+    { label: 'Receita Projetada', value: formatMoneyBR(totalProjected), icon: TrendingUp, color: 'text-accent', to: drillUrl(), hint: 'Soma dos acordos das contas' },
   ];
 
   return (
@@ -297,7 +340,7 @@ const CrmDashboardPage = () => {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="surface-card p-6">
             <h3 className="text-sm font-semibold">Funil de Conquista</h3>
-            <p className="mb-4 text-xs text-muted-foreground">7 etapas, da prospecção ao fechamento — clique para ver as contas</p>
+            <p className="mb-4 text-xs text-muted-foreground">8 etapas, da prospecção ao cliente ativo — clique para ver as contas</p>
             <div className="space-y-3">
               {STAGE_ORDER.map((s, idx) => {
                 const count = byStage[s] || 0;
@@ -306,7 +349,7 @@ const CrmDashboardPage = () => {
                   <button
                     key={s}
                     type="button"
-                    onClick={() => navigate(`/comercial/contas?stage=${s}`)}
+                    onClick={() => navigate(drillUrl({ stage: s }))}
                     className="w-full rounded-md p-1 text-left transition hover:bg-secondary/40"
                   >
                     <div className="mb-1 flex items-start justify-between gap-3">
@@ -370,15 +413,15 @@ const CrmDashboardPage = () => {
           </div>
           <TabsContent value="hotel" className="mt-0">
             <GroupPanel title="Desempenho por Hotel" subtitle="Contas, interações e acordos por hotel atendido"
-                        firstLabel="Hotel" rows={byHotel} />
+                        firstLabel="Hotel" rows={byHotel} onDrill={onDrill} />
           </TabsContent>
           <TabsContent value="exec" className="mt-0">
             <GroupPanel title="Desempenho por Executivo" subtitle="Carteira de cada executivo comercial"
-                        firstLabel="Executivo" rows={byExecutive} />
+                        firstLabel="Executivo" rows={byExecutive} onDrill={onDrill} />
           </TabsContent>
           <TabsContent value="sub" className="mt-0">
             <GroupPanel title="Desempenho por Subsegmentação" subtitle="Evento, mensalista, grupo e RFP"
-                        firstLabel="Subsegmentação" rows={bySubSegment} />
+                        firstLabel="Subsegmentação" rows={bySubSegment} onDrill={onDrill} />
           </TabsContent>
         </Tabs>
       </div>
