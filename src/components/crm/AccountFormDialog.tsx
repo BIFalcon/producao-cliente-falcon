@@ -164,7 +164,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
 
   // O Status da Conta só existe a partir do estágio "Fechamento" e nasce como Ativo.
   useEffect(() => {
-    if (stage === FINAL_STAGE) {
+    if (stage === FINAL_STAGE || stage === 'cliente_ativo') {
       setAccountStatus((prev) => prev ?? 'ativo');
     } else {
       setAccountStatus(null);
@@ -185,7 +185,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
         segment: segment.trim() || null,
         sub_segment: subSegment,
         stage,
-        account_status: stage === FINAL_STAGE ? (accountStatus ?? 'ativo') : null,
+        account_status: (stage === FINAL_STAGE || stage === 'cliente_ativo') ? (accountStatus ?? 'ativo') : null,
         notes: notes.trim() || null,
         properties,
         contact_name: contactName.trim() || null,
@@ -280,7 +280,7 @@ const AccountFormDialog: React.FC<AccountFormDialogProps> = ({ open, onOpenChang
             </div>
           </div>
 
-          {stage === FINAL_STAGE && (
+          {(stage === FINAL_STAGE || stage === 'cliente_ativo') && (
             <div>
               <Label className="text-xs">Status da Conta</Label>
               <Select
